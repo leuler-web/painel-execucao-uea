@@ -159,7 +159,7 @@ def carregar_dicionarios():
     dict_acoes = {}
     dict_naturezas = {}
     status_msg = ""
-    caminho_aux = r"G:\Meu Drive\27.PythonAnaliseOrcamentaria\Tabelas_Auxiliares.xlsx"
+    caminho_aux = r"Tabelas_Auxiliares.xlsx"
     
     if os.path.exists(caminho_aux):
         try:
@@ -204,7 +204,7 @@ def carregar_dicionarios():
     return dict_acoes, dict_naturezas, status_msg
 
 # 5. CARREGAMENTO DOS DADOS PRINCIPAIS
-PATH_SIAFI = r"G:\Meu Drive\27.PythonAnaliseOrcamentaria\Base_Consolidada_SIAFI.xlsx"
+PATH_SIAFI = r"Base_Consolidada_SIAFI.xlsx"
 
 @st.cache_data(ttl=60)
 def carregar_dados_v181(path):
@@ -309,7 +309,7 @@ def forcar_limpeza_total():
 # MENU LATERAL COM AS LOGOMARCAS OFICIAIS
 # ==========================================
 img_uea = "brasaouea.png"
-img_logos = r"G:\Meu Drive\27.PythonAnaliseOrcamentaria\Logos_Execução.jpeg"
+img_logos = r"Logos_Execução.jpeg"
 
 if os.path.exists(img_logos):
     st.sidebar.image(img_logos, use_container_width=True)
