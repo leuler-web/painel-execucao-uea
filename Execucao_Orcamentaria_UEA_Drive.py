@@ -3,7 +3,17 @@ import pandas as pd
 import plotly.express as px
 import os
 from io import BytesIO
-
+# Código para forçar o valor da métrica a ser verde
+st.markdown(
+    """
+    <style>
+    [data-testid="stMetricValue"] {
+        color: #2E7D32 !important;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 # 1. CONFIGURAÇÃO DA PÁGINA E FONTES
 st.set_page_config(page_title="Execução Orçamentária - UEA", layout="wide", page_icon="📈")
 
