@@ -15,7 +15,7 @@ st.markdown(
     unsafe_allow_html=True
 )
 # 1. CONFIGURAÇÃO DA PÁGINA E FONTES
-st.set_page_config(page_title="Execução Orçamentária - UEA", layout="wide", page_icon="📈")
+st.set_page_config(page_title="PAINEIL ORÇAMENTÁRIO - UEA", layout="wide", page_icon="📈")
 
 st.markdown("""
     <style>
@@ -445,7 +445,7 @@ with tab_visao:
             st.info("Não há valores empenhados para os filtros selecionados.")
             
     else:
-        st.subheader(f"Desdobramento da Ação {var_acao_codigo} por Natureza da Despesa")
+        st.subheader(f"Detalhamento da Ação {var_acao_codigo} por Natureza da Despesa")
         
         df_tree = df_latest.groupby('Natureza_ID')['Empenhado'].sum().reset_index()
         df_tree = df_tree[df_tree['Empenhado'] > 0]
