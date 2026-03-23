@@ -383,7 +383,7 @@ if var_fonte_codigo != "Todas": mask_var &= (df_var['Fonte_3'] == var_fonte_codi
 df_var_filtrada = df_var[mask_var]
 
 # --- TÍTULO GERAL ---
-st.title(f"📊 Execução Orçamentária - UEA {f'- {var_mes_str}' if var_mes_str != 'Todos' else ''}")
+st.title(f"📊 PAINEL ORÇAMENTÁRIO - UEA {f'- {var_mes_str}' if var_mes_str != 'Todos' else ''}")
 st.markdown(f"<div class='periodo-destaque'>📅 Data de Extração / {texto_periodo}</div>", unsafe_allow_html=True)
 
 # --- CAIXA DE DESTAQUE ---
