@@ -1,9 +1,27 @@
+Com certeza! Ter um único bloco de código completo e atualizado é muito mais seguro para evitar erros de sintaxe ou de cópia.
+
+Consolidei absolutamente tudo neste código abaixo. Ele já inclui:
+
+A Capa com a imagem LogoPainelOrcamento.jpeg.
+
+O Drill-down (clique) funcionando.
+
+As margens corrigidas e o cliponaxis=False para mostrar as barras do gráfico perfeitamente sem cortar os números nem achatar o eixo X.
+
+A lógica das abas organizadas (Destaque do ano nas primeiras e Data Técnica na tabela).
+
+Meses no formato mmm/aaaa dinâmico (para funcionar durante anos).
+
+🛠️ O que você precisa fazer:
+Vá ao seu GitHub, abra o ficheiro Execucao_Orcamentaria_UEA_Drive.py, apague TUDO o que está lá dentro e cole o código abaixo. Depois, clique em Commit changes.
+
+Python
 import streamlit as st
 import pandas as pd
 import plotly.express as px
 import os
 from io import BytesIO
-from streamlit_plotly_events import plotly_events # Adicionado para o clique
+from streamlit_plotly_events import plotly_events
 
 # Código para forçar o valor da métrica a ser verde
 st.markdown(
@@ -16,6 +34,7 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
 # 1. CONFIGURAÇÃO DA PÁGINA E FONTES
 st.set_page_config(page_title="PAINEL ORÇAMENTÁRIO - UEA", layout="wide", page_icon="📈")
 
@@ -220,7 +239,7 @@ except Exception as e: st.error(f"Erro ao acessar o arquivo SIAFI: {e}"); st.sto
 
 dict_acoes, dict_naturezas, status_dic = carregar_dicionarios()
 ordem_meses = {'Janeiro': 1, 'Fevereiro': 2, 'Março': 3, 'Abril': 4, 'Maio': 5, 'Junho': 6, 'Julho': 7, 'Agosto': 8, 'Setembro': 9, 'Outubro': 10, 'Novembro': 11, 'Dezembro': 12}
-abrev_meses = {'Janeiro': 'jan', 'Fevereiro': 'fev', 'Março': 'mar', 'Abril': 'abr', 'Maio': 'mai', 'Junho': 'jun', 'Julho': 'jul', 'Agosto': 'ago', 'Setembro': 'set', 'Outubro': 'out', 'Novembro': 'nov', 'Dezembro': 'dez'}
+abrev_meses = {'Janeiro': 'Jan', 'Fevereiro': 'Fev', 'Março': 'Mar', 'Abril': 'Abr', 'Maio': 'Mai', 'Junho': 'Jun', 'Julho': 'Jul', 'Agosto': 'Ago', 'Setembro': 'Set', 'Outubro': 'Out', 'Novembro': 'Nov', 'Dezembro': 'Dez'}
 
 try:
     val_ant = df_var['Data_Extracao_Anterior'].dropna().iloc[0]
@@ -232,11 +251,14 @@ except Exception:
     dt_atual = "N/D"
     texto_periodo = "Aguardando atualização da base de dados."
 
+# Processamento de Datas (Meses)
 if 'Mês Referência' in df_base.columns:
+    # Extrai o Nome e o Ano Ex: "Janeiro 2024"
     df_base['Mes_Nome'] = df_base['Mês Referência'].astype(str).str.split(' ').str[0].str.capitalize()
+    df_base['Ano_Ref'] = df_base['Mês Referência'].astype(str).str.split(' ').str[1]
     df_base['Mes_Num'] = df_base['Mes_Nome'].map(ordem_meses)
 else:
-    df_base['Mes_Nome'] = 'Desconhecido'; df_base['Mes_Num'] = 0
+    df_base['Mes_Nome'] = 'Desconhecido'; df_base['Mes_Num'] = 0; df_base['Ano_Ref'] = ''
 
 # ==========================================
 # TELA 1: CAPA
@@ -356,16 +378,25 @@ elif st.session_state.pagina_ativa == 'dashboard':
                 df_top['Nome_Acao'] = df_top['Ação'].map(dict_acoes).fillna('Não Identificada')
                 df_top['Eixo_Y_Negrito'] = '<b>' + df_top['Ação'] + '</b>'
                 
+                # --- GRÁFICO CORRIGIDO (SEM CORTES) ---
                 fig_bar = px.bar(df_top, x='Empenhado', y='Eixo_Y_Negrito', orientation='h', text='Rotulo', custom_data=['Ação', 'Nome_Acao'])
-                max_valor_bar = df_top['Empenhado'].max()
                 
                 fig_bar.update_layout(
-                yaxis=dict(categoryorder='total ascending', tickfont=dict(size=28, color="#111827"), automargin=True), 
-                font=dict(size=20, color="black"), 
-                xaxis=dict(showticklabels=False, title="", range=[0, max_valor_bar * 1.25]), 
-                yaxis_title="", 
-                margin=dict(l=100, r=100, t=10, b=10)  )
-                fig_bar.update_traces(marker_color='#4f8868', textposition="outside", textfont=dict(size=20, color="black"), hovertemplate="<b>Ação: %{customdata[0]} - %{customdata[1]}</b><br>Valor: %{text}<extra></extra>")
+                    yaxis=dict(categoryorder='total ascending', tickfont=dict(size=28, color="#111827"), automargin=True), 
+                    font=dict(size=20, color="black"), 
+                    xaxis=dict(showticklabels=False, title="", showgrid=False, zeroline=False), 
+                    yaxis_title="", 
+                    margin=dict(l=10, r=150, t=10, b=10),
+                    plot_bgcolor='white'
+                )
+                
+                fig_bar.update_traces(
+                    marker_color='#4f8868', 
+                    textposition="outside", 
+                    textfont=dict(size=20, color="black"), 
+                    cliponaxis=False, 
+                    hovertemplate="<b>Ação: %{customdata[0]} - %{customdata[1]}</b><br>Valor: %{text}<extra></extra>"
+                )
                 
                 # Captura do Clique
                 clique = plotly_events(fig_bar, click_event=True)
@@ -417,13 +448,14 @@ elif st.session_state.pagina_ativa == 'dashboard':
     with tab_evolucao:
         st.subheader("Evolução Mensal da Execução (R$)")
         colunas_ex = [col for col in ['Autorizado', 'Empenhado', 'Liquidado', 'Pago', 'Disponível'] if col in df_base.columns]
-        df_m = df_base[mask_evo].groupby('Mês Referência')[colunas_ex].sum().reset_index()
+        df_m = df_base[mask_evo].groupby(['Mês Referência', 'Mes_Nome', 'Ano_Ref', 'Mes_Num'])[colunas_ex].sum().reset_index()
+        
         if not df_m.empty:
-            df_m['Nome_Mes'] = df_m['Mês Referência'].str.split(' ').str[0].str.capitalize()
-            df_m['mes_num'] = df_m['Nome_Mes'].map(ordem_meses)
-            df_m['Mes_F'] = df_m['Nome_Mes'].map(abrev_meses) + '/2026'
-            df_m = df_m.sort_values('mes_num')
-            df_melt = df_m.melt(id_vars=['Mes_F', 'mes_num'], value_vars=colunas_ex, var_name='Fase', value_name='Valor')
+            df_m = df_m.sort_values('Mes_Num')
+            # Formato de Data Inteligente mmm/aaaa (Ex: Jan/2024)
+            df_m['Mes_F'] = df_m['Mes_Nome'].map(abrev_meses) + '/' + df_m['Ano_Ref']
+            
+            df_melt = df_m.melt(id_vars=['Mes_F', 'Mes_Num'], value_vars=colunas_ex, var_name='Fase', value_name='Valor')
             df_melt['Rotulo_F'] = df_melt['Valor'].apply(formata_abreviado)
             
             fig_line = px.line(df_melt, x='Mes_F', y='Valor', color='Fase', markers=True, text='Rotulo_F', color_discrete_sequence=['#64748B', '#1E3A8A', '#3B82F6', '#10B981', '#F59E0B'])
@@ -440,7 +472,7 @@ elif st.session_state.pagina_ativa == 'dashboard':
             st.info("Não há dados de evolução mensal para os filtros selecionados.")
 
     with tab_tabela:
-        st.markdown(f"<div class='periodo-destaque'>📅 Data de Extração / {texto_periodo}</div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='periodo-destaque'>📅 {texto_periodo}</div>", unsafe_allow_html=True)
         st.subheader("Tabela de Variações")
         
         df_var_visual = df_var_filtrada.copy()
@@ -493,12 +525,12 @@ elif st.session_state.pagina_ativa == 'dashboard':
         with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
             df_excel.to_excel(writer, index=False, sheet_name='Variações')
         
-        st.download_button(label="📥 Descarregar Relatório Excel (.xlsx)", data=buffer.getvalue(), file_name=f"Execucao_UEA_Variacoes.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        st.download_button(label="📥 Descarregar Relatório Excel (.xlsx)", data=buffer.getvalue(), file_name=f"Execucao_UEA_Variacoes_{dt_atual.replace('/', '-')}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
     st.sidebar.markdown("""
         <br><hr>
         <div style='text-align: center; color: #6B7280; font-size: 11px; line-height: 1.4;'>
-            <b>Desenvolvido com ajuda do Gemini Pro</b><br>
+            <b>Desenvolvido com ajuda da IA</b><br>
             em parceria com o Centro de Gerenciamento Operacional - CGO da CDM/PROPLAN<br>
             e CPI - Coordenação de Planejamento Institucional
         </div>
