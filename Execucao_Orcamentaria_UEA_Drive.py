@@ -42,7 +42,7 @@ st.markdown("""
     .periodo-destaque { font-size: 22px; color: #DC2626; font-weight: 900; margin-bottom: 15px; }
     .caixa-destaque { padding: 15px; background-color: #E0F2FE; border-left: 5px solid #0284C7; border-radius: 5px; margin-bottom: 20px; font-size: 18px; color: #0C4A6E; line-height: 1.6; }
     
-    /* NOVO: Destaque do Ano Dinâmico nas Abas */
+    /* Destaque do Ano Dinâmico nas Abas */
     .destaque-ano { font-size: 30px; color: #2E7D32; font-weight: 900; text-align: center; margin-bottom: 25px; border-bottom: 3px solid #2E7D32; padding-bottom: 10px; }
     
     /* Destaque para os Filtros do Menu Lateral */
@@ -233,19 +233,22 @@ except Exception:
     dt_atual = "N/D"
     texto_periodo = "Aguardando atualização da base de dados."
 
+# --- CORREÇÃO DA EXTRAÇÃO DO ANO BLINDADA (USANDO REGEX) ---
 if 'Mês Referência' in df_base.columns:
     df_base['Mes_Nome'] = df_base['Mês Referência'].astype(str).str.split(' ').str[0].str.capitalize()
-    df_base['Ano_Ref'] = df_base['Mês Referência'].astype(str).str.split(' ').str[1]
     df_base['Mes_Num'] = df_base['Mes_Nome'].map(ordem_meses)
+    # Procura exatamente 4 dígitos numéricos para achar o ano (ignora palavras como "de")
+    df_base['Ano_Ref'] = df_base['Mês Referência'].astype(str).str.extract(r'(\d{4})')
 else:
-    df_base['Mes_Nome'] = 'Desconhecido'; df_base['Mes_Num'] = 0; df_base['Ano_Ref'] = ''
+    df_base['Mes_Nome'] = 'Desconhecido'; df_base['Mes_Num'] = 0; df_base['Ano_Ref'] = '2026'
 
 # CAPTURA DINÂMICA DO ANO MAIS RECENTE NA BASE DE DADOS
 try:
     ano_dinamico = str(df_base['Ano_Ref'].dropna().max())
-    if ano_dinamico == '' or ano_dinamico == 'nan': ano_dinamico = '2026'
+    if ano_dinamico in ['', 'nan', 'None']: ano_dinamico = '2026'
 except:
     ano_dinamico = '2026'
+
 
 # ==========================================
 # TELA 1: CAPA
@@ -342,7 +345,7 @@ elif st.session_state.pagina_ativa == 'dashboard':
     tab_visao, tab_evolucao, tab_tabela = st.tabs(["🎯 Visão Estratégica", "📈 Evolução Mensal", "🔍 Tabela de Variações"])
 
     with tab_visao:
-        # TÍTULO DINÂMICO COM O ANO
+        # TÍTULO DINÂMICO AGORA COM O ANO CORRETO
         st.markdown(f"<div class='destaque-ano'>Exercício Orçamentário: {ano_dinamico}</div>", unsafe_allow_html=True)
         
         c1, c2, c3, c4, c5 = st.columns(5)
@@ -418,8 +421,8 @@ elif st.session_state.pagina_ativa == 'dashboard':
         
         if not df_m.empty:
             df_m = df_m.sort_values('Mes_Num')
-            # Formato de Data Inteligente mmm/aaaa (Ex: Jan/2026)
-            df_m['Mes_F'] = df_m['Mes_Nome'].map(abrev_meses) + '/' + df_m['Ano_Ref']
+            # Formato de Data Inteligente mmm/aaaa garantido
+            df_m['Mes_F'] = df_m['Mes_Nome'].map(abrev_meses) + '/' + df_m['Ano_Ref'].astype(str)
             
             df_melt = df_m.melt(id_vars=['Mes_F', 'Mes_Num'], value_vars=colunas_ex, var_name='Fase', value_name='Valor')
             df_melt['Rotulo_F'] = df_melt['Valor'].apply(formata_abreviado)
