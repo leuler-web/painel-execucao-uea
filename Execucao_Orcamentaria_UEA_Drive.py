@@ -3,7 +3,6 @@ import pandas as pd
 import plotly.express as px
 import os
 from io import BytesIO
-from streamlit_plotly_events import plotly_events
 
 # Código para forçar o valor da métrica a ser verde
 st.markdown(
@@ -56,11 +55,9 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# GESTÃO DE ESTADO (Capa e Drill-down)
+# GESTÃO DE ESTADO (Capa)
 if 'pagina_ativa' not in st.session_state:
     st.session_state.pagina_ativa = 'capa'
-if 'acao_drilldown' not in st.session_state:
-    st.session_state.acao_drilldown = None
 
 # 2. DICIONÁRIO MANUAL DAS FONTES
 dict_fontes_global = {
@@ -245,15 +242,14 @@ else:
 # TELA 1: CAPA
 # ==========================================
 if st.session_state.pagina_ativa == 'capa':
-    # A imagem e o botão agora ficam na coluna central (reduzindo o tamanho da imagem)
-    col1, col2, col3 = st.columns([1, 1.5, 1])
+    # Proporção ajustada para [1, 2.5, 1] conforme solicitado!
+    col1, col2, col3 = st.columns([1, 2.5, 1])
     with col2:
         try:
             st.image("LogoPainelOrcamento.jpeg", use_container_width=True)
         except:
             st.warning("Imagem da capa não encontrada.")
             
-        # Botão posicionado imediatamente abaixo da imagem
         if st.button("🚀 ACESSAR PAINEL DE EXECUÇÃO ORÇAMENTÁRIA", use_container_width=True):
             st.session_state.pagina_ativa = 'dashboard'
             st.rerun()
@@ -267,7 +263,6 @@ elif st.session_state.pagina_ativa == 'dashboard':
     if 'botao_reset' not in st.session_state: st.session_state.botao_reset = 0
     def forcar_limpeza_total():
         st.session_state.botao_reset += 1
-        st.session_state.acao_drilldown = None
         for chave in list(st.session_state.keys()):
             if chave.startswith('filtro_'): del st.session_state[chave]
 
@@ -353,7 +348,9 @@ elif st.session_state.pagina_ativa == 'dashboard':
         st.divider()
         
         if var_acao_codigo == "Todas":
-            st.subheader("Top 10 Maiores Despesas por Ação (Clique na barra para ver o detalhamento por Natureza)")
+            # Título limpo sem a instrução de clique
+            st.subheader("Top 10 Maiores Despesas por Ação")
+            
             df_top = df_latest.groupby('Ação')['Empenhado'].sum().nlargest(10).reset_index()
             df_top = df_top[df_top['Empenhado'] > 0]
             
@@ -381,42 +378,9 @@ elif st.session_state.pagina_ativa == 'dashboard':
                     hovertemplate="<b>Ação: %{customdata[0]} - %{customdata[1]}</b><br>Valor: %{text}<extra></extra>"
                 )
                 
-                # --- NOVA LÓGICA DO CLIQUE BLINDADA ---
-                clique = plotly_events(fig_bar, click_event=True, key=f"clique_acao_{st.session_state.botao_reset}")
+                # Gráfico renderizado nativamente (sem plotly_events para evitar problemas)
+                st.plotly_chart(fig_bar, use_container_width=True)
                 
-                if clique:
-                    idx = clique[0].get('pointNumber')
-                    if idx is not None and idx < len(df_top):
-                        # Pega o número da Ação usando o índice do dataframe diretamente
-                        acao_clicada = str(df_top.iloc[idx]['Ação']).strip()
-                        
-                        # Verifica se clicou em uma ação nova para evitar loop de refresh
-                        if st.session_state.acao_drilldown != acao_clicada:
-                            st.session_state.acao_drilldown = acao_clicada
-                            st.rerun()
-
-                # Se houver uma Ação clicada na memória, o gráfico Treemap é desenhado na mesma hora!
-                if st.session_state.acao_drilldown:
-                    st.divider()
-                    st.info(f"🔍 Detalhamento da Ação Clicada: {st.session_state.acao_drilldown} - {dict_acoes.get(st.session_state.acao_drilldown, 'N/I')}")
-                    if st.button("✖️ Fechar Detalhamento e voltar ao Top 10"):
-                        st.session_state.acao_drilldown = None
-                        st.rerun()
-                        
-                    df_tree_click = df_latest[df_latest['Ação'] == st.session_state.acao_drilldown].groupby('Natureza_ID')['Empenhado'].sum().reset_index()
-                    df_tree_click = df_tree_click[df_tree_click['Empenhado'] > 0]
-                    
-                    if not df_tree_click.empty:
-                        df_tree_click['Nome_Natureza'] = df_tree_click['Natureza_ID'].map(dict_naturezas).fillna('Não Identificada')
-                        df_tree_click['Rotulo_Display'] = df_tree_click['Natureza_ID'] + " - " + df_tree_click['Nome_Natureza']
-                        df_tree_click['Valor_Abreviado'] = df_tree_click['Empenhado'].apply(formata_abreviado)
-                        
-                        fig_tree_c = px.treemap(df_tree_click, path=[px.Constant(f"Ação {st.session_state.acao_drilldown}"), 'Rotulo_Display'], values='Empenhado', color='Empenhado', color_continuous_scale='Greens', custom_data=['Valor_Abreviado'])
-                        fig_tree_c.update_traces(texttemplate="<b>%{label}</b><br>%{customdata[0]}", textfont=dict(size=20), hovertemplate="<b>%{label}</b><br>Empenhado: %{customdata[0]}<extra></extra>")
-                        fig_tree_c.update_layout(margin=dict(t=20, l=10, r=10, b=10), height=500)
-                        st.plotly_chart(fig_tree_c, use_container_width=True)
-                    else:
-                        st.warning("Não há detalhamento financeiro para exibir nesta Ação.")
             else:
                 st.info("Não há valores empenhados para os filtros selecionados.")
                 
