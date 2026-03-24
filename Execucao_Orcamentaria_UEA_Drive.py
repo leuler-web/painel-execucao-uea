@@ -360,7 +360,7 @@ elif st.session_state.pagina_ativa == 'dashboard':
 
     with tab_visao:
         # ATUALIZAÇÃO DO TÍTULO COM DATA EM FONTE MENOR E CINZA
-        st.markdown(f"<div class='destaque-ano'>Exercício Orçamentário: {ano_dinamico} <span style='font-size: 16px; font-weight: normal; color: #6B7280;'>(última atualização: {dt_atual})</span></div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='destaque-ano'>Exercício Orçamentário: {ano_dinamico} <span style='font-size: 16px; font-weight: bold; color: #6B7280;'>(última atualização: {dt_atual})</span></div>", unsafe_allow_html=True)
         
         c1, c2, c3, c4, c5 = st.columns(5)
         v_aut = df_latest['Autorizado'].sum() if 'Autorizado' in df_latest.columns else 0
