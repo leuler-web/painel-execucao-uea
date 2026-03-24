@@ -264,13 +264,13 @@ except:
 # TELA 1: CAPA
 # ==========================================
 if st.session_state.pagina_ativa == 'capa':
+    try:
+        st.image("LogoPainelOrcamento.jpeg", use_container_width=True)
+    except:
+        st.warning("Imagem da capa não encontrada.")
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        try:
-            st.image("LogoPainelOrcamento.jpeg", use_container_width=True)
-        except:
-            st.warning("Imagem da capa não encontrada.")
-            
+        st.write("")
         if st.button("🚀 ACESSAR PAINEL DE EXECUÇÃO ORÇAMENTÁRIA", use_container_width=True):
             st.session_state.pagina_ativa = 'dashboard'
             st.rerun()
