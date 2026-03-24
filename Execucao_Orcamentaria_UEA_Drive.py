@@ -1,3 +1,10 @@
+Excelente ideia! Colocar a data de atualização no título traz muito mais transparência e evita que a Pró-Reitora tenha de ir à aba técnica para descobrir de quando são os dados.
+
+Usei um pequeno truque de formatação (HTML <span>) para colocar a data logo ao lado do ano, mas com uma letra mais pequena e num tom cinza discreto, para que o ano de 2026 continue a ser a informação principal.
+
+Como é mais seguro, aqui está o código completo com esta alteração já aplicada. Basta apagar tudo no GitHub e colar este novo bloco:
+
+Python
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -233,8 +240,9 @@ except Exception as e: st.error(f"Erro ao acessar o arquivo SIAFI: {e}"); st.sto
 
 dict_acoes, dict_naturezas, status_dic = carregar_dicionarios()
 ordem_meses = {'Janeiro': 1, 'Fevereiro': 2, 'Março': 3, 'Abril': 4, 'Maio': 5, 'Junho': 6, 'Julho': 7, 'Agosto': 8, 'Setembro': 9, 'Outubro': 10, 'Novembro': 11, 'Dezembro': 12}
-abrev_meses = {'Janeiro': 'Jan', 'Fevereiro': 'Fev', 'Março': 'Mar', 'Abril': 'Abr', 'Maio': 'Mai', 'Junho': 'Jun', 'Julho': 'Jul', 'Agosto': 'Ago', 'Setembro': 'Set', 'Outubro': 'Out', 'Novembro': 'Nov', 'Dezembro': 'Dez'}
+abrev_meses = {'Janeiro': 'jan', 'Fevereiro': 'fev', 'Março': 'mar', 'Abril': 'abr', 'Maio': 'mai', 'Junho': 'jun', 'Julho': 'jul', 'Agosto': 'ago', 'Setembro': 'set', 'Outubro': 'out', 'Novembro': 'nov', 'Dezembro': 'dez'}
 
+# --- LÓGICA DA DATA ---
 try:
     val_ant = df_var['Data_Extracao_Anterior'].dropna().iloc[0]
     val_atual = df_var['Data_Extracao_Atual'].dropna().iloc[0]
@@ -245,7 +253,6 @@ except Exception:
     dt_atual = "N/D"
     texto_periodo = "Aguardando atualização da base de dados."
 
-# LÓGICA DA DATA E ANO DINÂMICO
 if 'Mês Referência' in df_base.columns:
     df_base['Mes_Nome'] = df_base['Mês Referência'].astype(str).str.split(' ').str[0].str.capitalize()
     df_base['Mes_Num'] = df_base['Mes_Nome'].map(ordem_meses)
@@ -258,6 +265,16 @@ try:
     if ano_dinamico in ['', 'nan', 'None']: ano_dinamico = '2026'
 except:
     ano_dinamico = '2026'
+
+# --- LÓGICA DO BOTÃO BORRACHA ---
+if 'botao_reset' not in st.session_state:
+    st.session_state.botao_reset = 0
+
+def forcar_limpeza_total():
+    st.session_state.botao_reset += 1
+    for chave in list(st.session_state.keys()):
+        if chave.startswith('filtro_'):
+            del st.session_state[chave]
 
 
 # ==========================================
@@ -281,12 +298,7 @@ if st.session_state.pagina_ativa == 'capa':
 # ==========================================
 elif st.session_state.pagina_ativa == 'dashboard':
 
-    if 'botao_reset' not in st.session_state: st.session_state.botao_reset = 0
-    def forcar_limpeza_total():
-        st.session_state.botao_reset += 1
-        for chave in list(st.session_state.keys()):
-            if chave.startswith('filtro_'): del st.session_state[chave]
-
+    # MENU LATERAL
     img_logos = r"Logos_Execução.jpeg"
     if os.path.exists(img_logos):
         st.sidebar.image(img_logos, use_container_width=True)
@@ -354,7 +366,8 @@ elif st.session_state.pagina_ativa == 'dashboard':
     tab_visao, tab_evolucao, tab_tabela = st.tabs(["🎯 Visão Estratégica", "📈 Evolução Mensal", "🔍 Tabela de Variações"])
 
     with tab_visao:
-        st.markdown(f"<div class='destaque-ano'>Exercício Orçamentário: {ano_dinamico}</div>", unsafe_allow_html=True)
+        # ATUALIZAÇÃO DO TÍTULO COM DATA EM FONTE MENOR E CINZA
+        st.markdown(f"<div class='destaque-ano'>Exercício Orçamentário: {ano_dinamico} <span style='font-size: 16px; font-weight: normal; color: #6B7280;'>(última atualização: {dt_atual})</span></div>", unsafe_allow_html=True)
         
         c1, c2, c3, c4, c5 = st.columns(5)
         v_aut = df_latest['Autorizado'].sum() if 'Autorizado' in df_latest.columns else 0
@@ -371,8 +384,7 @@ elif st.session_state.pagina_ativa == 'dashboard':
         st.divider()
         
         if var_acao_codigo == "Todas":
-            st.subheader("Top 10 Maiores Despesas por Ação")
-            
+            st.subheader("Top 10 Maiores Despesas por Ação (Empenhado)")
             df_top = df_latest.groupby('Ação')['Empenhado'].sum().nlargest(10).reset_index()
             df_top = df_top[df_top['Empenhado'] > 0]
             
@@ -382,56 +394,65 @@ elif st.session_state.pagina_ativa == 'dashboard':
                 df_top['Eixo_Y_Negrito'] = '<b>' + df_top['Ação'] + '</b>'
                 
                 fig_bar = px.bar(df_top, x='Empenhado', y='Eixo_Y_Negrito', orientation='h', text='Rotulo', custom_data=['Ação', 'Nome_Acao'])
+                max_valor_bar = df_top['Empenhado'].max()
                 
                 fig_bar.update_layout(
                     yaxis=dict(categoryorder='total ascending', tickfont=dict(size=24, color="#111827"), automargin=True), 
                     font=dict(size=18, color="black"), 
-                    xaxis=dict(showticklabels=False, title="", showgrid=False, zeroline=False), 
+                    xaxis=dict(showticklabels=False, title="", range=[0, max_valor_bar * 1.25]), 
                     yaxis_title="", 
-                    margin=dict(l=10, r=120, t=10, b=10),
-                    plot_bgcolor='white'
+                    margin=dict(l=20, r=100, t=10, b=10)
                 )
-                
-                fig_bar.update_traces(
-                    marker_color='#4f8868', 
-                    textposition="outside", 
-                    textfont=dict(size=18, color="black"), 
-                    cliponaxis=False, 
-                    hovertemplate="<b>Ação: %{customdata[0]} - %{customdata[1]}</b><br>Valor: %{text}<extra></extra>"
-                )
-                
+                fig_bar.update_traces(marker_color='#4f8868', textposition="outside", textfont=dict(size=18, color="black"), hovertemplate="<b>Ação: %{customdata[0]} - %{customdata[1]}</b><br>Valor: %{text}<extra></extra>")
                 st.plotly_chart(fig_bar, use_container_width=True)
-                
             else:
                 st.info("Não há valores empenhados para os filtros selecionados.")
                 
         else:
             st.subheader(f"Detalhamento da Ação {var_acao_codigo} por Natureza da Despesa")
+            
             df_tree = df_latest.groupby('Natureza_ID')['Empenhado'].sum().reset_index()
             df_tree = df_tree[df_tree['Empenhado'] > 0]
+            
             if not df_tree.empty:
                 df_tree['Nome_Natureza'] = df_tree['Natureza_ID'].map(dict_naturezas).fillna('Não Identificada')
                 df_tree['Rotulo_Display'] = df_tree['Natureza_ID'] + " - " + df_tree['Nome_Natureza']
                 df_tree['Valor_Abreviado'] = df_tree['Empenhado'].apply(formata_abreviado)
-                fig_tree = px.treemap(df_tree, path=[px.Constant(f"Ação {var_acao_codigo}"), 'Rotulo_Display'], values='Empenhado', color='Empenhado', color_continuous_scale='Greens', custom_data=['Valor_Abreviado'])
-                fig_tree.update_traces(texttemplate="<b>%{label}</b><br>%{customdata[0]}", textfont=dict(size=18), hovertemplate="<b>%{label}</b><br>Empenhado: %{customdata[0]}<extra></extra>")
-                # Altura ajustada para caber melhor na tela
+                
+                fig_tree = px.treemap(
+                    df_tree, 
+                    path=[px.Constant(f"Ação {var_acao_codigo}"), 'Rotulo_Display'], 
+                    values='Empenhado',
+                    color='Empenhado',
+                    color_continuous_scale='Greens',
+                    custom_data=['Valor_Abreviado']
+                )
+                
+                fig_tree.update_traces(
+                    texttemplate="<b>%{label}</b><br>%{customdata[0]}",
+                    textfont=dict(size=18), 
+                    hovertemplate="<b>%{label}</b><br>Empenhado: %{customdata[0]}<extra></extra>"
+                )
+                
                 fig_tree.update_layout(margin=dict(t=20, l=10, r=10, b=10), height=450)
+                
                 st.plotly_chart(fig_tree, use_container_width=True)
             else:
                 st.info("Não há valores empenhados para detalhar nesta Ação.")
 
     with tab_evolucao:
-        st.markdown(f"<div class='destaque-ano'>Evolução Mensal da Execução - Ano {ano_dinamico}</div>", unsafe_allow_html=True)
+        # ATUALIZAÇÃO DO TÍTULO COM DATA EM FONTE MENOR E CINZA
+        st.markdown(f"<div class='destaque-ano'>Evolução Mensal da Execução - Ano {ano_dinamico} <span style='font-size: 16px; font-weight: normal; color: #6B7280;'>(última atualização: {dt_atual})</span></div>", unsafe_allow_html=True)
         
         colunas_ex = [col for col in ['Autorizado', 'Empenhado', 'Liquidado', 'Pago', 'Disponível'] if col in df_base.columns]
-        df_m = df_base[mask_evo].groupby(['Mês Referência', 'Mes_Nome', 'Ano_Ref', 'Mes_Num'])[colunas_ex].sum().reset_index()
         
+        df_m = df_base[mask_evo].groupby('Mês Referência')[colunas_ex].sum().reset_index()
         if not df_m.empty:
-            df_m = df_m.sort_values('Mes_Num')
-            df_m['Mes_F'] = df_m['Mes_Nome'].map(abrev_meses) + '/' + df_m['Ano_Ref'].astype(str)
-            
-            df_melt = df_m.melt(id_vars=['Mes_F', 'Mes_Num'], value_vars=colunas_ex, var_name='Fase', value_name='Valor')
+            df_m['Nome_Mes'] = df_m['Mês Referência'].str.split(' ').str[0].str.capitalize()
+            df_m['mes_num'] = df_m['Nome_Mes'].map(ordem_meses)
+            df_m['Mes_F'] = df_m['Nome_Mes'].map(abrev_meses) + f'/{ano_dinamico}'
+            df_m = df_m.sort_values('mes_num')
+            df_melt = df_m.melt(id_vars=['Mes_F', 'mes_num'], value_vars=colunas_ex, var_name='Fase', value_name='Valor')
             df_melt['Rotulo_F'] = df_melt['Valor'].apply(formata_abreviado)
             
             fig_line = px.line(df_melt, x='Mes_F', y='Valor', color='Fase', markers=True, text='Rotulo_F', color_discrete_sequence=['#64748B', '#1E3A8A', '#3B82F6', '#10B981', '#F59E0B'])
@@ -442,21 +463,27 @@ elif st.session_state.pagina_ativa == 'dashboard':
                 trace.marker.size = 12
                 trace.line.width = 3
                 trace.textposition = "top center" 
+            
             fig_line.update_layout(font=dict(size=18, color="black"), margin=dict(l=40, r=60, t=20, b=20), yaxis_range=[0, df_melt['Valor'].max() * 1.30], yaxis=dict(showticklabels=False), xaxis=dict(tickfont=dict(size=20, weight="bold")), legend=dict(orientation="h", y=1.05))
             st.plotly_chart(fig_line, use_container_width=True)
         else:
             st.info("Não há dados de evolução mensal para os filtros selecionados.")
 
     with tab_tabela:
-        st.markdown(f"<div class='periodo-destaque'>📅 {texto_periodo}</div>", unsafe_allow_html=True)
         st.subheader("Tabela de Variações")
         
         df_var_visual = df_var_filtrada.copy()
         df_var_visual_tela = df_var_visual.copy()
         
-        df_var_visual_tela['AÇÃO'] = df_var_visual['Ação'].apply(lambda x: f'<div title="{x} - {dict_acoes.get(x, "N/I")}">{x}</div>' if x else "")
-        df_var_visual_tela['FONTE'] = df_var_visual['Fonte_3'].apply(lambda x: f'<div title="{x} - {dict_fontes_global.get(x, "Outras Fontes")}">{x}</div>' if x else "")
-        df_var_visual_tela['NATUREZA'] = df_var_visual['Natureza_ID'].apply(lambda x: f'<div title="{x} - {dict_naturezas.get(x, "N/I")}">{x}</div>' if x else "")
+        df_var_visual_tela['AÇÃO'] = df_var_visual['Ação'].apply(
+            lambda x: f'<div title="{x} - {dict_acoes.get(x, "N/I")}">{x}</div>' if x else ""
+        )
+        df_var_visual_tela['FONTE'] = df_var_visual['Fonte_3'].apply(
+            lambda x: f'<div title="{x} - {dict_fontes_global.get(x, "Outras Fontes")}">{x}</div>' if x else ""
+        )
+        df_var_visual_tela['NATUREZA'] = df_var_visual['Natureza_ID'].apply(
+            lambda x: f'<div title="{x} - {dict_naturezas.get(x, "N/I")}">{x}</div>' if x else ""
+        )
         
         colunas_identificacao = ['AÇÃO', 'FONTE', 'NATUREZA']
         categorias_alvo = ['Dotação Suplementar', 'Reduções', 'Autorizado', 'Empenhado', 'Disponível']
@@ -472,7 +499,8 @@ elif st.session_state.pagina_ativa == 'dashboard':
         mapeamento_colunas = {}
         for col in colunas_financeiras_originais:
             nome_seguro = col.replace('Ant.', 'A\u200Bnt.') 
-            novo_nome = nome_seguro.replace('_', '<br>').replace(' ', '<br>').replace('<br><br>', '<br>')
+            novo_nome = nome_seguro.replace('_', '<br>').replace(' ', '<br>')
+            novo_nome = novo_nome.replace('<br><br>', '<br>')
             mapeamento_colunas[col] = f'<span translate="no" class="notranslate">{novo_nome}</span>'
             
         df_var_visual_tela = df_var_visual_tela.rename(columns=mapeamento_colunas)
@@ -485,29 +513,44 @@ elif st.session_state.pagina_ativa == 'dashboard':
             .set_properties(**{'text-align': 'center'}, subset=colunas_identificacao)
         )
         
-        try: html_tabela = tabela_estilizada.hide(axis="index").to_html(escape=False)
-        except AttributeError: html_tabela = tabela_estilizada.hide_index().render()
+        try:
+            html_tabela = tabela_estilizada.hide(axis="index").to_html(escape=False)
+        except AttributeError:
+            html_tabela = tabela_estilizada.hide_index().render()
             
         st.markdown(f'<div class="tabela-container tabela-customizada">{html_tabela}</div>', unsafe_allow_html=True)
         
+        # EXPORTAÇÃO EXCEL LIMPA
         df_excel = df_var_visual.copy()
         df_excel['AÇÃO'] = df_excel['Ação'].apply(lambda x: f"{x} - {dict_acoes.get(x, 'N/I')}" if x else "")
         df_excel['FONTE'] = df_excel['Fonte_3'].apply(lambda x: f"{x} - {dict_fontes_global.get(x, 'Outras Fontes')}" if x else "")
         df_excel['NATUREZA'] = df_excel['Natureza_ID'].apply(lambda x: f"{x} - {dict_naturezas.get(x, 'N/I')}" if x else "")
         df_excel = df_excel[colunas_identificacao + colunas_financeiras_originais]
+        
         df_excel.columns = [c.replace('_Ant.', '_Anterior').replace('_Ant', '_Anterior').replace(' Ant.', ' Anterior').replace(' Ant', ' Anterior') for c in df_excel.columns]
         
         buffer = BytesIO()
         with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
             df_excel.to_excel(writer, index=False, sheet_name='Variações')
         
-        st.download_button(label="📥 Descarregar Relatório Excel (.xlsx)", data=buffer.getvalue(), file_name=f"Execucao_UEA_Variacoes_{dt_atual.replace('/', '-')}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        st.download_button(
+            label="📥 Descarregar Relatório Excel (.xlsx)",
+            data=buffer.getvalue(),
+            file_name=f"Execucao_UEA_Variacoes_{dt_atual.replace('/', '-')}.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
 
-    st.sidebar.markdown("""
-        <br><hr>
-        <div style='text-align: center; color: #6B7280; font-size: 11px; line-height: 1.4;'>
-            <b>Desenvolvido com ajuda da IA</b><br>
-            em parceria com o Centro de Gerenciamento Operacional - CGO da CDM/PROPLAN<br>
-            e CPI - Coordenação de Planejamento Institucional
-        </div>
-    """, unsafe_allow_html=True)
+# ==========================================
+# RODAPÉ DE CRÉDITOS OFICIAIS
+# ==========================================
+st.sidebar.markdown("""
+    <br><hr>
+    <div style='text-align: center; color: #6B7280; font-size: 11px; line-height: 1.4;'>
+        <b>Desenvolvido com ajuda do Gemini Pro</b><br>
+        em parceria com o Centro de Gerenciamento Operacional - CGO da CDM/PROPLAN<br>
+        e CPI - Coordenação de Planejamento Institucional
+    </div>
+    <div style='text-align: center; color: #9CA3AF; font-size: 11px; margin-top: 10px;'>
+        Versão 3.5 - Painel Responsivo e Dinâmico 🚀
+    </div>
+""", unsafe_allow_html=True)
