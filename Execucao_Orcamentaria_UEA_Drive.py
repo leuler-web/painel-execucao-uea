@@ -264,7 +264,7 @@ except:
 # TELA 1: CAPA
 # ==========================================
 if st.session_state.pagina_ativa == 'capa':
-    col1, col2, col3 = st.columns([1, 2.5, 1])
+    col1, col2, col3 = st.columns([1, 1, 1])
     with col2:
         try:
             st.image("LogoPainelOrcamento.jpeg", use_container_width=True)
