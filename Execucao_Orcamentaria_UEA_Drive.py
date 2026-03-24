@@ -1,10 +1,3 @@
-Tem toda a razão! Acabei por deixar de fora a linha que criava o "cabeçalho" verde com o ano em destaque, e é fundamental que ele seja automático para não ter de mexer no código quando virarmos para 2027!
-
-Já recuperei o estilo visual (destaque-ano) e adicionei a lógica dinâmica (ano_dinamico = df_base['Ano_Ref'].max()). O código vai ler a sua coluna de "Mês Referência" (ex: "Janeiro 2026"), extrair o ano automaticamente e colocá-lo como título principal nas duas primeiras abas.
-
-Aqui tem o código final, já com a proporção da capa a [1, 2.5, 1], o gráfico de barras limpo (sem clique) e o ano automático. Pode copiar e substituir na íntegra no seu GitHub:
-
-Python
 import streamlit as st
 import pandas as pd
 import plotly.express as px
