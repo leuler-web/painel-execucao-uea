@@ -1,3 +1,10 @@
+Tem toda a razão! Acabei por deixar de fora a linha que criava o "cabeçalho" verde com o ano em destaque, e é fundamental que ele seja automático para não ter de mexer no código quando virarmos para 2027!
+
+Já recuperei o estilo visual (destaque-ano) e adicionei a lógica dinâmica (ano_dinamico = df_base['Ano_Ref'].max()). O código vai ler a sua coluna de "Mês Referência" (ex: "Janeiro 2026"), extrair o ano automaticamente e colocá-lo como título principal nas duas primeiras abas.
+
+Aqui tem o código final, já com a proporção da capa a [1, 2.5, 1], o gráfico de barras limpo (sem clique) e o ano automático. Pode copiar e substituir na íntegra no seu GitHub:
+
+Python
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -41,6 +48,9 @@ st.markdown("""
     [data-testid="stMetricLabel"] * { font-size: 18px !important; font-weight: 900 !important; color: #111827 !important; }
     .periodo-destaque { font-size: 22px; color: #DC2626; font-weight: 900; margin-bottom: 15px; }
     .caixa-destaque { padding: 15px; background-color: #E0F2FE; border-left: 5px solid #0284C7; border-radius: 5px; margin-bottom: 20px; font-size: 18px; color: #0C4A6E; line-height: 1.6; }
+    
+    /* NOVO: Destaque do Ano Dinâmico nas Abas */
+    .destaque-ano { font-size: 30px; color: #2E7D32; font-weight: 900; text-align: center; margin-bottom: 25px; border-bottom: 3px solid #2E7D32; padding-bottom: 10px; }
     
     /* Destaque para os Filtros do Menu Lateral */
     [data-testid="stSidebar"] label p { font-size: 18px !important; font-weight: 900 !important; color: #0F172A !important; margin-bottom: 4px; }
@@ -237,12 +247,18 @@ if 'Mês Referência' in df_base.columns:
 else:
     df_base['Mes_Nome'] = 'Desconhecido'; df_base['Mes_Num'] = 0; df_base['Ano_Ref'] = ''
 
+# CAPTURA DINÂMICA DO ANO MAIS RECENTE NA BASE DE DADOS
+try:
+    ano_dinamico = str(df_base['Ano_Ref'].dropna().max())
+    if ano_dinamico == '' or ano_dinamico == 'nan': ano_dinamico = '2026'
+except:
+    ano_dinamico = '2026'
 
 # ==========================================
 # TELA 1: CAPA
 # ==========================================
 if st.session_state.pagina_ativa == 'capa':
-    # Proporção ajustada para [1, 2.5, 1] conforme solicitado!
+    # Proporção ajustada para [1, 2.5, 1]
     col1, col2, col3 = st.columns([1, 2.5, 1])
     with col2:
         try:
@@ -333,6 +349,9 @@ elif st.session_state.pagina_ativa == 'dashboard':
     tab_visao, tab_evolucao, tab_tabela = st.tabs(["🎯 Visão Estratégica", "📈 Evolução Mensal", "🔍 Tabela de Variações"])
 
     with tab_visao:
+        # TÍTULO DINÂMICO COM O ANO
+        st.markdown(f"<div class='destaque-ano'>Exercício Orçamentário: {ano_dinamico}</div>", unsafe_allow_html=True)
+        
         c1, c2, c3, c4, c5 = st.columns(5)
         v_aut = df_latest['Autorizado'].sum() if 'Autorizado' in df_latest.columns else 0
         v_emp = df_latest['Empenhado'].sum() if 'Empenhado' in df_latest.columns else 0
@@ -348,7 +367,6 @@ elif st.session_state.pagina_ativa == 'dashboard':
         st.divider()
         
         if var_acao_codigo == "Todas":
-            # Título limpo sem a instrução de clique
             st.subheader("Top 10 Maiores Despesas por Ação")
             
             df_top = df_latest.groupby('Ação')['Empenhado'].sum().nlargest(10).reset_index()
@@ -378,7 +396,6 @@ elif st.session_state.pagina_ativa == 'dashboard':
                     hovertemplate="<b>Ação: %{customdata[0]} - %{customdata[1]}</b><br>Valor: %{text}<extra></extra>"
                 )
                 
-                # Gráfico renderizado nativamente (sem plotly_events para evitar problemas)
                 st.plotly_chart(fig_bar, use_container_width=True)
                 
             else:
@@ -400,13 +417,15 @@ elif st.session_state.pagina_ativa == 'dashboard':
                 st.info("Não há valores empenhados para detalhar nesta Ação.")
 
     with tab_evolucao:
-        st.subheader("Evolução Mensal da Execução (R$)")
+        # TÍTULO DINÂMICO COM O ANO
+        st.markdown(f"<div class='destaque-ano'>Evolução Mensal da Execução - Ano {ano_dinamico}</div>", unsafe_allow_html=True)
+        
         colunas_ex = [col for col in ['Autorizado', 'Empenhado', 'Liquidado', 'Pago', 'Disponível'] if col in df_base.columns]
         df_m = df_base[mask_evo].groupby(['Mês Referência', 'Mes_Nome', 'Ano_Ref', 'Mes_Num'])[colunas_ex].sum().reset_index()
         
         if not df_m.empty:
             df_m = df_m.sort_values('Mes_Num')
-            # Formato de Data Inteligente mmm/aaaa (Ex: Jan/2024)
+            # Formato de Data Inteligente mmm/aaaa (Ex: Jan/2026)
             df_m['Mes_F'] = df_m['Mes_Nome'].map(abrev_meses) + '/' + df_m['Ano_Ref']
             
             df_melt = df_m.melt(id_vars=['Mes_F', 'Mes_Num'], value_vars=colunas_ex, var_name='Fase', value_name='Valor')
