@@ -359,7 +359,7 @@ elif st.session_state.pagina_ativa == 'dashboard':
                 fig_bar = px.bar(df_top, x='Empenhado', y='Eixo_Y_Negrito', orientation='h', text='Rotulo', custom_data=['Ação', 'Nome_Acao'])
                 max_valor_bar = df_top['Empenhado'].max()
                 
-                fig_bar.update_layout(yaxis=dict(categoryorder='total ascending', tickfont=dict(size=28, color="#111827")), font=dict(size=20, color="black"), xaxis=dict(showticklabels=False, title="", range=[0, max_valor_bar * 1.25]), yaxis_title="", margin=dict(l=20, r=100, t=10, b=10))
+                fig_bar.update_layout(yaxis=dict(categoryorder='total ascending', tickfont=dict(size=28, color="#111827"), automargin=True),font=dict(size=20, color="black"),xaxis=dict(showticklabels=False, title="", range=[0, max_valor_bar * 1.25]), yaxis_title="", # A margem esquerda (l) foi aumentada de 20 para 100 margin=dict(l=100, r=100, t=10, b=10))
                 fig_bar.update_traces(marker_color='#4f8868', textposition="outside", textfont=dict(size=20, color="black"), hovertemplate="<b>Ação: %{customdata[0]} - %{customdata[1]}</b><br>Valor: %{text}<extra></extra>")
                 
                 # Captura do Clique
