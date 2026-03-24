@@ -21,38 +21,50 @@ st.set_page_config(page_title="PAINEL ORÇAMENTÁRIO - UEA", layout="wide", page
 
 st.markdown("""
     <style>
-    /* ELIMINAR O ESPAÇO GIGANTE NO TOPO DA PÁGINA */
-    .block-container { padding-top: 1.5rem !important; }
-    
-    /* DEIXAR O MENU LATERAL 100% BRANCO */
-    [data-testid="stSidebar"] { background-color: #FFFFFF !important; border-right: 1px solid #E5E7EB !important; }
-    
-    /* Fixar os KPIs no topo */
-    [data-testid="stHorizontalBlock"]:first-of-type {
-        position: sticky; top: 0rem; background-color: white; z-index: 999;
-        padding-bottom: 10px; padding-top: 10px; border-bottom: 2px solid #f0f2f6;
+    /* 1. OTIMIZAÇÃO DE ESPAÇO E BORDAS (RESPONSIVIDADE MÁXIMA) */
+    .block-container { 
+        padding-top: 2rem !important; 
+        padding-bottom: 1rem !important; 
+        max-width: 100% !important; 
     }
     
-    /* Fontes e Textos */
-    h1 { font-size: 54px !important; font-weight: 900 !important; color: #878787 !important; margin-top: -10px !important;}
-    h3 { font-size: 32px !important; font-weight: 800 !important; color: #111827 !important; padding-bottom: 15px; }
-    .stTabs [data-baseweb="tab-list"] button { font-size: 26px !important; font-weight: 900 !important; color: #374151 !important; }
-    [data-testid="stMetricValue"] { font-size: 28px !important; font-weight: 900 !important; color: #4B5563 !important; }
-    [data-testid="stMetricLabel"] * { font-size: 18px !important; font-weight: 900 !important; color: #111827 !important; }
-    .periodo-destaque { font-size: 22px; color: #DC2626; font-weight: 900; margin-bottom: 15px; }
-    .caixa-destaque { padding: 15px; background-color: #E0F2FE; border-left: 5px solid #0284C7; border-radius: 5px; margin-bottom: 20px; font-size: 18px; color: #0C4A6E; line-height: 1.6; }
+    /* 2. DEIXAR O MENU LATERAL 100% BRANCO */
+    [data-testid="stSidebar"] { 
+        background-color: #FFFFFF !important; 
+        border-right: 1px solid #E5E7EB !important; 
+    }
+    
+    /* 3. CONGELAR AS ABAS NO TOPO DA TELA (EFEITO STICKY) */
+    [data-testid="stTabs"] > div:first-of-type {
+        position: sticky !important;
+        top: 0px !important;
+        background-color: white !important;
+        z-index: 9999 !important;
+        padding-bottom: 10px !important;
+        padding-top: 15px !important;
+        border-bottom: 2px solid #2E7D32 !important;
+    }
+    
+    /* Fontes e Textos Ajustados para caberem bem em Laptops e Telas Grandes */
+    h1 { font-size: 44px !important; font-weight: 900 !important; color: #878787 !important; margin-top: -20px !important;}
+    h3 { font-size: 26px !important; font-weight: 800 !important; color: #111827 !important; padding-bottom: 10px; }
+    .stTabs [data-baseweb="tab-list"] button { font-size: 22px !important; font-weight: 900 !important; color: #374151 !important; }
+    [data-testid="stMetricValue"] { font-size: 26px !important; font-weight: 900 !important; color: #4B5563 !important; }
+    [data-testid="stMetricLabel"] * { font-size: 16px !important; font-weight: 900 !important; color: #111827 !important; }
+    .periodo-destaque { font-size: 18px; color: #DC2626; font-weight: 900; margin-bottom: 10px; }
+    .caixa-destaque { padding: 12px; background-color: #E0F2FE; border-left: 5px solid #0284C7; border-radius: 5px; margin-bottom: 15px; font-size: 15px; color: #0C4A6E; line-height: 1.5; }
     
     /* Destaque do Ano Dinâmico nas Abas */
-    .destaque-ano { font-size: 30px; color: #2E7D32; font-weight: 900; text-align: center; margin-bottom: 25px; border-bottom: 3px solid #2E7D32; padding-bottom: 10px; }
+    .destaque-ano { font-size: 26px; color: #2E7D32; font-weight: 900; text-align: center; margin-bottom: 15px; border-bottom: 3px solid #2E7D32; padding-bottom: 5px; }
     
     /* Destaque para os Filtros do Menu Lateral */
-    [data-testid="stSidebar"] label p { font-size: 18px !important; font-weight: 900 !important; color: #0F172A !important; margin-bottom: 4px; }
+    [data-testid="stSidebar"] label p { font-size: 16px !important; font-weight: 900 !important; color: #0F172A !important; margin-bottom: 4px; }
     
     /* CSS DA TABELA HTML CUSTOMIZADA */
-    .tabela-container { max-height: 600px; overflow-y: auto; overflow-x: auto; border: 1px solid #D1D5DB; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); background-color: white; margin-bottom: 20px; }
+    .tabela-container { max-height: 480px; overflow-y: auto; overflow-x: auto; border: 1px solid #D1D5DB; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); background-color: white; margin-bottom: 20px; }
     .tabela-customizada table { width: 100%; border-collapse: collapse; font-family: sans-serif; }
-    .tabela-customizada thead th { background-color: #1E3A8A !important; color: #FFFFFF !important; font-weight: 900 !important; font-size: 15px !important; text-align: center !important; position: sticky; top: 0; z-index: 10; padding: 12px 8px; border-bottom: 2px solid #0F172A; line-height: 1.2; }
-    .tabela-customizada tbody td { padding: 10px 8px; border-bottom: 1px solid #E5E7EB; font-size: 14px; vertical-align: middle; white-space: nowrap;  }
+    .tabela-customizada thead th { background-color: #1E3A8A !important; color: #FFFFFF !important; font-weight: 900 !important; font-size: 14px !important; text-align: center !important; position: sticky; top: 0; z-index: 10; padding: 10px 8px; border-bottom: 2px solid #0F172A; line-height: 1.2; }
+    .tabela-customizada tbody td { padding: 8px 8px; border-bottom: 1px solid #E5E7EB; font-size: 13px; vertical-align: middle; white-space: nowrap;  }
     .tabela-customizada tbody tr:hover { background-color: #F3F4F6 !important; }
     .tabela-customizada tbody td div[title] { cursor: help; border-bottom: 1px dotted #9CA3AF; display: inline-block; }
     </style>
@@ -233,16 +245,14 @@ except Exception:
     dt_atual = "N/D"
     texto_periodo = "Aguardando atualização da base de dados."
 
-# --- CORREÇÃO DA EXTRAÇÃO DO ANO BLINDADA (USANDO REGEX) ---
+# LÓGICA DA DATA E ANO DINÂMICO
 if 'Mês Referência' in df_base.columns:
     df_base['Mes_Nome'] = df_base['Mês Referência'].astype(str).str.split(' ').str[0].str.capitalize()
     df_base['Mes_Num'] = df_base['Mes_Nome'].map(ordem_meses)
-    # Procura exatamente 4 dígitos numéricos para achar o ano (ignora palavras como "de")
     df_base['Ano_Ref'] = df_base['Mês Referência'].astype(str).str.extract(r'(\d{4})')
 else:
     df_base['Mes_Nome'] = 'Desconhecido'; df_base['Mes_Num'] = 0; df_base['Ano_Ref'] = '2026'
 
-# CAPTURA DINÂMICA DO ANO MAIS RECENTE NA BASE DE DADOS
 try:
     ano_dinamico = str(df_base['Ano_Ref'].dropna().max())
     if ano_dinamico in ['', 'nan', 'None']: ano_dinamico = '2026'
@@ -254,7 +264,6 @@ except:
 # TELA 1: CAPA
 # ==========================================
 if st.session_state.pagina_ativa == 'capa':
-    # Proporção ajustada para [1, 2.5, 1]
     col1, col2, col3 = st.columns([1, 2.5, 1])
     with col2:
         try:
@@ -345,7 +354,6 @@ elif st.session_state.pagina_ativa == 'dashboard':
     tab_visao, tab_evolucao, tab_tabela = st.tabs(["🎯 Visão Estratégica", "📈 Evolução Mensal", "🔍 Tabela de Variações"])
 
     with tab_visao:
-        # TÍTULO DINÂMICO AGORA COM O ANO CORRETO
         st.markdown(f"<div class='destaque-ano'>Exercício Orçamentário: {ano_dinamico}</div>", unsafe_allow_html=True)
         
         c1, c2, c3, c4, c5 = st.columns(5)
@@ -376,18 +384,18 @@ elif st.session_state.pagina_ativa == 'dashboard':
                 fig_bar = px.bar(df_top, x='Empenhado', y='Eixo_Y_Negrito', orientation='h', text='Rotulo', custom_data=['Ação', 'Nome_Acao'])
                 
                 fig_bar.update_layout(
-                    yaxis=dict(categoryorder='total ascending', tickfont=dict(size=28, color="#111827"), automargin=True), 
-                    font=dict(size=20, color="black"), 
+                    yaxis=dict(categoryorder='total ascending', tickfont=dict(size=24, color="#111827"), automargin=True), 
+                    font=dict(size=18, color="black"), 
                     xaxis=dict(showticklabels=False, title="", showgrid=False, zeroline=False), 
                     yaxis_title="", 
-                    margin=dict(l=10, r=150, t=10, b=10),
+                    margin=dict(l=10, r=120, t=10, b=10),
                     plot_bgcolor='white'
                 )
                 
                 fig_bar.update_traces(
                     marker_color='#4f8868', 
                     textposition="outside", 
-                    textfont=dict(size=20, color="black"), 
+                    textfont=dict(size=18, color="black"), 
                     cliponaxis=False, 
                     hovertemplate="<b>Ação: %{customdata[0]} - %{customdata[1]}</b><br>Valor: %{text}<extra></extra>"
                 )
@@ -406,14 +414,14 @@ elif st.session_state.pagina_ativa == 'dashboard':
                 df_tree['Rotulo_Display'] = df_tree['Natureza_ID'] + " - " + df_tree['Nome_Natureza']
                 df_tree['Valor_Abreviado'] = df_tree['Empenhado'].apply(formata_abreviado)
                 fig_tree = px.treemap(df_tree, path=[px.Constant(f"Ação {var_acao_codigo}"), 'Rotulo_Display'], values='Empenhado', color='Empenhado', color_continuous_scale='Greens', custom_data=['Valor_Abreviado'])
-                fig_tree.update_traces(texttemplate="<b>%{label}</b><br>%{customdata[0]}", textfont=dict(size=20), hovertemplate="<b>%{label}</b><br>Empenhado: %{customdata[0]}<extra></extra>")
-                fig_tree.update_layout(margin=dict(t=20, l=10, r=10, b=10), height=500)
+                fig_tree.update_traces(texttemplate="<b>%{label}</b><br>%{customdata[0]}", textfont=dict(size=18), hovertemplate="<b>%{label}</b><br>Empenhado: %{customdata[0]}<extra></extra>")
+                # Altura ajustada para caber melhor na tela
+                fig_tree.update_layout(margin=dict(t=20, l=10, r=10, b=10), height=450)
                 st.plotly_chart(fig_tree, use_container_width=True)
             else:
                 st.info("Não há valores empenhados para detalhar nesta Ação.")
 
     with tab_evolucao:
-        # TÍTULO DINÂMICO COM O ANO
         st.markdown(f"<div class='destaque-ano'>Evolução Mensal da Execução - Ano {ano_dinamico}</div>", unsafe_allow_html=True)
         
         colunas_ex = [col for col in ['Autorizado', 'Empenhado', 'Liquidado', 'Pago', 'Disponível'] if col in df_base.columns]
@@ -421,7 +429,6 @@ elif st.session_state.pagina_ativa == 'dashboard':
         
         if not df_m.empty:
             df_m = df_m.sort_values('Mes_Num')
-            # Formato de Data Inteligente mmm/aaaa garantido
             df_m['Mes_F'] = df_m['Mes_Nome'].map(abrev_meses) + '/' + df_m['Ano_Ref'].astype(str)
             
             df_melt = df_m.melt(id_vars=['Mes_F', 'Mes_Num'], value_vars=colunas_ex, var_name='Fase', value_name='Valor')
@@ -430,12 +437,12 @@ elif st.session_state.pagina_ativa == 'dashboard':
             fig_line = px.line(df_melt, x='Mes_F', y='Valor', color='Fase', markers=True, text='Rotulo_F', color_discrete_sequence=['#64748B', '#1E3A8A', '#3B82F6', '#10B981', '#F59E0B'])
             for trace in fig_line.data:
                 trace.textfont.color = trace.line.color
-                trace.textfont.size = 15
+                trace.textfont.size = 14
                 trace.textfont.weight = "bold"
-                trace.marker.size = 14
-                trace.line.width = 4
+                trace.marker.size = 12
+                trace.line.width = 3
                 trace.textposition = "top center" 
-            fig_line.update_layout(font=dict(size=20, color="black"), margin=dict(l=40, r=60, t=20, b=20), yaxis_range=[0, df_melt['Valor'].max() * 1.30], yaxis=dict(showticklabels=False), xaxis=dict(tickfont=dict(size=22, weight="bold")), legend=dict(orientation="h", y=1.05))
+            fig_line.update_layout(font=dict(size=18, color="black"), margin=dict(l=40, r=60, t=20, b=20), yaxis_range=[0, df_melt['Valor'].max() * 1.30], yaxis=dict(showticklabels=False), xaxis=dict(tickfont=dict(size=20, weight="bold")), legend=dict(orientation="h", y=1.05))
             st.plotly_chart(fig_line, use_container_width=True)
         else:
             st.info("Não há dados de evolução mensal para os filtros selecionados.")
