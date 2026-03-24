@@ -233,29 +233,31 @@ except Exception:
     dt_atual = "N/D"
     texto_periodo = "Aguardando atualização da base de dados."
 
-# Processamento de Datas (Meses)
 if 'Mês Referência' in df_base.columns:
-    # Extrai o Nome e o Ano Ex: "Janeiro 2024"
     df_base['Mes_Nome'] = df_base['Mês Referência'].astype(str).str.split(' ').str[0].str.capitalize()
     df_base['Ano_Ref'] = df_base['Mês Referência'].astype(str).str.split(' ').str[1]
     df_base['Mes_Num'] = df_base['Mes_Nome'].map(ordem_meses)
 else:
     df_base['Mes_Nome'] = 'Desconhecido'; df_base['Mes_Num'] = 0; df_base['Ano_Ref'] = ''
 
+
 # ==========================================
 # TELA 1: CAPA
 # ==========================================
 if st.session_state.pagina_ativa == 'capa':
-    try:
-        st.image("LogoPainelOrcamento.jpeg", use_container_width=True)
-    except:
-        st.warning("Imagem da capa não encontrada.")
-    col1, col2, col3 = st.columns([1, 2, 1])
+    # A imagem e o botão agora ficam na coluna central (reduzindo o tamanho da imagem)
+    col1, col2, col3 = st.columns([1, 1.5, 1])
     with col2:
-        st.write("")
+        try:
+            st.image("LogoPainelOrcamento.jpeg", use_container_width=True)
+        except:
+            st.warning("Imagem da capa não encontrada.")
+            
+        # Botão posicionado imediatamente abaixo da imagem
         if st.button("🚀 ACESSAR PAINEL DE EXECUÇÃO ORÇAMENTÁRIA", use_container_width=True):
             st.session_state.pagina_ativa = 'dashboard'
             st.rerun()
+
 
 # ==========================================
 # TELA 2: DASHBOARD
@@ -360,7 +362,6 @@ elif st.session_state.pagina_ativa == 'dashboard':
                 df_top['Nome_Acao'] = df_top['Ação'].map(dict_acoes).fillna('Não Identificada')
                 df_top['Eixo_Y_Negrito'] = '<b>' + df_top['Ação'] + '</b>'
                 
-                # --- GRÁFICO CORRIGIDO (SEM CORTES) ---
                 fig_bar = px.bar(df_top, x='Empenhado', y='Eixo_Y_Negrito', orientation='h', text='Rotulo', custom_data=['Ação', 'Nome_Acao'])
                 
                 fig_bar.update_layout(
@@ -380,18 +381,21 @@ elif st.session_state.pagina_ativa == 'dashboard':
                     hovertemplate="<b>Ação: %{customdata[0]} - %{customdata[1]}</b><br>Valor: %{text}<extra></extra>"
                 )
                 
-                # Captura do Clique
-                clique = plotly_events(fig_bar, click_event=True)
+                # --- NOVA LÓGICA DO CLIQUE BLINDADA ---
+                clique = plotly_events(fig_bar, click_event=True, key=f"clique_acao_{st.session_state.botao_reset}")
                 
                 if clique:
-                    # Captura exatamente o número da Ação que está escrito na barra
-                    y_clicado = clique[0]['y']
-                    acao_clicada = str(y_clicado).replace('<b>', '').replace('</b>', '').strip()
-                    st.session_state.acao_drilldown = acao_clicada
-                    
-                # Nota: O st.rerun() foi removido daqui para deixar o Treemap carregar!
+                    idx = clique[0].get('pointNumber')
+                    if idx is not None and idx < len(df_top):
+                        # Pega o número da Ação usando o índice do dataframe diretamente
+                        acao_clicada = str(df_top.iloc[idx]['Ação']).strip()
+                        
+                        # Verifica se clicou em uma ação nova para evitar loop de refresh
+                        if st.session_state.acao_drilldown != acao_clicada:
+                            st.session_state.acao_drilldown = acao_clicada
+                            st.rerun()
 
-                # Se clicou, mostra a árvore da Ação específica por Natureza
+                # Se houver uma Ação clicada na memória, o gráfico Treemap é desenhado na mesma hora!
                 if st.session_state.acao_drilldown:
                     st.divider()
                     st.info(f"🔍 Detalhamento da Ação Clicada: {st.session_state.acao_drilldown} - {dict_acoes.get(st.session_state.acao_drilldown, 'N/I')}")
