@@ -1,10 +1,3 @@
-Excelente ideia! Colocar a data de atualização no título traz muito mais transparência e evita que a Pró-Reitora tenha de ir à aba técnica para descobrir de quando são os dados.
-
-Usei um pequeno truque de formatação (HTML <span>) para colocar a data logo ao lado do ano, mas com uma letra mais pequena e num tom cinza discreto, para que o ano de 2026 continue a ser a informação principal.
-
-Como é mais seguro, aqui está o código completo com esta alteração já aplicada. Basta apagar tudo no GitHub e colar este novo bloco:
-
-Python
 import streamlit as st
 import pandas as pd
 import plotly.express as px
