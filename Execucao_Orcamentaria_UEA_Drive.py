@@ -1,21 +1,3 @@
-Com certeza! Ter um único bloco de código completo e atualizado é muito mais seguro para evitar erros de sintaxe ou de cópia.
-
-Consolidei absolutamente tudo neste código abaixo. Ele já inclui:
-
-A Capa com a imagem LogoPainelOrcamento.jpeg.
-
-O Drill-down (clique) funcionando.
-
-As margens corrigidas e o cliponaxis=False para mostrar as barras do gráfico perfeitamente sem cortar os números nem achatar o eixo X.
-
-A lógica das abas organizadas (Destaque do ano nas primeiras e Data Técnica na tabela).
-
-Meses no formato mmm/aaaa dinâmico (para funcionar durante anos).
-
-🛠️ O que você precisa fazer:
-Vá ao seu GitHub, abra o ficheiro Execucao_Orcamentaria_UEA_Drive.py, apague TUDO o que está lá dentro e cole o código abaixo. Depois, clique em Commit changes.
-
-Python
 import streamlit as st
 import pandas as pd
 import plotly.express as px
