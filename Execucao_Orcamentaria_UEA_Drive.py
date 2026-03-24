@@ -382,10 +382,14 @@ elif st.session_state.pagina_ativa == 'dashboard':
                 
                 # Captura do Clique
                 clique = plotly_events(fig_bar, click_event=True)
+                
                 if clique:
-                    idx = clique[0]['pointNumber']
-                    st.session_state.acao_drilldown = df_top.iloc[idx]['Ação']
-                    st.rerun()
+                    # Captura exatamente o número da Ação que está escrito na barra
+                    y_clicado = clique[0]['y']
+                    acao_clicada = str(y_clicado).replace('<b>', '').replace('</b>', '').strip()
+                    st.session_state.acao_drilldown = acao_clicada
+                    
+                # Nota: O st.rerun() foi removido daqui para deixar o Treemap carregar!
 
                 # Se clicou, mostra a árvore da Ação específica por Natureza
                 if st.session_state.acao_drilldown:
