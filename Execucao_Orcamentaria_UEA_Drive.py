@@ -463,6 +463,9 @@ elif st.session_state.pagina_ativa == 'dashboard':
             st.info("Não há dados de evolução mensal para os filtros selecionados.")
 
     with tab_tabela:
+        # AQUI ESTÁ A LINHA DE VOLTA: Mostra a data em vermelho e calendário!
+        st.markdown(f"<div class='periodo-destaque'>📅 {texto_periodo}</div>", unsafe_allow_html=True)
+        
         st.subheader("Tabela de Variações")
         
         df_var_visual = df_var_filtrada.copy()
