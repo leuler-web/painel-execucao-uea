@@ -544,6 +544,6 @@ st.sidebar.markdown("""
         e CPI - Coordenação de Planejamento Institucional
     </div>
     <div style='text-align: center; color: #9CA3AF; font-size: 11px; margin-top: 10px;'>
-        Versão 3.5 - Painel Responsivo e Dinâmico 🚀
+        Versão 4.0 - Painel Responsivo e Dinâmico 🚀
     </div>
 """, unsafe_allow_html=True)
