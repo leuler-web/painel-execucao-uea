@@ -443,12 +443,12 @@ elif st.session_state.pagina_ativa == 'dashboard':
         if not df_m.empty:
             df_m['Nome_Mes'] = df_m['Mês Referência'].str.split(' ').str[0].str.capitalize()
             df_m['mes_num'] = df_m['Nome_Mes'].map(ordem_meses)
-            df_m['Mês'] = df_m['Nome_Mes'].map(abrev_meses) + f'/{ano_dinamico}'
+            df_m['Mes_F'] = df_m['Nome_Mes'].map(abrev_meses) + f'/{ano_dinamico}'
             df_m = df_m.sort_values('mes_num')
-            df_melt = df_m.melt(id_vars=['Mês', 'mes_num'], value_vars=colunas_ex, var_name='Fase', value_name='Valor')
+            df_melt = df_m.melt(id_vars=['Mes_F', 'mes_num'], value_vars=colunas_ex, var_name='Fase', value_name='Valor')
             df_melt['Rotulo_F'] = df_melt['Valor'].apply(formata_abreviado)
             
-            fig_line = px.line(df_melt, x='Mês', y='Valor', color='Fase', markers=True, text='Rotulo_F', color_discrete_sequence=['#64748B', '#1E3A8A', '#3B82F6', '#10B981', '#F59E0B'])
+            fig_line = px.line(df_melt, x='Mes_F', y='Valor', color='Fase', markers=True, text='Rotulo_F', color_discrete_sequence=['#64748B', '#1E3A8A', '#3B82F6', '#10B981', '#F59E0B'])
             for trace in fig_line.data:
                 trace.textfont.color = trace.line.color
                 trace.textfont.size = 14
@@ -463,9 +463,6 @@ elif st.session_state.pagina_ativa == 'dashboard':
             st.info("Não há dados de evolução mensal para os filtros selecionados.")
 
     with tab_tabela:
-        # AQUI ESTÁ A LINHA DE VOLTA: Mostra a data em vermelho e calendário!
-        st.markdown(f"<div class='periodo-destaque'>📅 {texto_periodo}</div>", unsafe_allow_html=True)
-        
         st.subheader("Tabela de Variações")
         
         df_var_visual = df_var_filtrada.copy()
