@@ -1,19 +1,3 @@
-Calma, já entendi o que aconteceu! Ao tentar simplificar o código para resolver o problema do gráfico, acabei removendo funções essenciais que faziam o "resto" do painel funcionar (como a leitura dos nomes das ações e a formatação das tabelas).
-
-O seu Dashboard é complexo e precisa de todas as engrenagens. O erro "Indefinido" que apareceu na sua imagem é porque o código novo não conseguiu ler a coluna Mês Referência da mesma forma que o antigo.
-
-Aqui está o código completo original (as 560+ linhas), mas com a "cirurgia" precisa feita apenas onde importava para consertar o gráfico e a leitura dos meses com barra (/).
-
-O que este código faz:
-Recupera tudo: Cores, tabelas com realce amarelo, nomes das ações do arquivo auxiliar e todas as métricas.
-
-Conserta o Mês: Agora ele entende tanto Janeiro 2026 quanto Janeiro/2026.
-
-Gráfico de Evolução: Ele vai mostrar a linha do tempo completa (Jan, Fev, Mar, Abr) sem sumir quando você filtra.
-
-Substitua tudo no seu arquivo por este:
-
-Python
 import streamlit as st
 import pandas as pd
 import plotly.express as px
