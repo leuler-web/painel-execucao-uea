@@ -1,14 +1,3 @@
-Tens toda a razão. Misturar versões de tamanhos diferentes pode causar confusão e apagar funcionalidades que já estavam a funcionar bem. Para garantir que o teu painel se mantém exatamente como está, mas com o gráfico de evolução corrigido, aqui tens o código completo (mantendo as ~560 linhas).
-
-O que foi corrigido:
-
-Dicionários de Meses Robustos: Agora aceitam "Abr" ou "Abril", "Mar" ou "Março", etc.
-
-Lógica do Gráfico de Evolução: Garanti que ele ignora o filtro de mês da barra lateral (para que a linha do tempo apareça sempre completa) e que os rótulos nos pontos do gráfico fiquem visíveis.
-
-Versão no Rodapé: Atualizada para 4.1.
-
-Python
 import streamlit as st
 import pandas as pd
 import plotly.express as px
