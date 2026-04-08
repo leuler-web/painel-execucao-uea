@@ -232,8 +232,15 @@ try: df_base, df_var = carregar_dados_v181(PATH_SIAFI)
 except Exception as e: st.error(f"Erro ao acessar o arquivo SIAFI: {e}"); st.stop()
 
 dict_acoes, dict_naturezas, status_dic = carregar_dicionarios()
-ordem_meses = {'Janeiro': 1, 'Fevereiro': 2, 'Março': 3, 'Abril': 4, 'Maio': 5, 'Junho': 6, 'Julho': 7, 'Agosto': 8, 'Setembro': 9, 'Outubro': 10, 'Novembro': 11, 'Dezembro': 12}
-abrev_meses = {'Janeiro': 'jan', 'Fevereiro': 'fev', 'Março': 'mar', 'Abril': 'abr', 'Maio': 'mai', 'Junho': 'jun', 'Julho': 'jul', 'Agosto': 'ago', 'Setembro': 'set', 'Outubro': 'out', 'Novembro': 'nov', 'Dezembro': 'dez'}
+ordem_meses = {
+    'Janeiro': 1, 'Fevereiro': 2, 'Março': 3, 'Abril': 4, 'Maio': 5, 'Junho': 6,
+    'Julho': 7, 'Agosto': 8, 'Setembro': 9, 'Outubro': 10, 'Novembro': 11, 'Dezembro': 12,
+    'Jan': 1, 'Fev': 2, 'Mar': 3, 'Abr': 4, 'Mai': 5, 'Jun': 6, 'Jul': 7, 'Ago': 8, 'Set': 9, 'Out': 10, 'Nov': 11, 'Dez': 12
+}
+abrev_meses = {
+    'Janeiro': 'jan', 'Fevereiro': 'fev', 'Março': 'mar', 'Abril': 'abr', 'Maio': 'mai', 'Junho': 'jun',
+    'Jan': 'jan', 'Fev': 'fev', 'Mar': 'mar', 'Abr': 'abr', 'Mai': 'mai', 'Jun': 'jun'
+}
 
 # --- LÓGICA DA DATA (ATUALIZADA) ---
 dt_atual = "N/D"
