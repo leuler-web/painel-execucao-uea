@@ -54,7 +54,7 @@ st.markdown("""
     .periodo-destaque { font-size: 18px; color: #DC2626; font-weight: 900; margin-bottom: 10px; }
     .caixa-destaque { padding: 12px; background-color: #E0F2FE; border-left: 5px solid #0284C7; border-radius: 5px; margin-bottom: 15px; font-size: 15px; color: #0C4A6E; line-height: 1.5; }
     
-    /* Destaque do Ano Dinâmico nas Abas */
+    /* Destaque do Ano Dinâmico Nas Abas */
     .destaque-ano { font-size: 26px; color: #2E7D32; font-weight: 900; text-align: center; margin-bottom: 15px; border-bottom: 3px solid #2E7D32; padding-bottom: 5px; }
     
     /* Destaque para os Filtros do Menu Lateral */
@@ -235,16 +235,27 @@ dict_acoes, dict_naturezas, status_dic = carregar_dicionarios()
 ordem_meses = {'Janeiro': 1, 'Fevereiro': 2, 'Março': 3, 'Abril': 4, 'Maio': 5, 'Junho': 6, 'Julho': 7, 'Agosto': 8, 'Setembro': 9, 'Outubro': 10, 'Novembro': 11, 'Dezembro': 12}
 abrev_meses = {'Janeiro': 'jan', 'Fevereiro': 'fev', 'Março': 'mar', 'Abril': 'abr', 'Maio': 'mai', 'Junho': 'jun', 'Julho': 'jul', 'Agosto': 'ago', 'Setembro': 'set', 'Outubro': 'out', 'Novembro': 'nov', 'Dezembro': 'dez'}
 
-# --- LÓGICA DA DATA ---
+# --- LÓGICA DA DATA (ATUALIZADA) ---
+dt_atual = "N/D"
+dt_ant = "N/D"
+texto_periodo = "Aguardando atualização da base de dados."
+
 try:
-    val_ant = df_var['Data_Extracao_Anterior'].dropna().iloc[0]
-    val_atual = df_var['Data_Extracao_Atual'].dropna().iloc[0]
-    dt_ant = pd.to_datetime(val_ant, errors='coerce').strftime('%d/%m/%Y')
-    dt_atual = pd.to_datetime(val_atual, errors='coerce').strftime('%d/%m/%Y')
-    texto_periodo = f"Posição Consolidada da Base: {dt_atual}" if dt_ant == dt_atual else f"Comparativo Automático: Extrato de {dt_ant} até {dt_atual}"
-except Exception: 
-    dt_atual = "N/D"
-    texto_periodo = "Aguardando atualização da base de dados."
+    if not df_var.empty:
+        if 'Data_Extracao_Atual' in df_var.columns:
+            val_atual = df_var['Data_Extracao_Atual'].dropna().iloc[0]
+            dt_atual = pd.to_datetime(val_atual, errors='coerce').strftime('%d/%m/%Y')
+        if 'Data_Extracao_Anterior' in df_var.columns:
+            val_ant = df_var['Data_Extracao_Anterior'].dropna().iloc[0]
+            dt_ant = pd.to_datetime(val_ant, errors='coerce').strftime('%d/%m/%Y')
+        
+        if dt_atual != "N/D" and dt_ant != "N/D":
+            if dt_ant == dt_atual:
+                texto_periodo = f"Posição Consolidada da Base: {dt_atual}"
+            else:
+                texto_periodo = f"Comparativo Automático: Extrato de {dt_ant} até {dt_atual}"
+except Exception:
+    pass
 
 if 'Mês Referência' in df_base.columns:
     df_base['Mes_Nome'] = df_base['Mês Referência'].astype(str).str.split(' ').str[0].str.capitalize()
@@ -269,7 +280,6 @@ def forcar_limpeza_total():
         if chave.startswith('filtro_'):
             del st.session_state[chave]
 
-
 # ==========================================
 # TELA 1: CAPA
 # ==========================================
@@ -284,7 +294,6 @@ if st.session_state.pagina_ativa == 'capa':
         if st.button("🚀 ACESSAR PAINEL DE EXECUÇÃO ORÇAMENTÁRIA", use_container_width=True):
             st.session_state.pagina_ativa = 'dashboard'
             st.rerun()
-
 
 # ==========================================
 # TELA 2: DASHBOARD
@@ -443,12 +452,12 @@ elif st.session_state.pagina_ativa == 'dashboard':
         if not df_m.empty:
             df_m['Nome_Mes'] = df_m['Mês Referência'].str.split(' ').str[0].str.capitalize()
             df_m['mes_num'] = df_m['Nome_Mes'].map(ordem_meses)
-            df_m['Mes_F'] = df_m['Nome_Mes'].map(abrev_meses) + f'/{ano_dinamico}'
+            df_m['Mês'] = df_m['Nome_Mes'].map(abrev_meses) + f'/{ano_dinamico}'
             df_m = df_m.sort_values('mes_num')
-            df_melt = df_m.melt(id_vars=['Mes_F', 'mes_num'], value_vars=colunas_ex, var_name='Fase', value_name='Valor')
+            df_melt = df_m.melt(id_vars=['Mês', 'mes_num'], value_vars=colunas_ex, var_name='Fase', value_name='Valor')
             df_melt['Rotulo_F'] = df_melt['Valor'].apply(formata_abreviado)
             
-            fig_line = px.line(df_melt, x='Mes_F', y='Valor', color='Fase', markers=True, text='Rotulo_F', color_discrete_sequence=['#64748B', '#1E3A8A', '#3B82F6', '#10B981', '#F59E0B'])
+            fig_line = px.line(df_melt, x='Mês', y='Valor', color='Fase', markers=True, text='Rotulo_F', color_discrete_sequence=['#64748B', '#1E3A8A', '#3B82F6', '#10B981', '#F59E0B'])
             for trace in fig_line.data:
                 trace.textfont.color = trace.line.color
                 trace.textfont.size = 14
@@ -463,6 +472,9 @@ elif st.session_state.pagina_ativa == 'dashboard':
             st.info("Não há dados de evolução mensal para os filtros selecionados.")
 
     with tab_tabela:
+        # AQUI ESTÁ A LINHA DE VOLTA: Mostra a data em vermelho e calendário!
+        st.markdown(f"<div class='periodo-destaque'>📅 {texto_periodo}</div>", unsafe_allow_html=True)
+        
         st.subheader("Tabela de Variações")
         
         df_var_visual = df_var_filtrada.copy()
@@ -544,6 +556,6 @@ st.sidebar.markdown("""
         e CPI - Coordenação de Planejamento Institucional
     </div>
     <div style='text-align: center; color: #9CA3AF; font-size: 11px; margin-top: 10px;'>
-        Versão 4.0 - Painel Responsivo e Dinâmico 🚀
+        Versão 4.0 - Inteligência de Fechamento Mensal 🚀
     </div>
 """, unsafe_allow_html=True)
