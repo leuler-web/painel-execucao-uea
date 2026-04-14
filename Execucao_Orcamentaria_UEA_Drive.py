@@ -374,7 +374,7 @@ st.sidebar.markdown("""
         e CPI - Coordenação de Planejamento Institucional
     </div>
     <div style='text-align: center; color: #9CA3AF; font-size: 11px; margin-top: 10px;'>
-        Versão 4.8 - Full Screen & Menu Fixo 🚀
+        Versão 4.9 - Nova Aba: Variação por Natureza 🚀
     </div>
 """, unsafe_allow_html=True)
 
@@ -414,7 +414,13 @@ elif st.session_state.pagina_ativa == 'dashboard':
     if var_natureza_codigo != "Todas": tags.append(f"<b>🏷️ Natureza da Despesa:</b> {var_natureza_str}")
     if tags: st.markdown(f"<div class='caixa-destaque'>{' &nbsp;&nbsp;|&nbsp;&nbsp; '.join(tags)}</div>", unsafe_allow_html=True)
 
-    tab_visao, tab_evolucao, tab_tabela = st.tabs(["🎯 Visão Estratégica", "📈 Evolução Mensal", "🔍 Tabela de Variações"])
+    # === AQUI ESTÁ A NOVA ABA ADICIONADA (tab_var_natureza) ===
+    tab_visao, tab_evolucao, tab_var_natureza, tab_tabela = st.tabs([
+        "🎯 Visão Estratégica", 
+        "📈 Evolução Mensal", 
+        "📊 Variação por Natureza", 
+        "🔍 Tabela de Variações"
+    ])
 
     with tab_visao:
         st.markdown(f"<div class='destaque-ano'>Exercício Orçamentário: {ano_dinamico} <span style='font-size: 16px; font-weight: bold; color: #6B7280;'>(última atualização: {dt_atual})</span></div>", unsafe_allow_html=True)
@@ -517,6 +523,82 @@ elif st.session_state.pagina_ativa == 'dashboard':
             st.plotly_chart(fig_line, use_container_width=True)
         else:
             st.info("Não há dados de evolução mensal para os filtros selecionados.")
+
+    # === INÍCIO DA NOVA ABA DE VARIAÇÕES POR NATUREZA ===
+    with tab_var_natureza:
+        st.markdown(f"<div class='destaque-ano'>Desdobramento da Variação do Empenho por Natureza</div>", unsafe_allow_html=True)
+        
+        # Procurar automaticamente a coluna que contém a variação do empenho
+        col_var_emp = None
+        for col in df_var_filtrada.columns:
+            if 'Empenhado' in col and ('Varia' in col or 'Diferença' in col):
+                col_var_emp = col
+                break
+        
+        # Fallback 1: Primeira coluna com "Empenhado" que não seja Atual nem Anterior
+        if not col_var_emp:
+            for col in df_var_filtrada.columns:
+                if 'Empenhado' in col and 'Ant' not in col and 'Atual' not in col:
+                    col_var_emp = col
+                    break
+                    
+        # Fallback 2: Apenas a coluna "Empenhado"
+        if not col_var_emp:
+            col_var_emp = [c for c in df_var_filtrada.columns if 'Empenhado' in c][0] if [c for c in df_var_filtrada.columns if 'Empenhado' in c] else None
+
+        if col_var_emp and not df_var_filtrada.empty:
+            df_chart_var = df_var_filtrada.groupby('Natureza_ID')[col_var_emp].sum().reset_index()
+            
+            # Filtrar apenas as naturezas que tiveram alguma variação real (maior que 1 centavo)
+            df_chart_var = df_chart_var[abs(df_chart_var[col_var_emp]) > 0.01]
+            
+            if not df_chart_var.empty:
+                df_chart_var['Nome_Natureza'] = df_chart_var['Natureza_ID'].map(dict_naturezas).fillna('Não Identificada')
+                # Criação do rótulo cortando nomes muito longos para não estragar o gráfico
+                df_chart_var['Rotulo_Eixo'] = df_chart_var['Natureza_ID'] + " - " + df_chart_var['Nome_Natureza'].str.slice(0, 45) + "..."
+                df_chart_var['Texto_Valor'] = df_chart_var[col_var_emp].apply(formata_abreviado)
+                
+                # Regra de Cores: Verde para Aumento, Vermelho para Redução
+                df_chart_var['Cor'] = df_chart_var[col_var_emp].apply(lambda x: '#10B981' if x > 0 else '#EF4444')
+                
+                # Ordenar as barras (das mais negativas para as mais positivas)
+                df_chart_var = df_chart_var.sort_values(by=col_var_emp, ascending=True)
+                
+                fig_var = px.bar(
+                    df_chart_var, 
+                    x=col_var_emp, 
+                    y='Rotulo_Eixo', 
+                    orientation='h', 
+                    text='Texto_Valor',
+                    custom_data=['Natureza_ID', 'Nome_Natureza']
+                )
+                
+                fig_var.update_traces(
+                    marker_color=df_chart_var['Cor'], 
+                    textposition="outside", 
+                    textfont=dict(size=14, color="black", weight="bold"),
+                    hovertemplate="<b>Natureza: %{customdata[0]} - %{customdata[1]}</b><br>Variação no Período: %{text}<extra></extra>"
+                )
+                
+                # Adicionar uma linha preta fina marcando o "Zero"
+                fig_var.add_vline(x=0, line_width=2, line_color="black")
+                
+                # Ajuste de layout para as barras respirarem (espaço dinâmico para os rótulos laterais)
+                max_abs = abs(df_chart_var[col_var_emp]).max()
+                fig_var.update_layout(
+                    font=dict(size=14, color="black"), 
+                    xaxis=dict(showticklabels=False, title="", range=[-max_abs * 1.35, max_abs * 1.35]), 
+                    yaxis_title="", 
+                    margin=dict(l=10, r=40, t=20, b=10),
+                    height=max(400, len(df_chart_var) * 45) # Altura cresce conforme a quantidade de naturezas
+                )
+                
+                st.plotly_chart(fig_var, use_container_width=True)
+            else:
+                st.info("Não houve variação de Empenho para as naturezas neste período ou filtro selecionado.")
+        else:
+            st.warning("Coluna de variação de Empenhado não foi identificada na base de dados.")
+    # === FIM DA NOVA ABA ===
 
     with tab_tabela:
         st.markdown(f"<div class='periodo-destaque'>📅 {texto_periodo}</div>", unsafe_allow_html=True)
