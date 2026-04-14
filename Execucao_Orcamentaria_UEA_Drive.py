@@ -374,7 +374,7 @@ st.sidebar.markdown("""
         e CPI - Coordenação de Planejamento Institucional
     </div>
     <div style='text-align: center; color: #9CA3AF; font-size: 11px; margin-top: 10px;'>
-        Versão 4.10 - Ordem de Abas Atualizada 🚀
+        Versão 4.11 - Destaque em Natureza Dinâmica 🚀
     </div>
 """, unsafe_allow_html=True)
 
@@ -414,7 +414,6 @@ elif st.session_state.pagina_ativa == 'dashboard':
     if var_natureza_codigo != "Todas": tags.append(f"<b>🏷️ Natureza da Despesa:</b> {var_natureza_str}")
     if tags: st.markdown(f"<div class='caixa-destaque'>{' &nbsp;&nbsp;|&nbsp;&nbsp; '.join(tags)}</div>", unsafe_allow_html=True)
 
-    # === ORDEM DAS ABAS ATUALIZADA AQUI ===
     tab_visao, tab_evolucao, tab_tabela, tab_var_natureza = st.tabs([
         "🎯 Visão Estratégica", 
         "📈 Evolução Mensal", 
@@ -598,9 +597,16 @@ elif st.session_state.pagina_ativa == 'dashboard':
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
 
-    # === A NOVA ABA MOVIDA PARA O FINAL ===
+    # === ABA COM O TÍTULO DINÂMICO E FONTE NEGRITO NAS NATUREZAS ===
     with tab_var_natureza:
-        st.markdown(f"<div class='destaque-ano'>Desdobramento da Variação do Empenho por Natureza</div>", unsafe_allow_html=True)
+        
+        # 1. Ajuste do Título Condicional
+        if var_acao_codigo != "Todas":
+            titulo_dinamico = f"Desdobramento da Variação do Empenho por Natureza<br><span style='font-size: 20px; color: #4B5563;'>da Ação: {var_acao_str}</span>"
+        else:
+            titulo_dinamico = "Desdobramento da Variação do Empenho por Natureza<br><span style='font-size: 20px; color: #4B5563;'>(Panorama de Todas as Ações)</span>"
+            
+        st.markdown(f"<div class='destaque-ano'>{titulo_dinamico}</div>", unsafe_allow_html=True)
         
         # Procurar automaticamente a coluna que contém a variação do empenho
         col_var_emp = None
@@ -609,14 +615,12 @@ elif st.session_state.pagina_ativa == 'dashboard':
                 col_var_emp = col
                 break
         
-        # Fallback 1: Primeira coluna com "Empenhado" que não seja Atual nem Anterior
         if not col_var_emp:
             for col in df_var_filtrada.columns:
                 if 'Empenhado' in col and 'Ant' not in col and 'Atual' not in col:
                     col_var_emp = col
                     break
                     
-        # Fallback 2: Apenas a coluna "Empenhado"
         if not col_var_emp:
             col_var_emp = [c for c in df_var_filtrada.columns if 'Empenhado' in c][0] if [c for c in df_var_filtrada.columns if 'Empenhado' in c] else None
 
@@ -628,14 +632,16 @@ elif st.session_state.pagina_ativa == 'dashboard':
             
             if not df_chart_var.empty:
                 df_chart_var['Nome_Natureza'] = df_chart_var['Natureza_ID'].map(dict_naturezas).fillna('Não Identificada')
-                # Criação do rótulo cortando nomes muito longos para não estragar o gráfico
-                df_chart_var['Rotulo_Eixo'] = df_chart_var['Natureza_ID'] + " - " + df_chart_var['Nome_Natureza'].str.slice(0, 45) + "..."
+                
+                # 2. Rótulos das Naturezas em NEGRITO (tag <b>) para dar destaque
+                df_chart_var['Rotulo_Eixo'] = "<b>" + df_chart_var['Natureza_ID'] + " - " + df_chart_var['Nome_Natureza'].str.slice(0, 50) + "</b>"
+                
                 df_chart_var['Texto_Valor'] = df_chart_var[col_var_emp].apply(formata_abreviado)
                 
                 # Regra de Cores: Verde para Aumento, Vermelho para Redução
                 df_chart_var['Cor'] = df_chart_var[col_var_emp].apply(lambda x: '#10B981' if x > 0 else '#EF4444')
                 
-                # Ordenar as barras (das mais negativas para as mais positivas)
+                # Ordenar as barras
                 df_chart_var = df_chart_var.sort_values(by=col_var_emp, ascending=True)
                 
                 fig_var = px.bar(
@@ -654,17 +660,17 @@ elif st.session_state.pagina_ativa == 'dashboard':
                     hovertemplate="<b>Natureza: %{customdata[0]} - %{customdata[1]}</b><br>Variação no Período: %{text}<extra></extra>"
                 )
                 
-                # Adicionar uma linha preta fina marcando o "Zero"
                 fig_var.add_vline(x=0, line_width=2, line_color="black")
                 
-                # Ajuste de layout para as barras respirarem (espaço dinâmico para os rótulos laterais)
+                # 3. Aumentar o tamanho e a cor da fonte no Eixo Y (tickfont)
                 max_abs = abs(df_chart_var[col_var_emp]).max()
                 fig_var.update_layout(
                     font=dict(size=14, color="black"), 
+                    yaxis=dict(tickfont=dict(size=15, color="#111827")), # Fonte maior e bem escura
                     xaxis=dict(showticklabels=False, title="", range=[-max_abs * 1.35, max_abs * 1.35]), 
                     yaxis_title="", 
                     margin=dict(l=10, r=40, t=20, b=10),
-                    height=max(400, len(df_chart_var) * 45) # Altura cresce conforme a quantidade de naturezas
+                    height=max(400, len(df_chart_var) * 45) 
                 )
                 
                 st.plotly_chart(fig_var, use_container_width=True)
