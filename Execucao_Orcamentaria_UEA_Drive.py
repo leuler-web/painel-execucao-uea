@@ -16,30 +16,47 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# 1. CONFIGURAÇÃO DA PÁGINA E FONTES
-st.set_page_config(page_title="PAINEL ORÇAMENTÁRIO - UEA", layout="wide", page_icon="📈")
+# 1. CONFIGURAÇÃO DA PÁGINA (Adicionado initial_sidebar_state="expanded")
+st.set_page_config(
+    page_title="PAINEL ORÇAMENTÁRIO - UEA", 
+    layout="wide", 
+    page_icon="📈",
+    initial_sidebar_state="expanded"
+)
 
 st.markdown("""
     <style>
-    /* 1. REMOVER ELEMENTOS DO STREAMLIT PARA EFEITO FULL SCREEN NO SITE */
+    /* ========================================================
+       EFEITO FULL SCREEN E TRAVA DO MENU LATERAL
+       ======================================================== */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
 
-    /* 2. OTIMIZAÇÃO DE ESPAÇO E BORDAS (Zerar margem superior) */
+    /* DEVOLVER O BOTÃO DE ABRIR O MENU (Para limpar o bloqueio do seu navegador) */
+    [data-testid="collapsedControl"] {
+        display: flex !important; 
+    }
+    
+    /* ESCONDER O BOTÃO DE FECHAR (Para não fechar sem querer novamente) */
+    [data-testid="stSidebarCollapseButton"] {
+        display: none !important;
+    }
+
+    /* 1. OTIMIZAÇÃO DE ESPAÇO E BORDAS (Zerar margem no topo) */
     .block-container { 
         padding-top: 0rem !important; 
         padding-bottom: 0rem !important; 
         max-width: 100% !important; 
     }
     
-    /* 3. DEIXAR O MENU LATERAL 100% BRANCO */
+    /* 2. DEIXAR O MENU LATERAL 100% BRANCO */
     [data-testid="stSidebar"] { 
         background-color: #FFFFFF !important; 
         border-right: 1px solid #E5E7EB !important; 
     }
     
-    /* 4. CONGELAR AS ABAS NO TOPO DA TELA (EFEITO STICKY) */
+    /* 3. CONGELAR AS ABAS NO TOPO DA TELA (EFEITO STICKY) */
     [data-testid="stTabs"] > div:first-of-type {
         position: sticky !important;
         top: 0px !important;
@@ -287,39 +304,15 @@ def forcar_limpeza_total():
 
 
 # ==========================================
-# TELA 1: CAPA (COM AJUSTE PARA TELAS GRANDES)
+# GESTÃO DO MENU LATERAL E RODAPÉ
 # ==========================================
-if st.session_state.pagina_ativa == 'capa':
-    st.write("") # Dá um pequeno respiro no topo
-    st.write("")
-    
-    # Cria 3 colunas: Centraliza a imagem e impede que ela fique gigante em monitores ultrawide
-    col_esq, col_centro, col_dir = st.columns([1, 3, 1])
-    
-    with col_centro:
-        try:
-            st.image("LogoPainelOrcamento.jpeg", use_container_width=True)
-        except:
-            st.warning("Imagem da capa não encontrada.")
-            
-        st.write("") # Pequeno espaço entre a imagem e o botão
-        
-        if st.button("🚀 ACESSAR PAINEL DE EXECUÇÃO ORÇAMENTÁRIA", use_container_width=True):
-            st.session_state.pagina_ativa = 'dashboard'
-            st.rerun()
+img_logos = r"Logos_Execução.jpeg"
+if os.path.exists(img_logos):
+    st.sidebar.image(img_logos, use_container_width=True)
+    st.sidebar.markdown("---")
 
-
-# ==========================================
-# TELA 2: DASHBOARD
-# ==========================================
-elif st.session_state.pagina_ativa == 'dashboard':
-
-    # MENU LATERAL
-    img_logos = r"Logos_Execução.jpeg"
-    if os.path.exists(img_logos):
-        st.sidebar.image(img_logos, use_container_width=True)
-        st.sidebar.markdown("---")
-
+# Só mostra os filtros se estivermos no painel
+if st.session_state.pagina_ativa == 'dashboard':
     st.sidebar.button("⬅️ Voltar para a Capa", on_click=lambda: st.session_state.update(pagina_ativa='capa'))
     st.sidebar.header("FILTROS GLOBAIS")
     st.sidebar.button("🧹 Limpar Todos os Filtros", on_click=forcar_limpeza_total, use_container_width=True)
@@ -370,6 +363,48 @@ elif st.session_state.pagina_ativa == 'dashboard':
     if var_natureza_codigo != "Todas": mask_var &= (df_var['Natureza_ID'] == var_natureza_codigo)
     if var_fonte_codigo != "Todas": mask_var &= (df_var['Fonte_3'] == var_fonte_codigo)
     df_var_filtrada = df_var[mask_var]
+else:
+    st.sidebar.info("Acesse o painel para habilitar os filtros de execução.")
+
+st.sidebar.markdown("""
+    <br><hr>
+    <div style='text-align: center; color: #6B7280; font-size: 11px; line-height: 1.4;'>
+        <b>Desenvolvido com ajuda do Gemini Pro</b><br>
+        em parceria com o Centro de Gerenciamento Operacional - CGO da CDM/PROPLAN<br>
+        e CPI - Coordenação de Planejamento Institucional
+    </div>
+    <div style='text-align: center; color: #9CA3AF; font-size: 11px; margin-top: 10px;'>
+        Versão 4.8 - Full Screen & Menu Fixo 🚀
+    </div>
+""", unsafe_allow_html=True)
+
+
+# ==========================================
+# TELA 1: CAPA
+# ==========================================
+if st.session_state.pagina_ativa == 'capa':
+    st.write("") 
+    st.write("")
+    
+    col_esq, col_centro, col_dir = st.columns([1, 3, 1])
+    
+    with col_centro:
+        try:
+            st.image("LogoPainelOrcamento.jpeg", use_container_width=True)
+        except:
+            st.warning("Imagem da capa não encontrada.")
+            
+        st.write("") 
+        
+        if st.button("🚀 ACESSAR PAINEL DE EXECUÇÃO ORÇAMENTÁRIA", use_container_width=True):
+            st.session_state.pagina_ativa = 'dashboard'
+            st.rerun()
+
+
+# ==========================================
+# TELA 2: DASHBOARD
+# ==========================================
+elif st.session_state.pagina_ativa == 'dashboard':
 
     st.title(f"📊 PAINEL ORÇAMENTÁRIO - UEA {f'- {var_mes_str}' if var_mes_str != 'Todos' else ''}")
     
@@ -462,7 +497,6 @@ elif st.session_state.pagina_ativa == 'dashboard':
         
         df_m = df_base[mask_evo].groupby('Mês Referência')[colunas_ex].sum().reset_index()
         if not df_m.empty:
-            # ====== TROCA DE BARRA POR ESPAÇO PARA O GRÁFICO ======
             df_m['Nome_Mes'] = df_m['Mês Referência'].astype(str).str.replace('/', ' ').str.split(' ').str[0].str.capitalize()
             df_m['mes_num'] = df_m['Nome_Mes'].map(ordem_meses)
             df_m['Mês'] = df_m['Nome_Mes'].map(abrev_meses) + f'/{ano_dinamico}'
@@ -556,18 +590,3 @@ elif st.session_state.pagina_ativa == 'dashboard':
             file_name=f"Execucao_UEA_Variacoes_{dt_atual.replace('/', '-')}.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
-
-# ==========================================
-# RODAPÉ DE CRÉDITOS OFICIAIS
-# ==========================================
-st.sidebar.markdown("""
-    <br><hr>
-    <div style='text-align: center; color: #6B7280; font-size: 11px; line-height: 1.4;'>
-        <b>Desenvolvido com ajuda do Gemini Pro</b><br>
-        em parceria com o Centro de Gerenciamento Operacional - CGO da CDM/PROPLAN<br>
-        e CPI - Coordenação de Planejamento Institucional
-    </div>
-    <div style='text-align: center; color: #9CA3AF; font-size: 11px; margin-top: 10px;'>
-        Versão 4.7 - Full Screen & Layout Otimizado 🚀
-    </div>
-""", unsafe_allow_html=True)
