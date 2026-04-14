@@ -21,25 +21,20 @@ st.set_page_config(page_title="PAINEL ORÇAMENTÁRIO - UEA", layout="wide", page
 
 st.markdown("""
     <style>
-    /* 1. REMOVER ELEMENTOS DO STREAMLIT PARA EFEITO FULL SCREEN NO SITE */
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    header {visibility: hidden;}
-
-    /* 2. OTIMIZAÇÃO DE ESPAÇO E BORDAS (Zerar margem superior) */
+    /* 1. OTIMIZAÇÃO DE ESPAÇO E BORDAS (RESPONSIVIDADE MÁXIMA) */
     .block-container { 
-        padding-top: 0rem !important; 
-        padding-bottom: 0rem !important; 
+        padding-top: 2rem !important; 
+        padding-bottom: 1rem !important; 
         max-width: 100% !important; 
     }
     
-    /* 3. DEIXAR O MENU LATERAL 100% BRANCO */
+    /* 2. DEIXAR O MENU LATERAL 100% BRANCO */
     [data-testid="stSidebar"] { 
         background-color: #FFFFFF !important; 
         border-right: 1px solid #E5E7EB !important; 
     }
     
-    /* 4. CONGELAR AS ABAS NO TOPO DA TELA (EFEITO STICKY) */
+    /* 3. CONGELAR AS ABAS NO TOPO DA TELA (EFEITO STICKY) */
     [data-testid="stTabs"] > div:first-of-type {
         position: sticky !important;
         top: 0px !important;
@@ -238,7 +233,7 @@ except Exception as e: st.error(f"Erro ao acessar o arquivo SIAFI: {e}"); st.sto
 
 dict_acoes, dict_naturezas, status_dic = carregar_dicionarios()
 
-# ====== DICIONÁRIOS EXPANDIDOS ======
+# ====== CORREÇÃO AQUI: DICIONÁRIOS EXPANDIDOS ======
 ordem_meses = {
     'Janeiro': 1, 'Fevereiro': 2, 'Março': 3, 'Marco': 3, 'Abril': 4, 'Maio': 5, 'Junho': 6, 
     'Julho': 7, 'Agosto': 8, 'Setembro': 9, 'Outubro': 10, 'Novembro': 11, 'Dezembro': 12,
@@ -261,7 +256,7 @@ except Exception:
     dt_atual = "N/D"
     texto_periodo = "Aguardando atualização da base de dados."
 
-# ====== TROCA DE BARRA POR ESPAÇO ======
+# ====== CORREÇÃO AQUI: TROCA DE BARRA POR ESPAÇO ======
 if 'Mês Referência' in df_base.columns:
     df_base['Mes_Nome'] = df_base['Mês Referência'].astype(str).str.replace('/', ' ').str.split(' ').str[0].str.capitalize()
     df_base['Mes_Num'] = df_base['Mes_Nome'].map(ordem_meses)
@@ -287,23 +282,16 @@ def forcar_limpeza_total():
 
 
 # ==========================================
-# TELA 1: CAPA (COM AJUSTE PARA TELAS GRANDES)
+# TELA 1: CAPA
 # ==========================================
 if st.session_state.pagina_ativa == 'capa':
-    st.write("") # Dá um pequeno respiro no topo
-    st.write("")
-    
-    # Cria 3 colunas: Centraliza a imagem e impede que ela fique gigante em monitores ultrawide
-    col_esq, col_centro, col_dir = st.columns([1, 3, 1])
-    
-    with col_centro:
-        try:
-            st.image("LogoPainelOrcamento.jpeg", use_container_width=True)
-        except:
-            st.warning("Imagem da capa não encontrada.")
-            
-        st.write("") # Pequeno espaço entre a imagem e o botão
-        
+    try:
+        st.image("LogoPainelOrcamento.jpeg", use_container_width=True)
+    except:
+        st.warning("Imagem da capa não encontrada.")
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        st.write("")
         if st.button("🚀 ACESSAR PAINEL DE EXECUÇÃO ORÇAMENTÁRIA", use_container_width=True):
             st.session_state.pagina_ativa = 'dashboard'
             st.rerun()
@@ -382,6 +370,7 @@ elif st.session_state.pagina_ativa == 'dashboard':
     tab_visao, tab_evolucao, tab_tabela = st.tabs(["🎯 Visão Estratégica", "📈 Evolução Mensal", "🔍 Tabela de Variações"])
 
     with tab_visao:
+        # ATUALIZAÇÃO DO TÍTULO COM DATA EM FONTE MENOR E CINZA
         st.markdown(f"<div class='destaque-ano'>Exercício Orçamentário: {ano_dinamico} <span style='font-size: 16px; font-weight: bold; color: #6B7280;'>(última atualização: {dt_atual})</span></div>", unsafe_allow_html=True)
         
         c1, c2, c3, c4, c5 = st.columns(5)
@@ -456,13 +445,14 @@ elif st.session_state.pagina_ativa == 'dashboard':
                 st.info("Não há valores empenhados para detalhar nesta Ação.")
 
     with tab_evolucao:
+        # ATUALIZAÇÃO DO TÍTULO COM DATA EM FONTE MENOR E CINZA
         st.markdown(f"<div class='destaque-ano'>Evolução Mensal da Execução - Ano {ano_dinamico} <span style='font-size: 16px; font-weight: normal; color: #6B7280;'>(última atualização: {dt_atual})</span></div>", unsafe_allow_html=True)
         
         colunas_ex = [col for col in ['Autorizado', 'Empenhado', 'Liquidado', 'Pago', 'Disponível'] if col in df_base.columns]
         
         df_m = df_base[mask_evo].groupby('Mês Referência')[colunas_ex].sum().reset_index()
         if not df_m.empty:
-            # ====== TROCA DE BARRA POR ESPAÇO PARA O GRÁFICO ======
+            # ====== CORREÇÃO AQUI: TROCA DE BARRA POR ESPAÇO PARA O GRÁFICO ======
             df_m['Nome_Mes'] = df_m['Mês Referência'].astype(str).str.replace('/', ' ').str.split(' ').str[0].str.capitalize()
             df_m['mes_num'] = df_m['Nome_Mes'].map(ordem_meses)
             df_m['Mês'] = df_m['Nome_Mes'].map(abrev_meses) + f'/{ano_dinamico}'
@@ -485,6 +475,7 @@ elif st.session_state.pagina_ativa == 'dashboard':
             st.info("Não há dados de evolução mensal para os filtros selecionados.")
 
     with tab_tabela:
+        # AQUI ESTÁ A LINHA DE VOLTA: Mostra a data em vermelho e calendário!
         st.markdown(f"<div class='periodo-destaque'>📅 {texto_periodo}</div>", unsafe_allow_html=True)
         
         st.subheader("Tabela de Variações")
@@ -568,6 +559,6 @@ st.sidebar.markdown("""
         e CPI - Coordenação de Planejamento Institucional
     </div>
     <div style='text-align: center; color: #9CA3AF; font-size: 11px; margin-top: 10px;'>
-        Versão 4.7 - Full Screen & Layout Otimizado 🚀
+        Versão 4.6 - Fix da Barra nos Meses 🚀
     </div>
 """, unsafe_allow_html=True)
