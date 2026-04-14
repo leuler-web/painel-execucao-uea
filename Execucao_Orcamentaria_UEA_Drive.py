@@ -33,8 +33,13 @@ st.markdown("""
     footer {visibility: hidden;}
     header {visibility: hidden;}
 
-    /* Esconder o botão de fechar o menu (as setinhas <<) */
+    /* DEVOLVER O BOTÃO DE ABRIR O MENU (Para limpar o bloqueio do seu navegador) */
     [data-testid="collapsedControl"] {
+        display: flex !important; 
+    }
+    
+    /* ESCONDER O BOTÃO DE FECHAR (Para não fechar sem querer novamente) */
+    [data-testid="stSidebarCollapseButton"] {
         display: none !important;
     }
 
@@ -297,15 +302,16 @@ def forcar_limpeza_total():
         if chave.startswith('filtro_'):
             del st.session_state[chave]
 
+
 # ==========================================
-# GESTÃO DO MENU LATERAL E RODAPÉ (SEMPRE VISÍVEIS)
+# GESTÃO DO MENU LATERAL E RODAPÉ
 # ==========================================
 img_logos = r"Logos_Execução.jpeg"
 if os.path.exists(img_logos):
     st.sidebar.image(img_logos, use_container_width=True)
     st.sidebar.markdown("---")
 
-# Só mostra os filtros se estivermos no painel propriamente dito
+# Só mostra os filtros se estivermos no painel
 if st.session_state.pagina_ativa == 'dashboard':
     st.sidebar.button("⬅️ Voltar para a Capa", on_click=lambda: st.session_state.update(pagina_ativa='capa'))
     st.sidebar.header("FILTROS GLOBAIS")
@@ -358,10 +364,8 @@ if st.session_state.pagina_ativa == 'dashboard':
     if var_fonte_codigo != "Todas": mask_var &= (df_var['Fonte_3'] == var_fonte_codigo)
     df_var_filtrada = df_var[mask_var]
 else:
-    # Se estiver na Capa, mostra apenas uma mensagem simpática
     st.sidebar.info("Acesse o painel para habilitar os filtros de execução.")
 
-# RODAPÉ SEMPRE VISÍVEL
 st.sidebar.markdown("""
     <br><hr>
     <div style='text-align: center; color: #6B7280; font-size: 11px; line-height: 1.4;'>
