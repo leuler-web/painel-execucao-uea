@@ -383,7 +383,7 @@ st.sidebar.markdown("""
         e CPI - Coordenação de Planejamento Institucional
     </div>
     <div style='text-align: center; color: #9CA3AF; font-size: 11px; margin-top: 10px;'>
-        Versão 4.12 - Menu Responsivo Inteligente 🚀
+        Versão 4.13 - Título do Gráfico Ajustado 🚀
     </div>
 """, unsafe_allow_html=True)
 
@@ -608,10 +608,11 @@ elif st.session_state.pagina_ativa == 'dashboard':
 
     with tab_var_natureza:
         
+        # === AQUI ESTÁ A ALTERAÇÃO DO NOVO TÍTULO ===
         if var_acao_codigo != "Todas":
-            titulo_dinamico = f"Desdobramento da Variação do Empenho por Natureza<br><span style='font-size: 20px; color: #4B5563;'>da Ação: {var_acao_str}</span>"
+            titulo_dinamico = f"Detalhamento da variação do Empenhado<br><span style='font-size: 20px; color: #4B5563;'>da Ação: {var_acao_str}</span>"
         else:
-            titulo_dinamico = "Desdobramento da Variação do Empenho por Natureza<br><span style='font-size: 20px; color: #4B5563;'>(Panorama de Todas as Ações)</span>"
+            titulo_dinamico = "Detalhamento da variação do Empenhado<br><span style='font-size: 20px; color: #4B5563;'>(Panorama de Todas as Ações)</span>"
             
         st.markdown(f"<div class='destaque-ano'>{titulo_dinamico}</div>", unsafe_allow_html=True)
         
