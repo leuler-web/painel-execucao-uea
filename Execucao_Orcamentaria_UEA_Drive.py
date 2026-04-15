@@ -16,7 +16,7 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# 1. CONFIGURAÇÃO DA PÁGINA (Adicionado initial_sidebar_state="expanded")
+# 1. CONFIGURAÇÃO DA PÁGINA
 st.set_page_config(
     page_title="PAINEL ORÇAMENTÁRIO - UEA", 
     layout="wide", 
@@ -27,18 +27,27 @@ st.set_page_config(
 st.markdown("""
     <style>
     /* ========================================================
-       EFEITO FULL SCREEN E TRAVA DO MENU LATERAL
+       EFEITO FULL SCREEN INTELIGENTE E MENU RESPONSIVO
        ======================================================== */
+    /* Esconder o menu de opções direito e o rodapé */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
-    header {visibility: hidden;}
+    .stDeployButton {display: none;} 
 
-    /* DEVOLVER O BOTÃO DE ABRIR O MENU (Para limpar o bloqueio do seu navegador) */
+    /* Deixar a barra superior transparente em vez de invisível.
+       Assim, o botão de abrir o menu não desaparece em ecrãs menores! */
+    header {
+        background-color: transparent !important;
+    }
+
+    /* Garantir que o botão de abrir o menu (caso o Streamlit o recolha) fica visível */
     [data-testid="collapsedControl"] {
+        visibility: visible !important;
         display: flex !important; 
+        z-index: 999999 !important;
     }
     
-    /* ESCONDER O BOTÃO DE FECHAR (Para não fechar sem querer novamente) */
+    /* Impedir que o utilizador feche o menu por engano */
     [data-testid="stSidebarCollapseButton"] {
         display: none !important;
     }
@@ -374,7 +383,7 @@ st.sidebar.markdown("""
         e CPI - Coordenação de Planejamento Institucional
     </div>
     <div style='text-align: center; color: #9CA3AF; font-size: 11px; margin-top: 10px;'>
-        Versão 4.11 - Destaque em Natureza Dinâmica 🚀
+        Versão 4.12 - Menu Responsivo Inteligente 🚀
     </div>
 """, unsafe_allow_html=True)
 
@@ -597,10 +606,8 @@ elif st.session_state.pagina_ativa == 'dashboard':
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
 
-    # === ABA COM O TÍTULO DINÂMICO E FONTE NEGRITO NAS NATUREZAS ===
     with tab_var_natureza:
         
-        # 1. Ajuste do Título Condicional
         if var_acao_codigo != "Todas":
             titulo_dinamico = f"Desdobramento da Variação do Empenho por Natureza<br><span style='font-size: 20px; color: #4B5563;'>da Ação: {var_acao_str}</span>"
         else:
@@ -608,7 +615,6 @@ elif st.session_state.pagina_ativa == 'dashboard':
             
         st.markdown(f"<div class='destaque-ano'>{titulo_dinamico}</div>", unsafe_allow_html=True)
         
-        # Procurar automaticamente a coluna que contém a variação do empenho
         col_var_emp = None
         for col in df_var_filtrada.columns:
             if 'Empenhado' in col and ('Varia' in col or 'Diferença' in col):
@@ -627,21 +633,17 @@ elif st.session_state.pagina_ativa == 'dashboard':
         if col_var_emp and not df_var_filtrada.empty:
             df_chart_var = df_var_filtrada.groupby('Natureza_ID')[col_var_emp].sum().reset_index()
             
-            # Filtrar apenas as naturezas que tiveram alguma variação real (maior que 1 centavo)
             df_chart_var = df_chart_var[abs(df_chart_var[col_var_emp]) > 0.01]
             
             if not df_chart_var.empty:
                 df_chart_var['Nome_Natureza'] = df_chart_var['Natureza_ID'].map(dict_naturezas).fillna('Não Identificada')
                 
-                # 2. Rótulos das Naturezas em NEGRITO (tag <b>) para dar destaque
                 df_chart_var['Rotulo_Eixo'] = "<b>" + df_chart_var['Natureza_ID'] + " - " + df_chart_var['Nome_Natureza'].str.slice(0, 50) + "</b>"
                 
                 df_chart_var['Texto_Valor'] = df_chart_var[col_var_emp].apply(formata_abreviado)
                 
-                # Regra de Cores: Verde para Aumento, Vermelho para Redução
                 df_chart_var['Cor'] = df_chart_var[col_var_emp].apply(lambda x: '#10B981' if x > 0 else '#EF4444')
                 
-                # Ordenar as barras
                 df_chart_var = df_chart_var.sort_values(by=col_var_emp, ascending=True)
                 
                 fig_var = px.bar(
@@ -662,11 +664,10 @@ elif st.session_state.pagina_ativa == 'dashboard':
                 
                 fig_var.add_vline(x=0, line_width=2, line_color="black")
                 
-                # 3. Aumentar o tamanho e a cor da fonte no Eixo Y (tickfont)
                 max_abs = abs(df_chart_var[col_var_emp]).max()
                 fig_var.update_layout(
                     font=dict(size=14, color="black"), 
-                    yaxis=dict(tickfont=dict(size=15, color="#111827")), # Fonte maior e bem escura
+                    yaxis=dict(tickfont=dict(size=15, color="#111827")), 
                     xaxis=dict(showticklabels=False, title="", range=[-max_abs * 1.35, max_abs * 1.35]), 
                     yaxis_title="", 
                     margin=dict(l=10, r=40, t=20, b=10),
