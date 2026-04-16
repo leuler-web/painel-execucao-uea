@@ -151,12 +151,17 @@ def formata_abreviado(valor):
         else: return f"{sinal}R$ {abs_val:,.0f}".replace(',', '.')
     except Exception: return str(valor)
 
-def destacar_linhas_com_variacao(row):
-    cols_var = [c for c in row.index if 'Varia' in str(c)]
-    for c in cols_var:
-        if abs(extrair_numero(row[c])) > 0.001:
-            return ['background-color: #FFFF00; color: #000000; font-weight: bold;'] * len(row)
-    return [''] * len(row)
+# ALTERAÇÃO: FUNÇÃO DE DESTAQUE CÉLULA A CÉLULA
+def destacar_celulas_com_variacao(df):
+    """Cria um mapa de estilos para pintar apenas a célula onde houve variação"""
+    estilos = pd.DataFrame('', index=df.index, columns=df.columns)
+    for col in df.columns:
+        # Só analisamos colunas que representam variação/diferença
+        if 'Varia' in str(col) or 'Diferença' in str(col):
+            # Identifica onde o valor absoluto é relevante (> 0.001)
+            mask = df[col].apply(extrair_numero).abs() > 0.001
+            estilos.loc[mask, col] = 'background-color: #FFFF00; color: #000000; font-weight: bold;'
+    return estilos
 
 # 4. LEITOR DAS TABELAS AUXILIARES
 @st.cache_data(ttl=3600)
@@ -203,7 +208,9 @@ def carregar_dados_v181(path):
     tipos_forçados = {'Programa de Trabalho': str, 'Fonte de Recurso': str, 'Natureza da Despesa': str}
     df_base = pd.read_excel(path, sheet_name='Base_Consolidada', dtype=tipos_forçados)
     df_var = pd.read_excel(path, sheet_name='Variacoes_Recentes', dtype=tipos_forçados)
-    palavras_fin = ['Autorizado', 'Empenhado', 'Liquidado', 'Pago', 'Dotação', 'Reduções', 'Variação', 'Disponível']
+    
+    # ALTERAÇÃO: Adicionado 'Bloqueado'
+    palavras_fin = ['Autorizado', 'Empenhado', 'Liquidado', 'Pago', 'Dotação', 'Reduções', 'Variação', 'Disponível', 'Bloqueado']
     
     def limpar_nomes_colunas(df):
         df.columns = [str(c).strip() for c in df.columns]
@@ -383,7 +390,7 @@ st.sidebar.markdown("""
         e CPI - Coordenação de Planejamento Institucional
     </div>
     <div style='text-align: center; color: #9CA3AF; font-size: 11px; margin-top: 10px;'>
-        Versão 4.13 - Título do Gráfico Ajustado 🚀
+        Versão 4.15 - Destaque por Célula + Bloqueado 🚀
     </div>
 """, unsafe_allow_html=True)
 
@@ -552,7 +559,9 @@ elif st.session_state.pagina_ativa == 'dashboard':
         )
         
         colunas_identificacao = ['AÇÃO', 'FONTE', 'NATUREZA']
-        categorias_alvo = ['Dotação Suplementar', 'Reduções', 'Autorizado', 'Empenhado', 'Disponível']
+        
+        # ALTERAÇÃO: Adicionado 'Bloqueado' aqui na exibição visual da tabela
+        categorias_alvo = ['Dotação Suplementar', 'Reduções', 'Autorizado', 'Empenhado', 'Disponível', 'Bloqueado']
         
         colunas_financeiras_originais = []
         for col in df_var_visual.columns:
@@ -572,8 +581,9 @@ elif st.session_state.pagina_ativa == 'dashboard':
         df_var_visual_tela = df_var_visual_tela.rename(columns=mapeamento_colunas)
         colunas_financeiras_tela = list(mapeamento_colunas.values())
         
+        # ALTERAÇÃO: Usando a nova função célula a célula no lugar da que pintava a linha inteira
         tabela_estilizada = (df_var_visual_tela.style
-            .apply(destacar_linhas_com_variacao, axis=1)
+            .apply(destacar_celulas_com_variacao, axis=None)
             .format({col: formata_numero_duas_casas for col in colunas_financeiras_tela})
             .set_properties(**{'text-align': 'right'}, subset=colunas_financeiras_tela)
             .set_properties(**{'text-align': 'center'}, subset=colunas_identificacao)
@@ -608,7 +618,6 @@ elif st.session_state.pagina_ativa == 'dashboard':
 
     with tab_var_natureza:
         
-        # === AQUI ESTÁ A ALTERAÇÃO DO NOVO TÍTULO ===
         if var_acao_codigo != "Todas":
             titulo_dinamico = f"Detalhamento da variação do Empenhado<br><span style='font-size: 20px; color: #4B5563;'>da Ação: {var_acao_str}</span>"
         else:
