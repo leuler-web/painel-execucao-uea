@@ -151,14 +151,12 @@ def formata_abreviado(valor):
         else: return f"{sinal}R$ {abs_val:,.0f}".replace(',', '.')
     except Exception: return str(valor)
 
-# ALTERAÇÃO: FUNÇÃO DE DESTAQUE CÉLULA A CÉLULA
+# --- ALTERAÇÃO 1: NOVA FUNÇÃO DE DESTAQUE CÉLULA A CÉLULA ---
 def destacar_celulas_com_variacao(df):
     """Cria um mapa de estilos para pintar apenas a célula onde houve variação"""
     estilos = pd.DataFrame('', index=df.index, columns=df.columns)
     for col in df.columns:
-        # Só analisamos colunas que representam variação/diferença
         if 'Varia' in str(col) or 'Diferença' in str(col):
-            # Identifica onde o valor absoluto é relevante (> 0.001)
             mask = df[col].apply(extrair_numero).abs() > 0.001
             estilos.loc[mask, col] = 'background-color: #FFFF00; color: #000000; font-weight: bold;'
     return estilos
@@ -209,7 +207,7 @@ def carregar_dados_v181(path):
     df_base = pd.read_excel(path, sheet_name='Base_Consolidada', dtype=tipos_forçados)
     df_var = pd.read_excel(path, sheet_name='Variacoes_Recentes', dtype=tipos_forçados)
     
-    # ALTERAÇÃO: Adicionado 'Bloqueado'
+    # --- ALTERAÇÃO 2: INCLUSÃO DE 'Bloqueado' AQUI ---
     palavras_fin = ['Autorizado', 'Empenhado', 'Liquidado', 'Pago', 'Dotação', 'Reduções', 'Variação', 'Disponível', 'Bloqueado']
     
     def limpar_nomes_colunas(df):
@@ -390,7 +388,7 @@ st.sidebar.markdown("""
         e CPI - Coordenação de Planejamento Institucional
     </div>
     <div style='text-align: center; color: #9CA3AF; font-size: 11px; margin-top: 10px;'>
-        Versão 4.15 - Destaque por Célula + Bloqueado 🚀
+        Versão Atualizada - Destaque por Célula e Coluna Bloqueado 🚀
     </div>
 """, unsafe_allow_html=True)
 
@@ -560,7 +558,7 @@ elif st.session_state.pagina_ativa == 'dashboard':
         
         colunas_identificacao = ['AÇÃO', 'FONTE', 'NATUREZA']
         
-        # ALTERAÇÃO: Adicionado 'Bloqueado' aqui na exibição visual da tabela
+        # --- ALTERAÇÃO 3: INCLUSÃO DE 'Bloqueado' AQUI TAMBÉM ---
         categorias_alvo = ['Dotação Suplementar', 'Reduções', 'Autorizado', 'Empenhado', 'Disponível', 'Bloqueado']
         
         colunas_financeiras_originais = []
@@ -581,7 +579,7 @@ elif st.session_state.pagina_ativa == 'dashboard':
         df_var_visual_tela = df_var_visual_tela.rename(columns=mapeamento_colunas)
         colunas_financeiras_tela = list(mapeamento_colunas.values())
         
-        # ALTERAÇÃO: Usando a nova função célula a célula no lugar da que pintava a linha inteira
+        # --- ALTERAÇÃO 4: USO DO NOVO MÉTODO .apply COM axis=None ---
         tabela_estilizada = (df_var_visual_tela.style
             .apply(destacar_celulas_com_variacao, axis=None)
             .format({col: formata_numero_duas_casas for col in colunas_financeiras_tela})
