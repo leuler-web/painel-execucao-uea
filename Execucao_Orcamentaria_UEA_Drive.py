@@ -156,8 +156,13 @@ def carregar_dicionarios():
     else: status_msg = "Arquivo Tabelas_Auxiliares.xlsx não encontrado."
     return dict_acoes, dict_naturezas, status_msg
 
-# 5. CARREGAMENTO DOS DADOS PRINCIPAIS (AGORA APONTANDO PARA A REDE)
-PATH_SIAFI = r"\\Rei-1cpd003\coord_plan_institucional\DADOS CPI\Orçamento\2026\EXECUÇÃO ORÇAMENTÁRIA\RELEXORC_CSV\Saida_PowerBI\Base_Consolidada_SIAFI.xlsx"
+# 5. CARREGAMENTO DOS DADOS PRINCIPAIS (AGORA APONTANDO PARA O Z: MAPEADO)
+# Substitua a linha antiga por esta:
+PATH_SIAFI = r"Z:\DADOS CPI\Orçamento\2026\EXECUÇÃO ORÇAMENTÁRIA\RELEXORC_CSV\Saida_PowerBI\Base_Consolidada_SIAFI.xlsx"
+
+@st.cache_data(ttl=3600)
+def carregar_dados_v181(path):
+    # ... o restante da função continua igual ...
 
 @st.cache_data(ttl=3600)
 def carregar_dados_v181(path):
@@ -289,6 +294,18 @@ img_logos = r"Logos_Execução.jpeg"
 if os.path.exists(img_logos):
     st.sidebar.image(img_logos, use_container_width=True)
     st.sidebar.markdown("---")
+
+# --- BOTÃO SEMPRE VISÍVEL (COLE AQUI) ---
+if st.sidebar.button("🔄 Atualizar Dados da Rede", use_container_width=True):
+    st.cache_data.clear()
+    st.rerun()
+
+st.sidebar.markdown("---")
+# ----------------------------------------
+
+if st.session_state.pagina_ativa == 'dashboard':
+    st.sidebar.button("⬅️ Voltar para a Capa", on_click=lambda: st.session_state.update(pagina_ativa='capa'))
+    # ... o resto das suas 80 linhas de filtros continua aqui embaixo ...    
 
 if st.session_state.pagina_ativa == 'dashboard':
     st.sidebar.button("⬅️ Voltar para a Capa", on_click=lambda: st.session_state.update(pagina_ativa='capa'))
