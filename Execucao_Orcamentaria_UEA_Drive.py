@@ -655,4 +655,8 @@ elif st.session_state.pagina_ativa == 'dashboard':
             else:
                 st.info("Não houve variação de Empenho para as naturezas neste período ou filtro selecionado.")
         else:
-            st.warning("Coluna de variação de Empenhado não foi identificada na base de da
+            st.warning("Coluna de variação de Empenhado não foi identificada na base de dados.")
+
+# Rodapé lateral
+st.sidebar.markdown("---")
+st.sidebar.caption("SISTEMA DE GESTÃO - UEA | Versão 1.8.1")
