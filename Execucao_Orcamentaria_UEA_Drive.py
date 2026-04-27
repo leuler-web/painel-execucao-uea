@@ -1,8 +1,3 @@
-Aqui tens o código completo com a Secção 5 devidamente corrigida e estruturada.
-
-O principal problema no código original era a indentação: as funções de limpeza e a lógica de processamento de dados estavam fora do bloco da função carregar_dados_v181, o que causava erros de sintaxe e impedia o funcionamento do carregamento. Agora, toda a lógica de tratamento (ffill, limpeza de nomes, remoção de valores vazios e extração de códigos) está corretamente contida dentro da função cacheada.
-
-Python
 import streamlit as st
 import pandas as pd
 import numpy as np
