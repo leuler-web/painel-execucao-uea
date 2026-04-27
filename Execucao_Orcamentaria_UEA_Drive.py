@@ -1,3 +1,8 @@
+Aqui tens o código completo com a Secção 5 devidamente corrigida e estruturada.
+
+O principal problema no código original era a indentação: as funções de limpeza e a lógica de processamento de dados estavam fora do bloco da função carregar_dados_v181, o que causava erros de sintaxe e impedia o funcionamento do carregamento. Agora, toda a lógica de tratamento (ffill, limpeza de nomes, remoção de valores vazios e extração de códigos) está corretamente contida dentro da função cacheada.
+
+Python
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -156,20 +161,15 @@ def carregar_dicionarios():
     else: status_msg = "Arquivo Tabelas_Auxiliares.xlsx não encontrado."
     return dict_acoes, dict_naturezas, status_msg
 
-# 5. CARREGAMENTO DOS DADOS PRINCIPAIS (AGORA APONTANDO PARA O Z: MAPEADO)
-# Substitua a linha antiga por esta:
+# 5. CARREGAMENTO DOS DADOS PRINCIPAIS
 PATH_SIAFI = r"Base_Consolidada_SIAFI.xlsx"
-
-@st.cache_data(ttl=3600)
-def carregar_dados_v181(path):
-    # ... o restante da função continua igual ...
 
 @st.cache_data(ttl=3600)
 def carregar_dados_v181(path):
     tipos_forçados = {'Programa de Trabalho': str, 'Fonte de Recurso': str, 'Natureza da Despesa': str}
     df_base = pd.read_excel(path, sheet_name='Base_Consolidada', dtype=tipos_forçados)
     df_var = pd.read_excel(path, sheet_name='Variacoes_Recentes', dtype=tipos_forçados)
-    
+
     # --- NOVIDADE 1: O FFILL (PREENCHIMENTO AUTOMÁTICO DAS LINHAS EM BRANCO) ---
     colunas_preencher = ['Mês Referência', 'Programa de Trabalho', 'Fonte de Recurso', 'Natureza da Despesa', 'Tipo Movimento']
     for col in colunas_preencher:
@@ -177,7 +177,7 @@ def carregar_dados_v181(path):
             df_base[col] = df_base[col].replace(['nan', 'None', ''], np.nan).ffill()
         if col in df_var.columns:
             df_var[col] = df_var[col].replace(['nan', 'None', ''], np.nan).ffill()
-    
+
     palavras_fin = ['Autorizado', 'Empenhado', 'Liquidado', 'Pago', 'Dotação', 'Reduções', 'Variação', 'Disponível', 'Bloqueado']
     
     def limpar_nomes_colunas(df):
@@ -207,7 +207,8 @@ def carregar_dados_v181(path):
     
     for df in [df_base, df_var]:
         colunas_fin = [col for col in df.columns if any(p in col for p in palavras_fin)]
-        for col in colunas_fin: df[col] = df[col].apply(extrair_numero)
+        for col in colunas_fin: 
+            df[col] = df[col].apply(extrair_numero)
             
     colunas_texto = ['Programa de Trabalho', 'Fonte de Recurso', 'Natureza da Despesa', 'Mês Referência', 'Tipo Movimento']
     for df in [df_base, df_var]:
@@ -234,8 +235,11 @@ def carregar_dados_v181(path):
             
     return df_base, df_var
 
-try: df_base, df_var = carregar_dados_v181(PATH_SIAFI)
-except Exception as e: st.error(f"Erro ao acessar o arquivo SIAFI na rede. Verifique se o caminho {PATH_SIAFI} está correto e se a Máquina Virtual tem acesso à rede. Erro: {e}"); st.stop()
+try: 
+    df_base, df_var = carregar_dados_v181(PATH_SIAFI)
+except Exception as e: 
+    st.error(f"Erro ao acessar o arquivo SIAFI na rede. Verifique se o caminho {PATH_SIAFI} está correto e se a Máquina Virtual tem acesso à rede. Erro: {e}")
+    st.stop()
 
 dict_acoes, dict_naturezas, status_dic = carregar_dicionarios()
 
@@ -295,27 +299,15 @@ if os.path.exists(img_logos):
     st.sidebar.image(img_logos, use_container_width=True)
     st.sidebar.markdown("---")
 
-# --- BOTÃO SEMPRE VISÍVEL (COLE AQUI) ---
+# --- BOTÃO SEMPRE VISÍVEL ---
 if st.sidebar.button("🔄 Atualizar Dados da Rede", use_container_width=True):
     st.cache_data.clear()
     st.rerun()
 
 st.sidebar.markdown("---")
-# ----------------------------------------
 
 if st.session_state.pagina_ativa == 'dashboard':
     st.sidebar.button("⬅️ Voltar para a Capa", on_click=lambda: st.session_state.update(pagina_ativa='capa'))
-    # ... o resto das suas 80 linhas de filtros continua aqui embaixo ...    
-
-if st.session_state.pagina_ativa == 'dashboard':
-    st.sidebar.button("⬅️ Voltar para a Capa", on_click=lambda: st.session_state.update(pagina_ativa='capa'))
-    
-    # --- NOVIDADE 2: O BOTÃO DE ATUALIZAR DA REDE ---
-    st.sidebar.markdown("---")
-    if st.sidebar.button("🔄 Atualizar Dados da Rede", use_container_width=True):
-        st.cache_data.clear()
-        st.rerun()
-    st.sidebar.markdown("---")
     
     st.sidebar.header("FILTROS GLOBAIS")
     st.sidebar.button("🧹 Limpar Todos os Filtros", on_click=forcar_limpeza_total, use_container_width=True)
@@ -668,4 +660,4 @@ elif st.session_state.pagina_ativa == 'dashboard':
             else:
                 st.info("Não houve variação de Empenho para as naturezas neste período ou filtro selecionado.")
         else:
-            st.warning("Coluna de variação de Empenhado não foi identificada na base de dados.")
+            st.warning("Coluna de variação de Empenhado não foi identificada na base de da
