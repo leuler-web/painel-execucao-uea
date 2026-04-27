@@ -158,7 +158,7 @@ def carregar_dicionarios():
 
 # 5. CARREGAMENTO DOS DADOS PRINCIPAIS (AGORA APONTANDO PARA O Z: MAPEADO)
 # Substitua a linha antiga por esta:
-PATH_SIAFI = r"Z:\DADOS CPI\Orçamento\2026\EXECUÇÃO ORÇAMENTÁRIA\RELEXORC_CSV\Saida_PowerBI\Base_Consolidada_SIAFI.xlsx"
+PATH_SIAFI = r"Base_Consolidada_SIAFI.xlsx"
 
 @st.cache_data(ttl=3600)
 def carregar_dados_v181(path):
