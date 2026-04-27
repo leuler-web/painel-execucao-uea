@@ -4,6 +4,26 @@ import plotly.express as px
 import os
 from io import BytesIO
 
+# CONFIGURAÇÃO DA PÁGINA
+st.set_page_config(page_title="PAINEL UEA - ATUALIZADO", layout="wide")
+
+# 1. CARREGAMENTO E LIMPEZA AUTOMÁTICA (A MÁGICA ACONTECE AQUI)
+@st.cache_data
+def carregar_dados():
+    caminho_base = "Base_Consolidada_SIAFI.xlsx"
+    df = pd.read_excel(caminho_base, sheet_name='Base_Consolidada')
+    
+    # --- AJUSTE PARA OS VALORES BATEREAM COM O PDF ---
+    # O ffill() preenche as células vazias com o valor da célula acima.
+    # Isso resolve o problema de linhas de ajuste que o SIAFI exporta "em branco".
+    colunas_identificacao = ['Programa de Trabalho', 'Mês', 'Tipo de Movimento', 'Natureza_ID', 'Nome_Natureza']
+    df[colunas_identificacao] = df[colunas_identificacao].ffill()
+    
+    # Limpeza de nomes e filtros padrão
+    df['Nome_Natureza'] = df['Nome_Natureza'].str.replace('Bloqueado', '', case=False).str.strip()
+    
+    return df
+
 # Código para forçar o valor da métrica a ser verde
 st.markdown(
     """
