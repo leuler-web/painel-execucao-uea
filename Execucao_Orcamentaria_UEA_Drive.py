@@ -1,28 +1,9 @@
 import streamlit as st
 import pandas as pd
+import numpy as np
 import plotly.express as px
 import os
 from io import BytesIO
-
-# CONFIGURAÇÃO DA PÁGINA
-st.set_page_config(page_title="PAINEL UEA - ATUALIZADO", layout="wide")
-
-# 1. CARREGAMENTO E LIMPEZA AUTOMÁTICA (A MÁGICA ACONTECE AQUI)
-@st.cache_data
-def carregar_dados():
-    caminho_base = "Base_Consolidada_SIAFI.xlsx"
-    df = pd.read_excel(caminho_base, sheet_name='Base_Consolidada')
-    
-    # --- AJUSTE PARA OS VALORES BATEREAM COM O PDF ---
-    # O ffill() preenche as células vazias com o valor da célula acima.
-    # Isso resolve o problema de linhas de ajuste que o SIAFI exporta "em branco".
-    colunas_identificacao = ['Programa de Trabalho', 'Mês', 'Tipo de Movimento', 'Natureza_ID', 'Nome_Natureza']
-    df[colunas_identificacao] = df[colunas_identificacao].ffill()
-    
-    # Limpeza de nomes e filtros padrão
-    df['Nome_Natureza'] = df['Nome_Natureza'].str.replace('Bloqueado', '', case=False).str.strip()
-    
-    return df
 
 # Código para forçar o valor da métrica a ser verde
 st.markdown(
@@ -46,57 +27,21 @@ st.set_page_config(
 
 st.markdown("""
     <style>
-    /* ========================================================
-       EFEITO FULL SCREEN INTELIGENTE E MENU RESPONSIVO
-       ======================================================== */
-    /* Esconder o menu de opções direito e o rodapé */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     .stDeployButton {display: none;} 
 
-    /* Deixar a barra superior transparente em vez de invisível.
-       Assim, o botão de abrir o menu não desaparece em ecrãs menores! */
-    header {
-        background-color: transparent !important;
-    }
-
-    /* Garantir que o botão de abrir o menu (caso o Streamlit o recolha) fica visível */
-    [data-testid="collapsedControl"] {
-        visibility: visible !important;
-        display: flex !important; 
-        z-index: 999999 !important;
-    }
+    header { background-color: transparent !important; }
+    [data-testid="collapsedControl"] { visibility: visible !important; display: flex !important; z-index: 999999 !important; }
+    [data-testid="stSidebarCollapseButton"] { display: none !important; }
+    .block-container { padding-top: 0rem !important; padding-bottom: 0rem !important; max-width: 100% !important; }
+    [data-testid="stSidebar"] { background-color: #FFFFFF !important; border-right: 1px solid #E5E7EB !important; }
     
-    /* Impedir que o utilizador feche o menu por engano */
-    [data-testid="stSidebarCollapseButton"] {
-        display: none !important;
-    }
-
-    /* 1. OTIMIZAÇÃO DE ESPAÇO E BORDAS (Zerar margem no topo) */
-    .block-container { 
-        padding-top: 0rem !important; 
-        padding-bottom: 0rem !important; 
-        max-width: 100% !important; 
-    }
-    
-    /* 2. DEIXAR O MENU LATERAL 100% BRANCO */
-    [data-testid="stSidebar"] { 
-        background-color: #FFFFFF !important; 
-        border-right: 1px solid #E5E7EB !important; 
-    }
-    
-    /* 3. CONGELAR AS ABAS NO TOPO DA TELA (EFEITO STICKY) */
     [data-testid="stTabs"] > div:first-of-type {
-        position: sticky !important;
-        top: 0px !important;
-        background-color: white !important;
-        z-index: 9999 !important;
-        padding-bottom: 10px !important;
-        padding-top: 15px !important;
-        border-bottom: 2px solid #2E7D32 !important;
+        position: sticky !important; top: 0px !important; background-color: white !important; z-index: 9999 !important;
+        padding-bottom: 10px !important; padding-top: 15px !important; border-bottom: 2px solid #2E7D32 !important;
     }
     
-    /* Fontes e Textos Ajustados para caberem bem em Laptops e Telas Grandes */
     h1 { font-size: 44px !important; font-weight: 900 !important; color: #878787 !important; margin-top: -20px !important;}
     h3 { font-size: 26px !important; font-weight: 800 !important; color: #111827 !important; padding-bottom: 10px; }
     .stTabs [data-baseweb="tab-list"] button { font-size: 22px !important; font-weight: 900 !important; color: #374151 !important; }
@@ -104,14 +49,9 @@ st.markdown("""
     [data-testid="stMetricLabel"] * { font-size: 16px !important; font-weight: 900 !important; color: #111827 !important; }
     .periodo-destaque { font-size: 18px; color: #DC2626; font-weight: 900; margin-bottom: 10px; }
     .caixa-destaque { padding: 12px; background-color: #E0F2FE; border-left: 5px solid #0284C7; border-radius: 5px; margin-bottom: 15px; font-size: 15px; color: #0C4A6E; line-height: 1.5; }
-    
-    /* Destaque do Ano Dinâmico nas Abas */
     .destaque-ano { font-size: 26px; color: #2E7D32; font-weight: 900; text-align: center; margin-bottom: 15px; border-bottom: 3px solid #2E7D32; padding-bottom: 5px; }
-    
-    /* Destaque para os Filtros do Menu Lateral */
     [data-testid="stSidebar"] label p { font-size: 16px !important; font-weight: 900 !important; color: #0F172A !important; margin-bottom: 4px; }
     
-    /* CSS DA TABELA HTML CUSTOMIZADA */
     .tabela-container { max-height: 480px; overflow-y: auto; overflow-x: auto; border: 1px solid #D1D5DB; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); background-color: white; margin-bottom: 20px; }
     .tabela-customizada table { width: 100%; border-collapse: collapse; font-family: sans-serif; }
     .tabela-customizada thead th { background-color: #1E3A8A !important; color: #FFFFFF !important; font-weight: 900 !important; font-size: 14px !important; text-align: center !important; position: sticky; top: 0; z-index: 10; padding: 10px 8px; border-bottom: 2px solid #0F172A; line-height: 1.2; }
@@ -171,9 +111,7 @@ def formata_abreviado(valor):
         else: return f"{sinal}R$ {abs_val:,.0f}".replace(',', '.')
     except Exception: return str(valor)
 
-# --- ALTERAÇÃO 1: NOVA FUNÇÃO DE DESTAQUE CÉLULA A CÉLULA ---
 def destacar_celulas_com_variacao(df):
-    """Cria um mapa de estilos para pintar apenas a célula onde houve variação"""
     estilos = pd.DataFrame('', index=df.index, columns=df.columns)
     for col in df.columns:
         if 'Varia' in str(col) or 'Diferença' in str(col):
@@ -218,16 +156,23 @@ def carregar_dicionarios():
     else: status_msg = "Arquivo Tabelas_Auxiliares.xlsx não encontrado."
     return dict_acoes, dict_naturezas, status_msg
 
-# 5. CARREGAMENTO DOS DADOS PRINCIPAIS
-PATH_SIAFI = r"Base_Consolidada_SIAFI.xlsx"
+# 5. CARREGAMENTO DOS DADOS PRINCIPAIS (AGORA APONTANDO PARA A REDE)
+PATH_SIAFI = r"\\Rei-1cpd003\coord_plan_institucional\DADOS CPI\Orçamento\2026\EXECUÇÃO ORÇAMENTÁRIA\RELEXORC_CSV\Saida_PowerBI\Base_Consolidada_SIAFI.xlsx"
 
-@st.cache_data(ttl=60)
+@st.cache_data(ttl=3600)
 def carregar_dados_v181(path):
     tipos_forçados = {'Programa de Trabalho': str, 'Fonte de Recurso': str, 'Natureza da Despesa': str}
     df_base = pd.read_excel(path, sheet_name='Base_Consolidada', dtype=tipos_forçados)
     df_var = pd.read_excel(path, sheet_name='Variacoes_Recentes', dtype=tipos_forçados)
     
-    # --- ALTERAÇÃO 2: INCLUSÃO DE 'Bloqueado' AQUI ---
+    # --- NOVIDADE 1: O FFILL (PREENCHIMENTO AUTOMÁTICO DAS LINHAS EM BRANCO) ---
+    colunas_preencher = ['Mês Referência', 'Programa de Trabalho', 'Fonte de Recurso', 'Natureza da Despesa', 'Tipo Movimento']
+    for col in colunas_preencher:
+        if col in df_base.columns:
+            df_base[col] = df_base[col].replace(['nan', 'None', ''], np.nan).ffill()
+        if col in df_var.columns:
+            df_var[col] = df_var[col].replace(['nan', 'None', ''], np.nan).ffill()
+    
     palavras_fin = ['Autorizado', 'Empenhado', 'Liquidado', 'Pago', 'Dotação', 'Reduções', 'Variação', 'Disponível', 'Bloqueado']
     
     def limpar_nomes_colunas(df):
@@ -285,7 +230,7 @@ def carregar_dados_v181(path):
     return df_base, df_var
 
 try: df_base, df_var = carregar_dados_v181(PATH_SIAFI)
-except Exception as e: st.error(f"Erro ao acessar o arquivo SIAFI: {e}"); st.stop()
+except Exception as e: st.error(f"Erro ao acessar o arquivo SIAFI na rede. Verifique se o caminho {PATH_SIAFI} está correto e se a Máquina Virtual tem acesso à rede. Erro: {e}"); st.stop()
 
 dict_acoes, dict_naturezas, status_dic = carregar_dicionarios()
 
@@ -345,9 +290,16 @@ if os.path.exists(img_logos):
     st.sidebar.image(img_logos, use_container_width=True)
     st.sidebar.markdown("---")
 
-# Só mostra os filtros se estivermos no painel
 if st.session_state.pagina_ativa == 'dashboard':
     st.sidebar.button("⬅️ Voltar para a Capa", on_click=lambda: st.session_state.update(pagina_ativa='capa'))
+    
+    # --- NOVIDADE 2: O BOTÃO DE ATUALIZAR DA REDE ---
+    st.sidebar.markdown("---")
+    if st.sidebar.button("🔄 Atualizar Dados da Rede", use_container_width=True):
+        st.cache_data.clear()
+        st.rerun()
+    st.sidebar.markdown("---")
+    
     st.sidebar.header("FILTROS GLOBAIS")
     st.sidebar.button("🧹 Limpar Todos os Filtros", on_click=forcar_limpeza_total, use_container_width=True)
 
@@ -408,7 +360,7 @@ st.sidebar.markdown("""
         e CPI - Coordenação de Planejamento Institucional
     </div>
     <div style='text-align: center; color: #9CA3AF; font-size: 11px; margin-top: 10px;'>
-        Versão Atualizada - Destaque por Célula e Coluna Bloqueado 🚀
+        Versão de Rede - Atualização Automática 🚀
     </div>
 """, unsafe_allow_html=True)
 
@@ -578,7 +530,6 @@ elif st.session_state.pagina_ativa == 'dashboard':
         
         colunas_identificacao = ['AÇÃO', 'FONTE', 'NATUREZA']
         
-        # --- ALTERAÇÃO 3: INCLUSÃO DE 'Bloqueado' AQUI TAMBÉM ---
         categorias_alvo = ['Dotação Suplementar', 'Reduções', 'Autorizado', 'Empenhado', 'Disponível', 'Bloqueado']
         
         colunas_financeiras_originais = []
@@ -599,7 +550,6 @@ elif st.session_state.pagina_ativa == 'dashboard':
         df_var_visual_tela = df_var_visual_tela.rename(columns=mapeamento_colunas)
         colunas_financeiras_tela = list(mapeamento_colunas.values())
         
-        # --- ALTERAÇÃO 4: USO DO NOVO MÉTODO .apply COM axis=None ---
         tabela_estilizada = (df_var_visual_tela.style
             .apply(destacar_celulas_com_variacao, axis=None)
             .format({col: formata_numero_duas_casas for col in colunas_financeiras_tela})
@@ -614,7 +564,6 @@ elif st.session_state.pagina_ativa == 'dashboard':
             
         st.markdown(f'<div class="tabela-container tabela-customizada">{html_tabela}</div>', unsafe_allow_html=True)
         
-        # EXPORTAÇÃO EXCEL LIMPA
         df_excel = df_var_visual.copy()
         df_excel['AÇÃO'] = df_excel['Ação'].apply(lambda x: f"{x} - {dict_acoes.get(x, 'N/I')}" if x else "")
         df_excel['FONTE'] = df_excel['Fonte_3'].apply(lambda x: f"{x} - {dict_fontes_global.get(x, 'Outras Fontes')}" if x else "")
@@ -665,13 +614,9 @@ elif st.session_state.pagina_ativa == 'dashboard':
             
             if not df_chart_var.empty:
                 df_chart_var['Nome_Natureza'] = df_chart_var['Natureza_ID'].map(dict_naturezas).fillna('Não Identificada')
-                
                 df_chart_var['Rotulo_Eixo'] = "<b>" + df_chart_var['Natureza_ID'] + " - " + df_chart_var['Nome_Natureza'].str.slice(0, 50) + "</b>"
-                
                 df_chart_var['Texto_Valor'] = df_chart_var[col_var_emp].apply(formata_abreviado)
-                
                 df_chart_var['Cor'] = df_chart_var[col_var_emp].apply(lambda x: '#10B981' if x > 0 else '#EF4444')
-                
                 df_chart_var = df_chart_var.sort_values(by=col_var_emp, ascending=True)
                 
                 fig_var = px.bar(
