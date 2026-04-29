@@ -30,6 +30,7 @@ st.markdown("""
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     .stDeployButton {display: none;} 
+    [data-testid="stToolbar"] {visibility: hidden !important;}
 
     header { background-color: transparent !important; }
     [data-testid="collapsedControl"] { visibility: visible !important; display: flex !important; z-index: 999999 !important; }
@@ -165,7 +166,7 @@ def carregar_dados_v181(path):
     df_base = pd.read_excel(path, sheet_name='Base_Consolidada', dtype=tipos_forçados)
     df_var = pd.read_excel(path, sheet_name='Variacoes_Recentes', dtype=tipos_forçados)
 
-    # PREENCHIMENTO AUTOMÁTICO DAS LINHAS EM BRANCO (FFILL)
+    # --- NOVIDADE 1: O FFILL (PREENCHIMENTO AUTOMÁTICO DAS LINHAS EM BRANCO) ---
     colunas_preencher = ['Mês Referência', 'Programa de Trabalho', 'Fonte de Recurso', 'Natureza da Despesa', 'Tipo Movimento']
     for col in colunas_preencher:
         if col in df_base.columns:
@@ -233,7 +234,7 @@ def carregar_dados_v181(path):
 try: 
     df_base, df_var = carregar_dados_v181(PATH_SIAFI)
 except Exception as e: 
-    st.error(f"Erro ao acessar o arquivo SIAFI na rede. Verifique se o arquivo está no GitHub. Erro: {e}")
+    st.error(f"Erro ao acessar o arquivo SIAFI na rede. Verifique se o caminho {PATH_SIAFI} está correto e se a Máquina Virtual tem acesso à rede. Erro: {e}")
     st.stop()
 
 dict_acoes, dict_naturezas, status_dic = carregar_dicionarios()
@@ -284,6 +285,7 @@ def forcar_limpeza_total():
     for chave in list(st.session_state.keys()):
         if chave.startswith('filtro_'):
             del st.session_state[chave]
+
 
 # ==========================================
 # GESTÃO DO MENU LATERAL E RODAPÉ
@@ -367,12 +369,14 @@ st.sidebar.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
+
 # ==========================================
 # TELA 1: CAPA
 # ==========================================
 if st.session_state.pagina_ativa == 'capa':
     st.write("") 
     st.write("")
+    
     col_esq, col_centro, col_dir = st.columns([1, 3, 1])
     
     with col_centro:
@@ -386,6 +390,7 @@ if st.session_state.pagina_ativa == 'capa':
         if st.button("🚀 ACESSAR PAINEL DE EXECUÇÃO ORÇAMENTÁRIA", use_container_width=True):
             st.session_state.pagina_ativa = 'dashboard'
             st.rerun()
+
 
 # ==========================================
 # TELA 2: DASHBOARD
@@ -476,6 +481,7 @@ elif st.session_state.pagina_ativa == 'dashboard':
                 )
                 
                 fig_tree.update_layout(margin=dict(t=20, l=10, r=10, b=10), height=450)
+                
                 st.plotly_chart(fig_tree, use_container_width=True)
             else:
                 st.info("Não há valores empenhados para detalhar nesta Ação.")
@@ -508,8 +514,10 @@ elif st.session_state.pagina_ativa == 'dashboard':
         else:
             st.info("Não há dados de evolução mensal para os filtros selecionados.")
 
+
     with tab_tabela:
         st.markdown(f"<div class='periodo-destaque'>📅 {texto_periodo}</div>", unsafe_allow_html=True)
+        
         st.subheader("Tabela de Variações")
         
         df_var_visual = df_var_filtrada.copy()
@@ -526,6 +534,7 @@ elif st.session_state.pagina_ativa == 'dashboard':
         )
         
         colunas_identificacao = ['AÇÃO', 'FONTE', 'NATUREZA']
+        
         categorias_alvo = ['Dotação Suplementar', 'Reduções', 'Autorizado', 'Empenhado', 'Disponível', 'Bloqueado']
         
         colunas_financeiras_originais = []
@@ -535,16 +544,6 @@ elif st.session_state.pagina_ativa == 'dashboard':
                     colunas_financeiras_originais.append(col)
                     
         df_var_visual_tela = df_var_visual_tela[colunas_identificacao + colunas_financeiras_originais]
-        
-        # --- CÁLCULO DO TOTAL GERAL ---
-        linha_soma = df_var_visual_tela[colunas_financeiras_originais].sum()
-        df_total = pd.DataFrame(linha_soma).T
-        for col in colunas_identificacao:
-            df_total[col] = "" 
-        df_total['AÇÃO'] = "<b>TOTAL GERAL</b>" 
-        
-        df_var_visual_tela = pd.concat([df_var_visual_tela, df_total], ignore_index=True)
-        # ------------------------------
         
         mapeamento_colunas = {}
         for col in colunas_financeiras_originais:
@@ -561,7 +560,6 @@ elif st.session_state.pagina_ativa == 'dashboard':
             .format({col: formata_numero_duas_casas for col in colunas_financeiras_tela})
             .set_properties(**{'text-align': 'right'}, subset=colunas_financeiras_tela)
             .set_properties(**{'text-align': 'center'}, subset=colunas_identificacao)
-            .set_properties(subset=pd.IndexSlice[df_var_visual_tela.index[-1], :], **{'font-weight': 'bold', 'background-color': '#E5E7EB', 'color': '#0F172A'}) 
         )
         
         try:
@@ -571,17 +569,11 @@ elif st.session_state.pagina_ativa == 'dashboard':
             
         st.markdown(f'<div class="tabela-container tabela-customizada">{html_tabela}</div>', unsafe_allow_html=True)
         
-        # EXCEL DOWNLOAD
         df_excel = df_var_visual.copy()
         df_excel['AÇÃO'] = df_excel['Ação'].apply(lambda x: f"{x} - {dict_acoes.get(x, 'N/I')}" if x else "")
         df_excel['FONTE'] = df_excel['Fonte_3'].apply(lambda x: f"{x} - {dict_fontes_global.get(x, 'Outras Fontes')}" if x else "")
         df_excel['NATUREZA'] = df_excel['Natureza_ID'].apply(lambda x: f"{x} - {dict_naturezas.get(x, 'N/I')}" if x else "")
         df_excel = df_excel[colunas_identificacao + colunas_financeiras_originais]
-        
-        df_total_excel = pd.DataFrame(df_excel[colunas_financeiras_originais].sum()).T
-        for col in colunas_identificacao: df_total_excel[col] = ""
-        df_total_excel['AÇÃO'] = "TOTAL GERAL"
-        df_excel = pd.concat([df_excel, df_total_excel], ignore_index=True)
         
         df_excel.columns = [c.replace('_Ant.', '_Anterior').replace('_Ant', '_Anterior').replace(' Ant.', ' Anterior').replace(' Ant', ' Anterior') for c in df_excel.columns]
         
@@ -597,6 +589,7 @@ elif st.session_state.pagina_ativa == 'dashboard':
         )
 
     with tab_var_natureza:
+        
         if var_acao_codigo != "Todas":
             titulo_dinamico = f"Detalhamento da variação do Empenhado<br><span style='font-size: 20px; color: #4B5563;'>da Ação: {var_acao_str}</span>"
         else:
@@ -621,6 +614,7 @@ elif st.session_state.pagina_ativa == 'dashboard':
 
         if col_var_emp and not df_var_filtrada.empty:
             df_chart_var = df_var_filtrada.groupby('Natureza_ID')[col_var_emp].sum().reset_index()
+            
             df_chart_var = df_chart_var[abs(df_chart_var[col_var_emp]) > 0.01]
             
             if not df_chart_var.empty:
@@ -647,6 +641,7 @@ elif st.session_state.pagina_ativa == 'dashboard':
                 )
                 
                 fig_var.add_vline(x=0, line_width=2, line_color="black")
+                
                 max_abs = abs(df_chart_var[col_var_emp]).max()
                 fig_var.update_layout(
                     font=dict(size=14, color="black"), 
@@ -662,3 +657,7 @@ elif st.session_state.pagina_ativa == 'dashboard':
                 st.info("Não houve variação de Empenho para as naturezas neste período ou filtro selecionado.")
         else:
             st.warning("Coluna de variação de Empenhado não foi identificada na base de dados.")
+
+# Rodapé lateral
+st.sidebar.markdown("---")
+st.sidebar.caption("SISTEMA DE GESTÃO - UEA | Versão 1.8.1")
