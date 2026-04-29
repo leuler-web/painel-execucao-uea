@@ -5,19 +5,7 @@ import plotly.express as px
 import os
 from io import BytesIO
 
-# Código para forçar o valor da métrica a ser verde
-st.markdown(
-    """
-    <style>
-    [data-testid="stMetricValue"] {
-        color: #2E7D32 !important;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
-
-# 1. CONFIGURAÇÃO DA PÁGINA
+# 1. CONFIGURAÇÃO DA PÁGINA (ESTE DEVE SER SEMPRE O PRIMEIRO COMANDO)
 st.set_page_config(
     page_title="PAINEL ORÇAMENTÁRIO - UEA", 
     layout="wide", 
@@ -25,24 +13,32 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# 2. BLOCO ÚNICO DE ESTILOS CSS
 st.markdown("""
     <style>
+    /* Cor da Métrica */
+    [data-testid="stMetricValue"] { color: #2E7D32 !important; }
+    
+    /* Esconder botões indesejados */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     .stDeployButton {display: none;} 
     [data-testid="stToolbar"] {visibility: hidden !important;}
 
+    /* Layout Geral */
     header { background-color: transparent !important; }
     [data-testid="collapsedControl"] { visibility: visible !important; display: flex !important; z-index: 999999 !important; }
     [data-testid="stSidebarCollapseButton"] { display: none !important; }
     .block-container { padding-top: 0rem !important; padding-bottom: 0rem !important; max-width: 100% !important; }
     [data-testid="stSidebar"] { background-color: #FFFFFF !important; border-right: 1px solid #E5E7EB !important; }
     
+    /* Abas Superiores */
     [data-testid="stTabs"] > div:first-of-type {
         position: sticky !important; top: 0px !important; background-color: white !important; z-index: 9999 !important;
         padding-bottom: 10px !important; padding-top: 15px !important; border-bottom: 2px solid #2E7D32 !important;
     }
     
+    /* Fontes e Textos */
     h1 { font-size: 44px !important; font-weight: 900 !important; color: #878787 !important; margin-top: -20px !important;}
     h3 { font-size: 26px !important; font-weight: 800 !important; color: #111827 !important; padding-bottom: 10px; }
     .stTabs [data-baseweb="tab-list"] button { font-size: 22px !important; font-weight: 900 !important; color: #374151 !important; }
@@ -108,19 +104,19 @@ st.markdown("""
     .tabela-customizada tbody tr:hover td { background-color: #F3F4F6 !important; }
     .tabela-customizada tbody td div[title] { cursor: help; border-bottom: 1px dotted #9CA3AF; display: inline-block; }
     </style>
-    """, unsafe_allow_html=True)
+""", unsafe_allow_html=True)
 
 # GESTÃO DE ESTADO (Capa)
 if 'pagina_ativa' not in st.session_state:
     st.session_state.pagina_ativa = 'capa'
 
-# 2. DICIONÁRIO MANUAL DAS FONTES
+# 3. DICIONÁRIO MANUAL DAS FONTES
 dict_fontes_global = {
     '201': 'Recursos Diretamente Arrecadados', '280': 'Convênios ou transferências',
     '116': 'Fonte do Tesouro', '285': 'Outras Fontes', '243': 'Transferências vinculadas/fundos'
 }
 
-# 3. FUNÇÕES DE LIMPEZA E FORMATAÇÃO
+# 4. FUNÇÕES DE LIMPEZA E FORMATAÇÃO
 def extrair_numero(val):
     try:
         if pd.isna(val): return 0.0
@@ -168,7 +164,7 @@ def destacar_celulas_com_variacao(df):
             estilos.loc[mask, col] = 'background-color: #FFFF00; color: #000000; font-weight: bold;'
     return estilos
 
-# 4. LEITOR DAS TABELAS AUXILIARES
+# 5. LEITOR DAS TABELAS AUXILIARES
 @st.cache_data(ttl=3600)
 def carregar_dicionarios():
     dict_acoes, dict_naturezas, status_msg = {}, {}, ""
@@ -205,7 +201,7 @@ def carregar_dicionarios():
     else: status_msg = "Arquivo Tabelas_Auxiliares.xlsx não encontrado."
     return dict_acoes, dict_naturezas, status_msg
 
-# 5. CARREGAMENTO DOS DADOS PRINCIPAIS
+# 6. CARREGAMENTO DOS DADOS PRINCIPAIS
 PATH_SIAFI = r"Base_Consolidada_SIAFI.xlsx"
 
 @st.cache_data(ttl=3600)
@@ -342,7 +338,7 @@ if os.path.exists(img_logos):
     st.sidebar.markdown("---")
 
 # --- BOTÃO SEMPRE VISÍVEL ---
-if st.sidebar.button("🔄 Atualizar Dados da Rede", use_container_width=True):
+if st.sidebar.button("🔄 Atualizar Dados da Rede (Limpar Cache)", use_container_width=True):
     st.cache_data.clear()
     st.rerun()
 
@@ -411,7 +407,8 @@ st.sidebar.markdown("""
         e CPI - Coordenação de Planejamento Institucional
     </div>
     <div style='text-align: center; color: #9CA3AF; font-size: 11px; margin-top: 10px;'>
-        Versão de Rede - Atualização Automática 🚀
+        Versão de Rede - Atualização Automática 🚀<br>
+        <b>Versão 1.8.4</b>
     </div>
 """, unsafe_allow_html=True)
 
@@ -485,7 +482,6 @@ elif st.session_state.pagina_ativa == 'dashboard':
                 fig_bar = px.bar(df_top, x='Empenhado', y='Eixo_Y_Negrito', orientation='h', text='Rotulo', custom_data=['Ação', 'Nome_Acao'])
                 max_valor_bar = df_top['Empenhado'].max()
                 
-                # A FORMATAÇÃO DO GRÁFICO VOLTOU AQUI!
                 fig_bar.update_layout(
                     yaxis=dict(categoryorder='total ascending', tickfont=dict(size=24, color="#111827"), automargin=True), 
                     font=dict(size=18, color="black"), 
@@ -518,7 +514,6 @@ elif st.session_state.pagina_ativa == 'dashboard':
                     custom_data=['Valor_Abreviado']
                 )
                 
-                # A FORMATAÇÃO DO TREEMAP VOLTOU AQUI!
                 fig_tree.update_traces(
                     texttemplate="<b>%{label}</b><br>%{customdata[0]}",
                     textfont=dict(size=18), 
@@ -544,8 +539,6 @@ elif st.session_state.pagina_ativa == 'dashboard':
             df_melt['Rotulo_F'] = df_melt['Valor'].apply(formata_abreviado)
             
             fig_line = px.line(df_melt, x='Mês', y='Valor', color='Fase', markers=True, text='Rotulo_F', color_discrete_sequence=['#64748B', '#1E3A8A', '#3B82F6', '#10B981', '#F59E0B'])
-            
-            # A FORMATAÇÃO DA LINHA DE EVOLUÇÃO VOLTOU AQUI!
             for trace in fig_line.data:
                 trace.textfont.color = trace.line.color
                 trace.textfont.size = 14
@@ -690,7 +683,6 @@ elif st.session_state.pagina_ativa == 'dashboard':
                     custom_data=['Natureza_ID', 'Nome_Natureza']
                 )
                 
-                # A FORMATAÇÃO DESTE GRÁFICO TAMBÉM VOLTOU!
                 fig_var.update_traces(
                     marker_color=df_chart_var['Cor'], 
                     textposition="outside", 
@@ -714,7 +706,3 @@ elif st.session_state.pagina_ativa == 'dashboard':
                 st.info("Não houve variação de Empenho para as naturezas neste período ou filtro selecionado.")
         else:
             st.warning("Coluna de variação de Empenhado não foi identificada na base de dados.")
-
-# Rodapé lateral
-st.sidebar.markdown("---")
-st.sidebar.caption("SISTEMA DE GESTÃO - UEA | Versão 1.8.3")
