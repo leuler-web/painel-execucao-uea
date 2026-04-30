@@ -62,13 +62,9 @@ st.markdown("""
     /* CONFIGURAÇÃO DA TABELA COM COLUNAS FIXAS */
     .tabela-container { max-height: 480px; overflow-y: auto; overflow-x: auto; border: 1px solid #D1D5DB; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); background-color: white; margin-bottom: 20px; }
     
-    .tabela-customizada table { 
-        width: 100%; 
-        border-collapse: separate !important;
-        border-spacing: 0; 
-        font-family: sans-serif; 
-    }
+    .tabela-customizada table { width: 100%; border-collapse: separate !important; border-spacing: 0; font-family: sans-serif; }
 
+    /* CABEÇALHO GERAL (Fundo Azul e Letra Branca) */
     .tabela-customizada thead th { 
         background-color: #1E3A8A !important; 
         color: #FFFFFF !important; 
@@ -83,33 +79,15 @@ st.markdown("""
         line-height: 1.2; 
     }
 
-    /* Coluna 1: AÇÃO */
-    .tabela-customizada th:nth-child(1), 
-    .tabela-customizada td:nth-child(1) {
-        position: sticky !important; left: 0; z-index: 10;
-        background-color: #F9FAFB !important; border-right: 2px solid #D1D5DB !important;
-    }
-    
-    /* Coluna 2: FONTE */
-    .tabela-customizada th:nth-child(2), 
-    .tabela-customizada td:nth-child(2) {
-        position: sticky !important; left: 65px; z-index: 10;
-        background-color: #F9FAFB !important; border-right: 2px solid #D1D5DB !important;
-    }
+    /* CORPO DA TABELA - COLUNAS FIXAS (Fundo Claro) */
+    .tabela-customizada tbody td:nth-child(1) { position: sticky !important; left: 0; z-index: 10; background-color: #F9FAFB !important; border-right: 2px solid #D1D5DB !important; }
+    .tabela-customizada tbody td:nth-child(2) { position: sticky !important; left: 65px; z-index: 10; background-color: #F9FAFB !important; border-right: 2px solid #D1D5DB !important; }
+    .tabela-customizada tbody td:nth-child(3) { position: sticky !important; left: 135px; z-index: 10; background-color: #F9FAFB !important; border-right: 2px solid #D1D5DB !important; }
 
-    /* Coluna 3: NATUREZA */
-    .tabela-customizada th:nth-child(3), 
-    .tabela-customizada td:nth-child(3) {
-        position: sticky !important; left: 135px; z-index: 10;
-        background-color: #F9FAFB !important; border-right: 2px solid #D1D5DB !important;
-    }
-
-    /* Sobreposição correta no cruzamento do cabeçalho com as colunas fixas */
-    .tabela-customizada thead th:nth-child(1),
-    .tabela-customizada thead th:nth-child(2),
-    .tabela-customizada thead th:nth-child(3) {
-        z-index: 110; 
-    }
+    /* CABEÇALHO - COLUNAS FIXAS (Garante Azul Escuro) */
+    .tabela-customizada thead th:nth-child(1) { position: sticky !important; left: 0; z-index: 110 !important; background-color: #1E3A8A !important; border-right: 2px solid #D1D5DB !important; }
+    .tabela-customizada thead th:nth-child(2) { position: sticky !important; left: 65px; z-index: 110 !important; background-color: #1E3A8A !important; border-right: 2px solid #D1D5DB !important; }
+    .tabela-customizada thead th:nth-child(3) { position: sticky !important; left: 135px; z-index: 110 !important; background-color: #1E3A8A !important; border-right: 2px solid #D1D5DB !important; }
 
     .tabela-customizada tbody td { padding: 8px 8px; border-bottom: 1px solid #E5E7EB; font-size: 13px; vertical-align: middle; white-space: nowrap;  }
     .tabela-customizada tbody tr:hover td { background-color: #F3F4F6 !important; }
@@ -744,3 +722,4 @@ except Exception as e:
             for key in list(st.session_state.keys()):
                 del st.session_state[key]
             st.rerun()
+# Forçando reinicialização do sistema
