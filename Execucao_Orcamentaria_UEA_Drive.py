@@ -22,47 +22,21 @@ st.set_page_config(
 )
 
 # ==========================================
-# 2. BLOCO ÚNICO DE ESTILOS CSS
+# 2. BLOCO ÚNICO DE ESTILOS CSS (VERSÃO CORRIGIDA)
 # ==========================================
 st.markdown("""
     <style>
-    /* Cor da Métrica */
+    /* Cor da Métrica e Configurações Gerais */
     [data-testid="stMetricValue"] { color: #2E7D32 !important; }
-    
-    /* Esconder botões indesejados (Deploy e menu do Streamlit) */
     #MainMenu {visibility: visible;}
     footer {visibility: hidden;}
     .stDeployButton {display: none !important;} 
-    [data-testid="stToolbar"] {visibility: hidden !important;}
+    .block-container { padding-top: 0rem !important; max-width: 100% !important; }
 
-    /* Layout Geral */
-    header { background-color: transparent !important; }
-    [data-testid="collapsedControl"] { visibility: visible !important; display: flex !important; z-index: 999999 !important; }
-    [data-testid="stSidebarCollapseButton"] { display: none !important; }
-    .block-container { padding-top: 0rem !important; padding-bottom: 0rem !important; max-width: 100% !important; }
-    [data-testid="stSidebar"] { background-color: #FFFFFF !important; border-right: 1px solid #E5E7EB !important; }
+    /* --- INÍCIO DO BLOCO DA TABELA --- */
+    .tabela-container { max-height: 480px; overflow-y: auto; overflow-x: auto; border: 1px solid #D1D5DB; border-radius: 8px; background-color: white; margin-bottom: 20px; }
     
-    /* Abas Superiores Estilizadas */
-    [data-testid="stTabs"] > div:first-of-type {
-        position: sticky !important; top: 0px !important; background-color: white !important; z-index: 9999 !important;
-        padding-bottom: 10px !important; padding-top: 15px !important; border-bottom: 2px solid #2E7D32 !important;
-    }
-    
-    /* Fontes e Textos */
-    h1 { font-size: 44px !important; font-weight: 900 !important; color: #878787 !important; margin-top: -20px !important;}
-    h3 { font-size: 26px !important; font-weight: 800 !important; color: #111827 !important; padding-bottom: 10px; }
-    .stTabs [data-baseweb="tab-list"] button { font-size: 22px !important; font-weight: 900 !important; color: #374151 !important; }
-    [data-testid="stMetricValue"] { font-size: 26px !important; font-weight: 900 !important; color: #4B5563 !important; }
-    [data-testid="stMetricLabel"] * { font-size: 16px !important; font-weight: 900 !important; color: #111827 !important; }
-    .periodo-destaque { font-size: 18px; color: #DC2626; font-weight: 900; margin-bottom: 10px; }
-    .caixa-destaque { padding: 12px; background-color: #E0F2FE; border-left: 5px solid #0284C7; border-radius: 5px; margin-bottom: 15px; font-size: 15px; color: #0C4A6E; line-height: 1.5; }
-    .destaque-ano { font-size: 26px; color: #2E7D32; font-weight: 900; text-align: center; margin-bottom: 15px; border-bottom: 3px solid #2E7D32; padding-bottom: 5px; }
-    [data-testid="stSidebar"] label p { font-size: 16px !important; font-weight: 900 !important; color: #0F172A !important; margin-bottom: 4px; }
-    
-    /* CONFIGURAÇÃO DA TABELA COM COLUNAS FIXAS */
-    .tabela-container { max-height: 480px; overflow-y: auto; overflow-x: auto; border: 1px solid #D1D5DB; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); background-color: white; margin-bottom: 20px; }
-    
-    .tabela-customizada table { width: 100%; border-collapse: separate !important; border-spacing: 0; font-family: sans-serif; }
+    .tabela-customizada table { width: 100%; border-collapse: separate !important; border-spacing: 0; }
 
     /* CABEÇALHO GERAL (Fundo Azul e Letra Branca) */
     .tabela-customizada thead th { 
@@ -75,23 +49,22 @@ st.markdown("""
         top: 0; 
         z-index: 100; 
         padding: 10px 8px; 
-        border-bottom: 2px solid #0F172A; 
-        line-height: 1.2; 
+        border: 1px solid #0F172A !important;
     }
 
-    /* CORPO DA TABELA - COLUNAS FIXAS (Fundo Claro) */
+    /* CORPO DA TABELA - COLUNAS FIXAS LATERAIS */
     .tabela-customizada tbody td:nth-child(1) { position: sticky !important; left: 0; z-index: 10; background-color: #F9FAFB !important; border-right: 2px solid #D1D5DB !important; }
     .tabela-customizada tbody td:nth-child(2) { position: sticky !important; left: 65px; z-index: 10; background-color: #F9FAFB !important; border-right: 2px solid #D1D5DB !important; }
     .tabela-customizada tbody td:nth-child(3) { position: sticky !important; left: 135px; z-index: 10; background-color: #F9FAFB !important; border-right: 2px solid #D1D5DB !important; }
 
-    /* CABEÇALHO - COLUNAS FIXAS (Garante Azul Escuro) */
-    .tabela-customizada thead th:nth-child(1) { position: sticky !important; left: 0; z-index: 110 !important; background-color: #1E3A8A !important; border-right: 2px solid #D1D5DB !important; }
-    .tabela-customizada thead th:nth-child(2) { position: sticky !important; left: 65px; z-index: 110 !important; background-color: #1E3A8A !important; border-right: 2px solid #D1D5DB !important; }
-    .tabela-customizada thead th:nth-child(3) { position: sticky !important; left: 135px; z-index: 110 !important; background-color: #1E3A8A !important; border-right: 2px solid #D1D5DB !important; }
+    /* CABEÇALHO - GARANTE AZUL SOBRE AS COLUNAS FIXAS */
+    .tabela-customizada thead th:nth-child(1) { position: sticky !important; left: 0; z-index: 110 !important; background-color: #1E3A8A !important; }
+    .tabela-customizada thead th:nth-child(2) { position: sticky !important; left: 65px; z-index: 110 !important; background-color: #1E3A8A !important; }
+    .tabela-customizada thead th:nth-child(3) { position: sticky !important; left: 135px; z-index: 110 !important; background-color: #1E3A8A !important; }
 
-    .tabela-customizada tbody td { padding: 8px 8px; border-bottom: 1px solid #E5E7EB; font-size: 13px; vertical-align: middle; white-space: nowrap;  }
-    .tabela-customizada tbody tr:hover td { background-color: #F3F4F6 !important; }
-    .tabela-customizada tbody td div[title] { cursor: help; border-bottom: 1px dotted #9CA3AF; display: inline-block; }
+    .tabela-customizada tbody td { padding: 8px 8px; border-bottom: 1px solid #E5E7EB; font-size: 13px; white-space: nowrap; }
+    /* --- FIM DO BLOCO DA TABELA --- */
+    
     </style>
 """, unsafe_allow_html=True)
 
@@ -240,8 +213,14 @@ def carregar_dados_v181(path):
     df_var = limpar_nomes_colunas(df_var)
     
     def remover_fantasmas(df):
-        mascara = df['Programa de Trabalho'].astype(str).str.lower().str.strip().isin(['', 'nan', 'none', 'null'])
-        return df[~mascara].copy()
+        # 1. Transforma em texto, remove 'nan' e limpa espaços invisíveis corretamente
+        df['Programa de Trabalho'] = df['Programa de Trabalho'].astype(str).str.replace('nan', '', regex=False).str.strip()
+        
+        # 2. Identifica o que é vazio ou apenas o zero 'solto'
+        mascara_fantasma = (df['Programa de Trabalho'] == '') | (df['Programa de Trabalho'] == '0')
+        
+        # 3. Filtra e devolve apenas as linhas com dados reais
+        return df[~mascara_fantasma].copy()
         
     df_base = remover_fantasmas(df_base)
     df_var = remover_fantasmas(df_var)
