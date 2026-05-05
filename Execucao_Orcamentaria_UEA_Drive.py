@@ -438,42 +438,52 @@ try:
         v_pago = df_latest['Pago'].sum() if 'Pago' in df_latest.columns else 0
         v_disp = df_latest['Disponível'].sum() if 'Disponível' in df_latest.columns else 0
 
+        
         # 2. CABEÇALHO FIXO (Título e KPIs)
         with st.container():
             # Âncora para o CSS fixar este bloco
-            st.markdown('<div class="fixed-header"></div>', unsafe_allow_html=True)
+            #st.markdown('<div class="fixed-header"></div>', unsafe_allow_html=True)
+            st.markdown('<div class="unificar-header"></div>', unsafe_allow_html=True)
             
             st.title(f"📊 PAINEL ORÇAMENTÁRIO - UEA {f'- {var_mes_str}' if var_mes_str != 'Todos' else ''}")
-            
+                        
             # Exibição das Tags de Filtro
             tags = []
-            if var_acao_codigo != "Todas": tags.append(f"<b>🎯 Ação:</b> {var_acao_str}")
-            if var_fonte_codigo != "Todas": tags.append(f"<b>🏦 Fonte de Recurso:</b> {var_fonte_str}")
-            if var_natureza_codigo != "Todas": tags.append(f"<b>🏷️ Natureza da Despesa:</b> {var_natureza_str}")
+            #if var_acao_codigo != "Todas": tags.append(f"<b>🎯 Ação:</b> {var_acao_str}")
+            if var_acao_codigo != "Todas": tags.append(f"🎯 {var_acao_str}")
+            #if var_fonte_codigo != "Todas": tags.append(f"<b>🏦 Fonte de Recurso:</b> {var_fonte_str}")
+            if var_fonte_codigo != "Todas": tags.append(f"🏦 {var_fonte_str}")
+            #if var_natureza_codigo != "Todas": tags.append(f"<b>🏷️ Natureza da Despesa:</b> {var_natureza_str}")
+            if var_natureza_codigo != "Todas": tags.append(f"🏷️ {var_natureza_str}")
             if tags: 
-                st.markdown(f"<div class='caixa-destaque'>{' &nbsp;&nbsp;|&nbsp;&nbsp; '.join(tags)}</div>", unsafe_allow_html=True)
+                st.caption(" | ".join(tags))
+                #st.markdown(f"<div class='caixa-destaque'>{' &nbsp;&nbsp;|&nbsp;&nbsp; '.join(tags)}</div>", unsafe_allow_html=True)
 
             # Colunas de Indicadores (KPIs)
             c1, c2, c3, c4, c5 = st.columns(5)
             c1.metric("AUTORIZADO", formata_moeda_sem_decimal(v_aut))
-            c2.metric("EMPENHADO", formata_moeda_sem_decimal(v_emp), delta=f"{(v_emp/v_aut)*100 if v_aut>0 else 0:.1f}% do total")
-            c3.metric("LIQUIDADO", formata_moeda_sem_decimal(v_liq), delta=f"{(v_liq/v_aut)*100 if v_aut>0 else 0:.1f}% do total")
-            c4.metric("PAGO", formata_moeda_sem_decimal(v_pago), delta=f"{(v_pago/v_aut)*100 if v_aut>0 else 0:.1f}% do total")
+            #c2.metric("EMPENHADO", formata_moeda_sem_decimal(v_emp), delta=f"{(v_emp/v_aut)*100 if v_aut>0 else 0:.1f}% do total")
+            c2.metric("EMPENHADO", formata_moeda_sem_decimal(v_emp), delta=f"{(v_emp/v_aut)*100 if v_aut>0 else 0:.1f}%")
+            #c3.metric("LIQUIDADO", formata_moeda_sem_decimal(v_liq), delta=f"{(v_liq/v_aut)*100 if v_aut>0 else 0:.1f}% do total")
+            c3.metric("LIQUIDADO", formata_moeda_sem_decimal(v_liq), delta=f"{(v_liq/v_aut)*100 if v_aut>0 else 0:.1f}%")
+            #c4.metric("PAGO", formata_moeda_sem_decimal(v_pago), delta=f"{(v_pago/v_aut)*100 if v_aut>0 else 0:.1f}% do total")
+            c4.metric("PAGO", formata_moeda_sem_decimal(v_pago), delta=f"{(v_pago/v_aut)*100 if v_aut>0 else 0:.1f}%")
             c5.metric("DISPONÍVEL", formata_moeda_sem_decimal(v_disp))
-            
-            st.markdown("---")
+            # Espaçador mínimo antes das abas
+            st.write("")           
+            #st.markdown("---")
 
-        # 3. CONTEÚDO DAS ABAS (O que rola por baixo do cabeçalho)
+        # 3. ABAS (Agora fora do container para o conteúdo rolar livremente abaixo do topo fixo)
         tab_visao, tab_evolucao, tab_tabela, tab_var_natureza = st.tabs([
             "🎯 Visão Estratégica", 
             "📈 Evolução Mensal", 
             "🔍 Tabela de Variações",
-            "📊 Variação do Empenhado por Natureza"
+            "📊 Variação por Natureza"
         ])
 
         with tab_visao:
-            st.markdown(f"<div class='destaque-ano'>Exercício Orçamentário: {ano_dinamico} <span style='font-size: 16px; font-weight: bold; color: #6B7280;'>(última atualização: {dt_atual})</span></div>", unsafe_allow_html=True)
-            
+            #st.markdown(f"<div class='destaque-ano'>Exercício Orçamentário: {ano_dinamico} <span style='font-size: 16px; font-weight: bold; color: #6B7280;'>(última atualização: {dt_atual})</span></div>", unsafe_allow_html=True)
+            st.markdown(f"<div class='destaque-ano'>Exercício Orçamentário: {ano_dinamico} <span style='font-size: 14px; font-weight: normal; color: #6B7280;'>(Última atualização: {dt_atual})</span></div>", unsafe_allow_html=True)
             if var_acao_codigo == "Todas":
                 st.subheader("Top 10 Maiores Despesas por Ação (Empenhado)")
                 df_top = df_latest.groupby('Ação')['Empenhado'].sum().nlargest(10).reset_index()
