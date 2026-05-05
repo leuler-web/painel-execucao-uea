@@ -23,17 +23,17 @@ if 'pagina_ativa' not in st.session_state:
     st.session_state.pagina_ativa = 'login' 
 
 # ==========================================
-# 2. CSS PARA IFRAME (Ajustado para não cortar o título)
+# 2. BLOCO ÚNICO DE ESTILOS CSS (VERSÃO IFRAME)
 # ==========================================
 st.markdown("""
     <style>
-    /* No iframe, o Streamlit precisa de mais espaço no topo */
+    /* 1. Empurra tudo para baixo para o título aparecer no Iframe */
     .block-container { 
         padding-top: 5.5rem !important; 
         max-width: 100% !important; 
     }
 
-    /* Container Fixo (Título e KPIs) */
+    /* 2. Cabeçalho Fixo (Título e KPIs) */
     [data-testid="stVerticalBlock"] > div:has(div.unificar-header) {
         position: sticky;
         top: 0px;
@@ -43,19 +43,19 @@ st.markdown("""
         border-bottom: 2px solid #e5e7eb;
     }
 
-    /* Título: Ajuste de tamanho para telas menores de site */
+    /* 3. Título visível */
     h1 { 
-        font-size: 1.6rem !important;
+        font-size: 1.7rem !important;
         margin-top: 0px !important;
-        line-height: 1.2 !important;
+        padding-bottom: 5px !important;
     }
 
-    /* Ajuste das Abas */
+    /* 4. Cola as abas nos KPIs */
     .stTabs { margin-top: -20px !important; }
-    
-    /* Esconder elementos que poluem o iframe */
+
+    /* 5. Esconde o lixo visual do Streamlit no site da UEA */
+    #MainMenu { visibility: hidden; }
     .stDeployButton { display: none !important; }
-    #MainMenu { visibility: hidden; } /* Esconde o menu de 3 risquinhos no iframe */
     footer { visibility: hidden; }
     </style>
 """, unsafe_allow_html=True)
