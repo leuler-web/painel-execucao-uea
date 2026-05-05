@@ -20,7 +20,7 @@ st.set_page_config(
 # ==========================================
 if 'pagina_ativa' not in st.session_state:
     # Se o app abrir direto no iframe, ele começa no dashboard ou login
-    st.session_state.pagina_ativa = 'login' 
+    st.session_state.pagina_ativa = 'capa' 
 
 # ==========================================
 # 2. BLOCO ÚNICO DE ESTILOS CSS (VERSÃO HÍBRIDA: TABELA + IFRAME)
