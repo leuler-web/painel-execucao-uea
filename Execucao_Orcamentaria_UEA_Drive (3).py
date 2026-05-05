@@ -6,97 +6,57 @@ import os
 from io import BytesIO
 
 # ==========================================
-# 1. CONFIGURAÇÃO DA PÁGINA (Sempre a primeira!)
+# 1. CONFIGURAÇÃO DA PÁGINA (Sempre o 1º)
 # ==========================================
 st.set_page_config(
     page_title="PAINEL ORÇAMENTÁRIO - UEA", 
     layout="wide", 
     page_icon="📈",
-    initial_sidebar_state="expanded",
-    menu_items={
-        'Get Help': 'https://www.uea.edu.br',
-        'Report a bug': None, 
-        'About': "Painel de Execução Orçamentária UEA. Versão 2.0"
-    }
+    initial_sidebar_state="expanded"
 )
 
 # ==========================================
-# 2. BLOCO ÚNICO DE ESTILOS CSS (TABELA CONGELADA E COMPACTA)
+# 1.1 INICIALIZAÇÃO DO ESTADO (Logo após a config)
+# ==========================================
+if 'pagina_ativa' not in st.session_state:
+    # Se o app abrir direto no iframe, ele começa no dashboard ou login
+    st.session_state.pagina_ativa = 'login' 
+
+# ==========================================
+# 2. CSS PARA IFRAME (Ajustado para não cortar o título)
 # ==========================================
 st.markdown("""
     <style>
-    [data-testid="stMetricValue"] { color: #2E7D32 !important; }
-    #MainMenu {visibility: visible;}
-    footer {visibility: hidden;}
-    .stDeployButton {display: none !important;} 
-    .block-container { padding-top: 0rem !important; max-width: 100% !important; }
-
-    /* 1. CONTAINER DA TABELA (Cria a barra de rolagem) */
-    .tabela-container { 
-        max-height: 500px; 
-        overflow-y: auto; 
-        overflow-x: auto; 
-        border: 1px solid #D1D5DB; 
-        border-radius: 8px; 
-        background-color: white; 
-        margin-bottom: 20px; 
+    /* No iframe, o Streamlit precisa de mais espaço no topo */
+    .block-container { 
+        padding-top: 5.5rem !important; 
+        max-width: 100% !important; 
     }
+
+    /* Container Fixo (Título e KPIs) */
+    [data-testid="stVerticalBlock"] > div:has(div.unificar-header) {
+        position: sticky;
+        top: 0px;
+        background-color: white;
+        z-index: 1000;
+        padding-top: 10px !important;
+        border-bottom: 2px solid #e5e7eb;
+    }
+
+    /* Título: Ajuste de tamanho para telas menores de site */
+    h1 { 
+        font-size: 1.6rem !important;
+        margin-top: 0px !important;
+        line-height: 1.2 !important;
+    }
+
+    /* Ajuste das Abas */
+    .stTabs { margin-top: -20px !important; }
     
-    /* 2. REDUZINDO O TAMANHO "ENORME" */
-    .tabela-customizada table { 
-        width: 100%; 
-        border-collapse: separate !important; 
-        border-spacing: 0; 
-        font-family: Arial, sans-serif;
-    }
-    .tabela-customizada th, .tabela-customizada td { 
-        padding: 6px 10px !important; 
-        font-size: 12px !important; /* Fonte menor e elegante */
-        white-space: nowrap; 
-        border-bottom: 1px solid #E5E7EB;
-    }
-
-    /* 3. CONGELANDO O CABEÇALHO (LINHA 1 FIXA NO TOPO) */
-    .tabela-customizada thead th { 
-        background-color: #1E3A8A !important; 
-        color: #FFFFFF !important; 
-        position: sticky !important; 
-        top: 0 !important; 
-        z-index: 100 !important; 
-        border-bottom: 2px solid #0F172A !important;
-    }
-
-    /* 4. CONGELANDO AS 3 PRIMEIRAS COLUNAS (LARGURA MATEMATICAMENTE EXATA) */
-    /* Coluna 1: Ação */
-    .tabela-customizada th:nth-child(1), .tabela-customizada td:nth-child(1) {
-        position: sticky !important; left: 0px !important; 
-        min-width: 70px !important; max-width: 70px !important; width: 70px !important;
-    }
-    /* Coluna 2: Fonte */
-    .tabela-customizada th:nth-child(2), .tabela-customizada td:nth-child(2) {
-        position: sticky !important; left: 70px !important; 
-        min-width: 70px !important; max-width: 70px !important; width: 70px !important;
-    }
-    /* Coluna 3: Natureza */
-    .tabela-customizada th:nth-child(3), .tabela-customizada td:nth-child(3) {
-        position: sticky !important; left: 140px !important; 
-        min-width: 90px !important; max-width: 90px !important; width: 90px !important;
-        border-right: 2px solid #9CA3AF !important; /* Linha divisória após as colunas fixas */
-    }
-
-    /* 5. FUNDO SÓLIDO PARA NÃO FICAR TRANSPARENTE AO ROLAR */
-    .tabela-customizada tbody td:nth-child(1),
-    .tabela-customizada tbody td:nth-child(2),
-    .tabela-customizada tbody td:nth-child(3) {
-        background-color: #F9FAFB !important; z-index: 10 !important;
-    }
-
-    /* 6. A "QUINA" (Onde o cabeçalho cruza com as colunas fixas) -> Fica no topo de tudo */
-    .tabela-customizada thead th:nth-child(1),
-    .tabela-customizada thead th:nth-child(2),
-    .tabela-customizada thead th:nth-child(3) {
-        z-index: 110 !important; background-color: #1E3A8A !important;
-    }
+    /* Esconder elementos que poluem o iframe */
+    .stDeployButton { display: none !important; }
+    #MainMenu { visibility: hidden; } /* Esconde o menu de 3 risquinhos no iframe */
+    footer { visibility: hidden; }
     </style>
 """, unsafe_allow_html=True)
 
