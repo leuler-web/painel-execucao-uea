@@ -21,46 +21,54 @@ st.set_page_config(
 )
 
 # ==========================================
-# 2. BLOCO ÚNICO DE ESTILOS CSS
+# 2. BLOCO ÚNICO DE ESTILOS CSS (ATUALIZADO)
 # ==========================================
 st.markdown("""
     <style>
-    /* 1. Torna o cabeçalho (Título e KPIs) fixo no topo da página */
+    /* 1. Remove o espaço em branco gigante no topo da página */
+    .block-container { 
+        padding-top: 0.5rem !important; 
+        padding-bottom: 0rem !important; 
+        max-width: 100% !important; 
+    }
+
+    /* 2. Remove margens inúteis do título para ele subir */
+    h1 { 
+        margin-top: -45px !important; 
+        padding-top: 0 !important;
+        font-size: 2rem !important;
+    }
+
+    /* 3. Cabeçalho Fixo (Título e KPIs) */
     [data-testid="stVerticalBlock"] > div:has(div.fixed-header) {
         position: sticky;
-        top: 2.875rem;
+        top: 0px;
         background-color: white;
         z-index: 999;
-        padding-bottom: 10px;
+        padding-bottom: 5px;
         border-bottom: 2px solid #f0f2f6;
     }
 
-    /* 2. Ajuste de métricas para serem responsivas (Notebook vs Monitor) */
+    /* 4. "Respiro" para os Botões de Navegação (Abas) */
+    /* Adiciona espaço entre os KPIs e as Abas */
+    .stTabs {
+        margin-top: 35px !important;
+    }
+
+    /* 5. Ajuste das Métricas */
     [data-testid="stMetricValue"] { 
         color: #2E7D32 !important; 
-        font-size: clamp(1.0rem, 1.6vw, 1.8rem) !important; 
-        font-weight: 700 !important;
+        font-size: clamp(1.0rem, 1.6vw, 1.6rem) !important; 
     }
     
     [data-testid="stMetricLabel"] {
-        font-size: clamp(0.7rem, 0.9vw, 1.0rem) !important;
-        white-space: nowrap !important;
+        font-size: clamp(0.7rem, 0.8vw, 0.9rem) !important;
     }
 
-    /* 3. Ajustes de espaçamento e visualização */
+    /* 6. Outros ajustes visuais */
     #MainMenu {visibility: visible;}
     footer {visibility: hidden;}
     .stDeployButton {display: none !important;} 
-    .block-container { padding-top: 0rem !important; max-width: 100% !important; }
-
-    .tabela-container { 
-        max-height: 480px; 
-        overflow-y: auto; 
-        overflow-x: auto; 
-        border: 1px solid #D1D5DB; 
-        border-radius: 5px; 
-        background-color: white; 
-    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -614,7 +622,7 @@ try:
                     st.plotly_chart(fig_var, use_container_width=True)
                 else:
                     st.info("Não houve variação de Empenho relevante no período.")
-                    
+
 # ==========================================
 # 7. TRATAMENTO DE ERROS (PLANO B VISUAL)
 # ==========================================
