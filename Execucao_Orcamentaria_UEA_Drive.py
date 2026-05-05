@@ -23,17 +23,17 @@ if 'pagina_ativa' not in st.session_state:
     st.session_state.pagina_ativa = 'login' 
 
 # ==========================================
-# 2. BLOCO ÚNICO DE ESTILOS CSS (VERSÃO DEFINITIVA UEA)
+# 2. BLOCO ÚNICO DE ESTILOS CSS (VERSÃO HÍBRIDA: TABELA + IFRAME)
 # ==========================================
 st.markdown("""
     <style>
-    /* 1. ESPAÇO NO TOPO: Aumentamos para 100px para o título descer */
+    /* --- 1. AJUSTES DO IFRAME (TÍTULO E TOPO) --- */
     .block-container { 
-        padding-top: 100px !important; 
+        padding-top: 100px !important; /* Espaço para o título não sumir no site da UEA */
         max-width: 100% !important; 
     }
 
-    /* 2. HEADER FIXO: Ajustamos a posição 'top' para não bater no teto */
+    /* Container Fixo do Topo (Título + KPIs) */
     [data-testid="stVerticalBlock"] > div:has(div.unificar-header) {
         position: sticky;
         top: 0px;
@@ -43,25 +43,52 @@ st.markdown("""
         border-bottom: 2px solid #e5e7eb;
     }
 
-    /* 3. TÍTULO: Garantimos que ele tenha tamanho fixo e margem */
     h1 { 
         font-size: 1.6rem !important;
         margin-top: 0px !important;
-        padding-top: 0px !important;
         line-height: 1.2 !important;
         color: #111827 !important;
     }
 
-    /* 4. ABAS: Puxamos para perto dos KPIs */
     .stTabs { margin-top: -20px !important; }
 
-    /* 5. LIMPEZA PARA O SITE DA UEA */
-    #MainMenu { visibility: hidden; } /* Esconde os 3 risquinhos */
+    /* --- 2. ESTILO DA TABELA DE VARIAÇÕES (RECUPERADO) --- */
+    .tabela-container { 
+        max-height: 450px; 
+        overflow-y: auto; 
+        border: 1px solid #e5e7eb; 
+        border-radius: 8px;
+    }
+    
+    table { width: 100%; border-collapse: collapse; font-family: sans-serif; }
+    
+    th { 
+        position: sticky; 
+        top: 0; 
+        background-color: #F3F4F6 !important; 
+        z-index: 10; 
+        padding: 12px; 
+        text-align: left; 
+        font-size: 13px; 
+        font-weight: bold; 
+        color: #374151;
+        border-bottom: 2px solid #D1D5DB;
+    }
+    
+    td { padding: 10px 12px; border-bottom: 1px solid #F3F4F6; font-size: 13px; color: #4B5563; }
+    
+    tr:hover { background-color: #F9FAFB; }
+    
+    /* Cores das Variações */
+    .pos { color: #059669; font-weight: bold; } /* Verde para positivo */
+    .neg { color: #DC2626; font-weight: bold; } /* Vermelho para negativo */
+    .zero { color: #6B7280; } /* Cinza para neutro */
+
+    /* --- 3. LIMPEZA VISUAL --- */
+    #MainMenu { visibility: hidden; }
     .stDeployButton { display: none !important; }
     footer { visibility: hidden; }
-    
-    /* Ajuste para telas pequenas/iframe */
-    [data-testid="stMetricValue"] { font-size: 1.2rem !important; }
+    [data-testid="stMetricValue"] { color: #2E7D32 !important; font-size: 1.2rem !important; }
     </style>
 """, unsafe_allow_html=True)
 
