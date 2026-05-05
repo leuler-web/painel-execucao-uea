@@ -21,50 +21,51 @@ st.set_page_config(
 )
 
 # ==========================================
-# 2. BLOCO ÚNICO DE ESTILOS CSS (CORRIGIDO)
+# 2. BLOCO ÚNICO DE ESTILOS CSS (VERSÃO UNIFICADA)
 # ==========================================
 st.markdown("""
     <style>
-    /* Ajuste do container principal para remover o vácuo no topo */
+    /* 1. Ajuste do topo da página */
     .block-container { 
-        padding-top: 1rem !important; 
+        padding-top: 1.5rem !important; 
         max-width: 100% !important; 
     }
 
-    /* Título: Ajuste fino para não sumir e manter o alinhamento */
+    /* 2. Título sem margens excessivas */
     h1 { 
         margin-top: 0px !important; 
-        padding-top: 0.5rem !important;
+        padding-bottom: 0.5rem !important;
         font-size: 1.8rem !important;
-        line-height: 1.2 !important;
     }
 
-    /* Cabeçalho Fixo (Título e KPIs) */
-    [data-testid="stVerticalBlock"] > div:has(div.fixed-header) {
+    /* 3. Container Fixo (Título + KPIs + Início das Abas) */
+    [data-testid="stVerticalBlock"] > div:has(div.unificar-header) {
         position: sticky;
         top: 0px;
         background-color: white;
         z-index: 999;
-        padding-bottom: 10px;
-        border-bottom: 2px solid #f0f2f6;
+        padding-bottom: 0px;
+        border-bottom: 2px solid #e5e7eb;
     }
 
-    /* Espaçamento para as Abas (Tabs) não ficarem coladas nos KPIs */
+    /* 4. UNIFICAR ABAS: Remove o espaço entre KPIs e os botões das abas */
     .stTabs {
-        margin-top: 25px !important;
+        margin-top: -10px !important; /* Puxa as abas para cima */
     }
-
-    /* Estilo das Métricas */
+    
+    /* 5. Estilo das Métricas (KPIs) */
     [data-testid="stMetricValue"] { 
         color: #2E7D32 !important; 
         font-size: clamp(1.1rem, 1.5vw, 1.5rem) !important; 
+        line-height: 1 !important;
     }
-    
     [data-testid="stMetricLabel"] {
-        font-size: 0.85rem !important;
+        font-size: 0.8rem !important;
         font-weight: bold !important;
+        margin-bottom: -5px !important;
     }
 
+    /* 6. Esconder botões inúteis do Streamlit */
     #MainMenu {visibility: visible;}
     footer {visibility: hidden;}
     .stDeployButton {display: none !important;} 
