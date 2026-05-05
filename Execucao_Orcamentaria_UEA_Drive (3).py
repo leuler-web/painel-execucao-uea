@@ -23,17 +23,17 @@ if 'pagina_ativa' not in st.session_state:
     st.session_state.pagina_ativa = 'login' 
 
 # ==========================================
-# 2. BLOCO ÚNICO DE ESTILOS CSS (VERSÃO IFRAME)
+# 2. BLOCO ÚNICO DE ESTILOS CSS (VERSÃO DEFINITIVA UEA)
 # ==========================================
 st.markdown("""
     <style>
-    /* 1. Empurra tudo para baixo para o título aparecer no Iframe */
+    /* 1. ESPAÇO NO TOPO: Aumentamos para 100px para o título descer */
     .block-container { 
-        padding-top: 5.5rem !important; 
+        padding-top: 100px !important; 
         max-width: 100% !important; 
     }
 
-    /* 2. Cabeçalho Fixo (Título e KPIs) */
+    /* 2. HEADER FIXO: Ajustamos a posição 'top' para não bater no teto */
     [data-testid="stVerticalBlock"] > div:has(div.unificar-header) {
         position: sticky;
         top: 0px;
@@ -43,20 +43,25 @@ st.markdown("""
         border-bottom: 2px solid #e5e7eb;
     }
 
-    /* 3. Título visível */
+    /* 3. TÍTULO: Garantimos que ele tenha tamanho fixo e margem */
     h1 { 
-        font-size: 1.7rem !important;
+        font-size: 1.6rem !important;
         margin-top: 0px !important;
-        padding-bottom: 5px !important;
+        padding-top: 0px !important;
+        line-height: 1.2 !important;
+        color: #111827 !important;
     }
 
-    /* 4. Cola as abas nos KPIs */
+    /* 4. ABAS: Puxamos para perto dos KPIs */
     .stTabs { margin-top: -20px !important; }
 
-    /* 5. Esconde o lixo visual do Streamlit no site da UEA */
-    #MainMenu { visibility: hidden; }
+    /* 5. LIMPEZA PARA O SITE DA UEA */
+    #MainMenu { visibility: hidden; } /* Esconde os 3 risquinhos */
     .stDeployButton { display: none !important; }
     footer { visibility: hidden; }
+    
+    /* Ajuste para telas pequenas/iframe */
+    [data-testid="stMetricValue"] { font-size: 1.2rem !important; }
     </style>
 """, unsafe_allow_html=True)
 
