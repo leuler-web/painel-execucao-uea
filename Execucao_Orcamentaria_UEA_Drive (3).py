@@ -6,7 +6,7 @@ import os
 from io import BytesIO
 
 # ==========================================
-# 1. CONFIGURAÇÃO DA PÁGINA
+# 1. CONFIGURAÇÃO DA PÁGINA (Sempre a primeira!)
 # ==========================================
 st.set_page_config(
     page_title="PAINEL ORÇAMENTÁRIO - UEA", 
@@ -16,7 +16,7 @@ st.set_page_config(
     menu_items={
         'Get Help': 'https://www.uea.edu.br',
         'Report a bug': None, 
-        'About': "Painel de Execução Orçamentária UEA. Versão 2.0 (Blindada)"
+        'About': "Painel de Execução Orçamentária UEA. Versão 2.0"
     }
 )
 
@@ -497,8 +497,10 @@ try:
             #c4.metric("PAGO", formata_moeda_sem_decimal(v_pago), delta=f"{(v_pago/v_aut)*100 if v_aut>0 else 0:.1f}% do total")
             c4.metric("PAGO", formata_moeda_sem_decimal(v_pago), delta=f"{(v_pago/v_aut)*100 if v_aut>0 else 0:.1f}%")
             c5.metric("DISPONÍVEL", formata_moeda_sem_decimal(v_disp))
+            # Pequeno espaço para as abas "encostarem"
+            st.markdown("<div style='margin-bottom: 5px;'></div>", unsafe_allow_html=True)
             # Espaçador mínimo antes das abas
-            st.write("")           
+            #st.write("")           
             #st.markdown("---")
 
         # 3. ABAS (Agora fora do container para o conteúdo rolar livremente abaixo do topo fixo)
