@@ -21,51 +21,50 @@ st.set_page_config(
 )
 
 # ==========================================
-# 2. BLOCO ÚNICO DE ESTILOS CSS (ATUALIZADO)
+# 2. BLOCO ÚNICO DE ESTILOS CSS (CORRIGIDO)
 # ==========================================
 st.markdown("""
     <style>
-    /* 1. Remove o espaço em branco gigante no topo da página */
+    /* Ajuste do container principal para remover o vácuo no topo */
     .block-container { 
-        padding-top: 0.5rem !important; 
-        padding-bottom: 0rem !important; 
+        padding-top: 1rem !important; 
         max-width: 100% !important; 
     }
 
-    /* 2. Remove margens inúteis do título para ele subir */
+    /* Título: Ajuste fino para não sumir e manter o alinhamento */
     h1 { 
-        margin-top: -45px !important; 
-        padding-top: 0 !important;
-        font-size: 2rem !important;
+        margin-top: 0px !important; 
+        padding-top: 0.5rem !important;
+        font-size: 1.8rem !important;
+        line-height: 1.2 !important;
     }
 
-    /* 3. Cabeçalho Fixo (Título e KPIs) */
+    /* Cabeçalho Fixo (Título e KPIs) */
     [data-testid="stVerticalBlock"] > div:has(div.fixed-header) {
         position: sticky;
         top: 0px;
         background-color: white;
         z-index: 999;
-        padding-bottom: 5px;
+        padding-bottom: 10px;
         border-bottom: 2px solid #f0f2f6;
     }
 
-    /* 4. "Respiro" para os Botões de Navegação (Abas) */
-    /* Adiciona espaço entre os KPIs e as Abas */
+    /* Espaçamento para as Abas (Tabs) não ficarem coladas nos KPIs */
     .stTabs {
-        margin-top: 35px !important;
+        margin-top: 25px !important;
     }
 
-    /* 5. Ajuste das Métricas */
+    /* Estilo das Métricas */
     [data-testid="stMetricValue"] { 
         color: #2E7D32 !important; 
-        font-size: clamp(1.0rem, 1.6vw, 1.6rem) !important; 
+        font-size: clamp(1.1rem, 1.5vw, 1.5rem) !important; 
     }
     
     [data-testid="stMetricLabel"] {
-        font-size: clamp(0.7rem, 0.8vw, 0.9rem) !important;
+        font-size: 0.85rem !important;
+        font-weight: bold !important;
     }
 
-    /* 6. Outros ajustes visuais */
     #MainMenu {visibility: visible;}
     footer {visibility: hidden;}
     .stDeployButton {display: none !important;} 
