@@ -503,105 +503,75 @@ try:
             # 1. Preparação dos Dados
             df_aggrid = df_var_filtrada.copy()
             
-            # Identificar colunas de valores (financeiras)
             categorias_alvo = ['Dotação Suplementar', 'Reduções', 'Autorizado', 'Empenhado', 'Disponível', 'Bloqueado', 'Variação', 'Var']
             colunas_financeiras = [col for col in df_aggrid.columns if any(cat.lower() in col.lower() for cat in categorias_alvo) 
                                   and not any(x in col for x in ['Data_', 'Mês', 'Tipo', 'Programa'])]
             
-            # Criar colunas de exibição simplificadas
             df_aggrid['AÇÃO'] = df_aggrid['Ação']
             df_aggrid['FONTE'] = df_aggrid['Fonte_3']
             df_aggrid['NATUREZA'] = df_aggrid['Natureza_ID']
             
-            # Textos para o Hover (Tooltip)
+            # Tooltips para o usuário ver a descrição ao passar o mouse
             df_aggrid['AÇÃO_DESC'] = df_aggrid['Ação'].apply(lambda x: f"{x} - {dict_acoes.get(x, 'N/I')}")
             df_aggrid['FONTE_DESC'] = df_aggrid['Fonte_3'].apply(lambda x: f"{x} - {dict_fontes_global.get(x, 'N/I')}")
             df_aggrid['NATUREZA_DESC'] = df_aggrid['Natureza_ID'].apply(lambda x: f"{x} - {dict_naturezas.get(x, 'N/I')}")
             
-            # Reordenar: Pinned (fixas) primeiro, depois as financeiras
             colunas_finais = ['AÇÃO', 'FONTE', 'NATUREZA'] + colunas_financeiras
-            df_aggrid_display = df_aggrid[colunas_finais].copy()
-            
-            # Adicionar linha de Total
-            linha_soma = df_aggrid_display[colunas_financeiras].sum()
-            df_total = pd.DataFrame(linha_soma).T
-            df_total['AÇÃO'] = "TOTAL GERAL"
-            df_aggrid_display = pd.concat([df_aggrid_display, df_total], ignore_index=True).fillna("")
+            df_display = df_aggrid[colunas_finais].copy()
 
-            # 2. Configuração da Planilha (GridOptionsBuilder)
-            gb = GridOptionsBuilder.from_dataframe(df_aggrid_display)
+            # 2. Configuração Manual (Evita o erro de AttributeError)
+            gb = GridOptionsBuilder.from_dataframe(df_display)
             
-            # CONFIGURAÇÃO PADRÃO PARA TODAS AS COLUNAS
-            gb.configure_default_column(
-                filter=False,           # Remove o filtro
-                suppressMenu=True,      # Remove o ícone de menu/filtro que ocupa espaço
-                sortable=True,
-                resizable=True,
-                wrapHeaderText=True,    # Quebra de linha no cabeçalho
-                autoHeaderHeight=True,
-                wrapText=True,          # Quebra de linha nas células
-                autoHeight=True,
-                minWidth=100            # Largura mínima para não espremer
-            )
+            # Em vez de configure_default_column, usamos esta forma mais segura:
+            default_col_def = {
+                "filter": False,
+                "resizable": True,
+                "sortable": True,
+                "wrapHeaderText": True,
+                "autoHeaderHeight": True,
+                "wrapText": True,
+                "autoHeight": True,
+                "suppressMenu": True # Remove o ícone de filtro que ocupa espaço
+            }
+            
+            # Aplicamos as configurações manuais
+            gb.configure_grid_options(defaultColDef=default_col_def)
 
-            # LARGURAS FIXAS (Para não precisar ajustar na mão)
+            # Larguras fixas para você não ter que ajustar na mão
             gb.configure_column("AÇÃO", pinned='left', width=100, tooltipField="AÇÃO_DESC")
             gb.configure_column("FONTE", pinned='left', width=80, tooltipField="FONTE_DESC")
             gb.configure_column("NATUREZA", pinned='left', width=110, tooltipField="NATUREZA_DESC")
 
-            # JavaScript para Moeda e Cor Amarela
-            js_moeda = JsCode("""
-                function(params) {
-                    if (params.value == null || params.value === "") return "";
-                    return params.value.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-                }
-            """)
-            
-            js_amarelo = JsCode("""
-                function(params) {
-                    if (params.value && Math.abs(params.value) > 0.01) {
-                        return {
-                            'backgroundColor': '#FFFF00',
-                            'color': 'black',
-                            'fontWeight': 'bold'
-                        };
-                    }
-                    return null;
-                }
-            """)
+            # Formatação de Moeda e Amarelo (Javascript)
+            js_moeda = JsCode("function(p){return p.value==null?'':p.value.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});}")
+            js_amarelo = JsCode("function(p){if(p.value&&Math.abs(p.value)>0.01)return{'backgroundColor':'#FFFF00','color':'black','fontWeight':'bold'};}")
 
-            # Aplicar formatação nas colunas financeiras
             for col in colunas_financeiras:
-                # Ajuste de nome para exibição
-                header_name = col.replace('_', ' ').replace('Ant.', 'Ant')
-                
+                header = col.replace('_', ' ')
                 if 'var' in col.lower():
-                    gb.configure_column(col, header_name=header_name, width=140, 
-                                      valueFormatter=js_moeda, cellStyle=js_amarelo)
+                    gb.configure_column(col, header_name=header, width=140, valueFormatter=js_moeda, cellStyle=js_amarelo)
                 else:
-                    gb.configure_column(col, header_name=header_name, width=140, 
-                                      valueFormatter=js_moeda)
+                    gb.configure_column(col, header_name=header, width=140, valueFormatter=js_moeda)
 
             gridOptions = gb.build()
 
-            # 3. Exibição com Try-Except (Protege o gráfico de baixo)
+            # 3. Execução Protegida (Se a tabela falhar, os gráficos continuam aparecendo!)
             try:
                 AgGrid(
-                    df_aggrid_display,
+                    df_display,
                     gridOptions=gridOptions,
                     height=450,
                     theme='balham',
                     allow_unsafe_jscode=True,
-                    enable_enterprise_modules=False, # Tenta omitir aviso de licença
-                    fit_columns_on_grid_load=False    # Mantém as larguras que definimos no código
+                    fit_columns_on_grid_load=False
                 )
             except Exception as e:
-                st.error("Erro ao carregar a tabela interativa. Exibindo versão estática.")
-                st.dataframe(df_aggrid_display.style.format(precision=2))
+                st.warning("A tabela interativa encontrou um problema, mas seus gráficos estão logo abaixo!")
+                st.dataframe(df_display) # Mostra tabela simples se a chique der erro
 
             st.markdown("<br>", unsafe_allow_html=True)
             
-            # --- O seu código do botão de Excel continua daqui para baixo ---
+            # --- O RESTANTE DO SEU CÓDIGO (BOTÃO EXCEL E GRÁFICOS) SEGUE NORMALMENTE ---
             
             # (AQUI CONTINUA O SEU CÓDIGO DO df_excel E DO st.download_button...)
             
