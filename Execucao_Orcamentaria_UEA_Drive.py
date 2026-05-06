@@ -3,12 +3,12 @@ import pandas as pd
 import numpy as np
 import plotly.express as px
 import os
+import re   
 from io import BytesIO
 
 # ==========================================
-# 1. CONFIGURAÇÃO DA PÁGINA (ESTE DEVE SER SEMPRE O PRIMEIRO COMANDO)
+# 1. CONFIGURAÇÃO DA PÁGINA
 # ==========================================
-# Oculta o link "Report a bug" que levava ao GitHub e direciona a ajuda para a UEA
 st.set_page_config(
     page_title="PAINEL ORÇAMENTÁRIO - UEA", 
     layout="wide", 
@@ -17,11 +17,12 @@ st.set_page_config(
     menu_items={
         'Get Help': 'https://www.uea.edu.br',
         'Report a bug': None, 
-        'About': "Painel de Execução Orçamentária UEA. Versão 1.8.9 (Final Blindada)"
+        'About': "Painel de Execução Orçamentária UEA. Versão 2.0 (Blindada)"
     }
 )
 
 # ==========================================
+<<<<<<< HEAD
 # 2. BLOCO ÚNICO DE ESTILOS CSS (VERSÃO CORRIGIDA)
 # ==========================================
 st.markdown("""
@@ -65,12 +66,213 @@ st.markdown("""
     .tabela-customizada tbody td { padding: 8px 8px; border-bottom: 1px solid #E5E7EB; font-size: 13px; white-space: nowrap; }
     /* --- FIM DO BLOCO DA TABELA --- */
     
+=======
+# 2. BLOCO ÚNICO DE ESTILOS CSS (TABELA ÚNICA COM STICKY - FUNCIONA NO STREAMLIT)
+# ==========================================
+st.markdown("""
+    <style>
+    /* --- 1. CONGELAMENTO DO TOPO DO PAINEL (TÍTULO + KPIs) --- */
+    .topo-congelado {
+        position: sticky;
+        top: 0px;
+        background-color: white;
+        z-index: 1000;
+        padding-top: 10px;
+        padding-bottom: 5px;
+        border-bottom: 2px solid #e5e7eb;
+        margin-bottom: 15px;
+    }
+
+    h1 { 
+        font-size: 1.6rem !important;
+        margin-top: 0px !important;
+        line-height: 1.2 !important;
+        color: #111827 !important;
+    }
+
+    .stTabs { margin-top: -20px !important; }
+
+    /* ============================================
+       2. CONTAINER ÚNICO DA TABELA COM SCROLL
+    ============================================ */
+    .tabela-container {
+        max-height: 480px;
+        overflow: auto;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        position: relative;
+    }
+
+    /* ============================================
+       3. TABELA
+    ============================================ */
+    table {
+        width: 100%;
+        min-width: 800px;
+        border-collapse: separate;
+        border-spacing: 0;
+        font-family: sans-serif;
+        table-layout: auto;
+    }
+
+    /* ============================================
+       4. CABEÇALHO AZUL FIXO NO TOPO (TODAS AS COLUNAS)
+    ============================================ */
+    thead th {
+        position: sticky;
+        top: 0;
+        background-color: #1E3A8A !important;
+        color: white !important;
+        padding: 12px 8px;
+        text-align: center;
+        font-size: 13px;
+        font-weight: bold;
+        border-bottom: 2px solid #D1D5DB;
+        white-space: nowrap;
+        z-index: 20;
+    }
+
+    /* ============================================
+       5. COLUNAS FIXAS À ESQUERDA (AÇÃO, FONTE, NATUREZA)
+    ============================================ */
+    
+    /* Camada 1 (AÇÃO): left: 0 */
+    thead th:nth-child(1) {
+        position: sticky;
+        left: 0;
+        z-index: 25;
+        background-color: #1E3A8A !important;
+    }
+    tbody td:nth-child(1) {
+        position: sticky;
+        left: 0;
+        z-index: 15;
+        background-color: white;
+    }
+    
+    /* Camada 2 (FONTE): left: 60px (ajustável) */
+    thead th:nth-child(2) {
+        position: sticky;
+        left: 60px;
+        z-index: 25;
+        background-color: #1E3A8A !important;
+    }
+    tbody td:nth-child(2) {
+        position: sticky;
+        left: 60px;
+        z-index: 15;
+        background-color: white;
+    }
+    
+    /* Camada 3 (NATUREZA): left: 120px (ajustável) + sombra */
+    thead th:nth-child(3) {
+        position: sticky;
+        left: 120px;
+        z-index: 25;
+        background-color: #1E3A8A !important;
+        box-shadow: 2px 0 5px -2px rgba(0,0,0,0.15);
+    }
+    tbody td:nth-child(3) {
+        position: sticky;
+        left: 120px;
+        z-index: 15;
+        background-color: white;
+        box-shadow: 2px 0 5px -2px rgba(0,0,0,0.15);
+    }
+
+    /* ============================================
+       6. CORPO DA TABELA
+    ============================================ */
+    tbody td {
+        padding: 10px 8px;
+        border-bottom: 1px solid #F3F4F6;
+        font-size: 13px;
+        color: #4B5563;
+        white-space: nowrap;
+        background-color: white;
+        text-align: right;
+    }
+    
+    /* As 3 primeiras colunas centralizadas */
+    tbody td:nth-child(1),
+    tbody td:nth-child(2),
+    tbody td:nth-child(3) {
+        text-align: center;
+    }
+
+    tr:hover td {
+        background-color: #F9FAFB !important;
+    }
+    tr:hover td:nth-child(1),
+    tr:hover td:nth-child(2),
+    tr:hover td:nth-child(3) {
+        background-color: #F9FAFB !important;
+    }
+
+    /* ============================================
+       7. CORES DAS VARIAÇÕES
+    ============================================ */
+    .pos { color: #059669; font-weight: bold; }
+    .neg { color: #DC2626; font-weight: bold; }
+    .zero { color: #6B7280; }
+
+            /* ============================================
+       8. LIMPEZA VISUAL (REMOÇÃO TOTAL VIA JAVASCRIPT)
+    ============================================ */
+    #MainMenu { visibility: hidden; }
+    footer { visibility: hidden; }
+    [data-testid="stMetricValue"] { color: #2E7D32 !important; font-size: 1.2rem !important; }
+>>>>>>> e4fba49b37b781d61105a1e89f4877a65e1699a3
     </style>
+    
+    <!-- SCRIPT PARA REMOVER ELEMENTOS DO STREAMLIT CLOUD -->
+    <script>
+    (function() {
+        let tentativas = 0;
+        const maxTentativas = 20;
+        
+        const remover = () => {
+            tentativas++;
+            
+            // Método 1: Remove o header inteiro (onde fica "Gerenciar aplicativo")
+            const header = document.querySelector('header[data-testid="stHeader"]');
+            if (header && header.parentNode) {
+                header.parentNode.removeChild(header);
+            }
+            
+            // Método 2: Remove a toolbar inferior (ícone do GitHub)
+            const toolbar = document.querySelector('[data-testid="stToolbar"]');
+            if (toolbar && toolbar.parentNode) {
+                toolbar.parentNode.removeChild(toolbar);
+            }
+            
+            // Método 3: Remove o elemento report (Made with Streamlit)
+            const report = document.querySelector('[data-testid="stDecoration"]');
+            if (report && report.parentNode) {
+                report.parentNode.removeChild(report);
+            }
+            
+            // Método 4: Remove QUALQUER botão que contenha "Gerenciar" no texto
+            const botoes = document.querySelectorAll('button');
+            botoes.forEach(btn => {
+                if (btn.textContent.includes('Gerenciar')) {
+                    if (btn.parentNode) btn.parentNode.removeChild(btn);
+                }
+            });
+            
+            // Para após 20 tentativas (10 segundos)
+            if (tentativas >= maxTentativas) {
+                clearInterval(intervalo);
+            }
+        };
+        
+        const intervalo = setInterval(remover, 500);
+    })();
+    </script>
 """, unsafe_allow_html=True)
 
-
 # ==========================================
-# 3. GESTÃO DE ESTADO (ANTI-KEYERROR)
+# 3. GESTÃO DE ESTADO
 # ==========================================
 if 'pagina_ativa' not in st.session_state:
     st.session_state.pagina_ativa = 'capa'
@@ -79,10 +281,7 @@ if 'botao_reset' not in st.session_state:
     st.session_state.botao_reset = 0
 
 def forcar_limpeza_total():
-    # Apenas incrementa o contador. Isso fará com que o Streamlit recrie 
-    # os filtros com uma nova chave, apagando o histórico anterior.
     st.session_state.botao_reset += 1
-
 
 # ==========================================
 # 4. DICIONÁRIOS E FUNÇÕES DE FORMATAÇÃO
@@ -138,7 +337,6 @@ def destacar_celulas_com_variacao(df):
             mask = df[col].apply(extrair_numero).abs() > 0.001
             estilos.loc[mask, col] = 'background-color: #FFFF00; color: #000000; font-weight: bold;'
     return estilos
-
 
 # ==========================================
 # 5. CARREGAMENTO DOS DADOS E DICIONÁRIOS
@@ -213,6 +411,7 @@ def carregar_dados_v181(path):
     df_var = limpar_nomes_colunas(df_var)
     
     def remover_fantasmas(df):
+<<<<<<< HEAD
         # 1. Transforma em texto, remove 'nan' e limpa espaços invisíveis corretamente
         df['Programa de Trabalho'] = df['Programa de Trabalho'].astype(str).str.replace('nan', '', regex=False).str.strip()
         
@@ -220,6 +419,10 @@ def carregar_dados_v181(path):
         mascara_fantasma = (df['Programa de Trabalho'] == '') | (df['Programa de Trabalho'] == '0')
         
         # 3. Filtra e devolve apenas as linhas com dados reais
+=======
+        df['Programa de Trabalho'] = df['Programa de Trabalho'].astype(str).str.replace('nan', '', regex=False).str.strip()
+        mascara_fantasma = (df['Programa de Trabalho'] == '') | (df['Programa de Trabalho'] == '0')
+>>>>>>> e4fba49b37b781d61105a1e89f4877a65e1699a3
         return df[~mascara_fantasma].copy()
         
     df_base = remover_fantasmas(df_base)
@@ -235,8 +438,16 @@ def carregar_dados_v181(path):
         for col in colunas_texto:
             if col in df.columns:
                 df[col] = df[col].astype(str).str.replace(r'\.0$', '', regex=True).str.strip().replace('nan', '')
+        
         if 'Tipo Movimento' in df.columns:
-            df['Tipo Movimento'] = df['Tipo Movimento'].apply(lambda x: 'Acumulado' if 'Acumulado' in str(x) else ('Mês' if str(x).lower() not in ['nan', 'none', '', '0', '0.0'] else x))
+            def classificar_movimento(x):
+                txt = str(x).upper().strip()
+                if txt in ['NAN', 'NONE', '', '0', '0.0']: return x
+                if 'ACUMULADO' in txt or 'ATÉ' in txt or 'ATE' in txt: 
+                    return 'Acumulado'
+                return 'Mês'
+            
+            df['Tipo Movimento'] = df['Tipo Movimento'].apply(classificar_movimento)
         
         if 'Programa de Trabalho' in df.columns:
             def extrair_acao(pt):
@@ -255,17 +466,14 @@ def carregar_dados_v181(path):
             
     return df_base, df_var
 
-
 # ==========================================
 # 6. O PLANO B: BLINDAGEM GLOBAL (TRY/EXCEPT)
-# Aqui garantimos que qualquer erro resulta numa mensagem limpa, não no GitHub
 # ==========================================
 try:
     PATH_SIAFI = r"Base_Consolidada_SIAFI.xlsx"
     df_base, df_var = carregar_dados_v181(PATH_SIAFI)
     dict_acoes, dict_naturezas, status_dic = carregar_dicionarios()
 
-    # Dicionários de meses
     ordem_meses = {
         'Janeiro': 1, 'Fevereiro': 2, 'Março': 3, 'Marco': 3, 'Abril': 4, 'Maio': 5, 'Junho': 6, 
         'Julho': 7, 'Agosto': 8, 'Setembro': 9, 'Outubro': 10, 'Novembro': 11, 'Dezembro': 12,
@@ -277,7 +485,6 @@ try:
         'Jan': 'jan', 'Fev': 'fev', 'Mar': 'mar', 'Abr': 'abr', 'Mai': 'mai', 'Jun': 'jun'
     }
 
-    # Lógica de extração de Data
     try:
         val_ant = df_var['Data_Extracao_Anterior'].dropna().iloc[0]
         val_atual = df_var['Data_Extracao_Atual'].dropna().iloc[0]
@@ -288,9 +495,24 @@ try:
         dt_atual = "N/D"
         texto_periodo = "Aguardando atualização da base de dados."
 
-    # Lógica do Mês Referência
     if 'Mês Referência' in df_base.columns:
-        df_base['Mes_Nome'] = df_base['Mês Referência'].astype(str).str.replace('/', ' ').str.split(' ').str[0].str.capitalize()
+        def identificar_mes_streamlit(texto):
+            t = str(texto).upper().strip()
+            if 'JAN' in t: return 'Janeiro'
+            if 'FEV' in t: return 'Fevereiro'
+            if 'MA' in t and 'R' in t: return 'Março'
+            if 'ABR' in t: return 'Abril'
+            if 'MAI' in t: return 'Maio'
+            if 'JUN' in t: return 'Junho'
+            if 'JUL' in t: return 'Julho'
+            if 'AGO' in t: return 'Agosto'
+            if 'SET' in t: return 'Setembro'
+            if 'OUT' in t: return 'Outubro'
+            if 'NOV' in t: return 'Novembro'
+            if 'DEZ' in t: return 'Dezembro'
+            return t.capitalize()
+
+        df_base['Mes_Nome'] = df_base['Mês Referência'].apply(identificar_mes_streamlit)
         df_base['Mes_Num'] = df_base['Mes_Nome'].map(ordem_meses)
         df_base['Ano_Ref'] = df_base['Mês Referência'].astype(str).str.extract(r'(\d{4})')
     else:
@@ -323,7 +545,7 @@ try:
         st.sidebar.button("🧹 Limpar Todos os Filtros", on_click=forcar_limpeza_total, use_container_width=True)
 
         lista_meses = df_base[['Mes_Nome', 'Mes_Num']].dropna().drop_duplicates().sort_values('Mes_Num')['Mes_Nome'].tolist()
-        if len(lista_meses) > 1: lista_meses = lista_meses[:-1] 
+        
         var_mes_str = st.sidebar.selectbox("Mês de Referência (Fechados)", ["Todos"] + lista_meses, key=f"filtro_mes_{st.session_state.botao_reset}")
 
         if 'Tipo Movimento' in df_base.columns:
@@ -380,7 +602,7 @@ try:
         </div>
         <div style='text-align: center; color: #9CA3AF; font-size: 11px; margin-top: 10px;'>
             Versão de Rede - Atualização Automática 🚀<br>
-            <b>Versão 1.8.9 (Blindada)</b>
+            <b>Versão 2.0 (Blindada)</b>
         </div>
     """, unsafe_allow_html=True)
 
@@ -425,20 +647,26 @@ try:
         ])
 
         with tab_visao:
+            # --- INÍCIO DO BLOCO CONGELADO ---
+            st.markdown('<div class="topo-congelado">', unsafe_allow_html=True)
+
             st.markdown(f"<div class='destaque-ano'>Exercício Orçamentário: {ano_dinamico} <span style='font-size: 16px; font-weight: bold; color: #6B7280;'>(última atualização: {dt_atual})</span></div>", unsafe_allow_html=True)
-            
+
             c1, c2, c3, c4, c5 = st.columns(5)
             v_aut = df_latest['Autorizado'].sum() if 'Autorizado' in df_latest.columns else 0
             v_emp = df_latest['Empenhado'].sum() if 'Empenhado' in df_latest.columns else 0
             v_liq = df_latest['Liquidado'].sum() if 'Liquidado' in df_latest.columns else 0
             v_pago = df_latest['Pago'].sum() if 'Pago' in df_latest.columns else 0
             v_disp = df_latest['Disponível'].sum() if 'Disponível' in df_latest.columns else 0
-            
+
             c1.metric("AUTORIZADO", formata_moeda_sem_decimal(v_aut))
             c2.metric("EMPENHADO", formata_moeda_sem_decimal(v_emp), delta=f"{(v_emp/v_aut)*100 if v_aut>0 else 0:.1f}% do total")
             c3.metric("LIQUIDADO", formata_moeda_sem_decimal(v_liq), delta=f"{(v_liq/v_aut)*100 if v_aut>0 else 0:.1f}% do total")
             c4.metric("PAGO", formata_moeda_sem_decimal(v_pago), delta=f"{(v_pago/v_aut)*100 if v_aut>0 else 0:.1f}% do total")
             c5.metric("DISPONÍVEL", formata_moeda_sem_decimal(v_disp))
+
+            st.markdown('</div>', unsafe_allow_html=True)
+            # --- FIM DO BLOCO CONGELADO ---
             
             st.divider()
             
@@ -504,7 +732,7 @@ try:
             
             df_m = df_base[mask_evo].groupby('Mês Referência')[colunas_ex].sum().reset_index()
             if not df_m.empty:
-                df_m['Nome_Mes'] = df_m['Mês Referência'].astype(str).str.replace('/', ' ').str.split(' ').str[0].str.capitalize()
+                df_m['Nome_Mes'] = df_m['Mês Referência'].apply(identificar_mes_streamlit)
                 df_m['mes_num'] = df_m['Nome_Mes'].map(ordem_meses)
                 df_m['Mês'] = df_m['Nome_Mes'].map(abrev_meses) + f'/{ano_dinamico}'
                 df_m = df_m.sort_values('mes_num')
@@ -553,7 +781,6 @@ try:
                         
             df_var_visual_tela = df_var_visual_tela[colunas_identificacao + colunas_financeiras_originais]
             
-            # Cálculo do Total Geral
             linha_soma = df_var_visual_tela[colunas_financeiras_originais].sum()
             df_total = pd.DataFrame(linha_soma).T
             for col in colunas_identificacao:
@@ -585,9 +812,11 @@ try:
             except AttributeError:
                 html_tabela = tabela_estilizada.hide_index().render()
                 
-            st.markdown(f'<div class="tabela-container tabela-customizada">{html_tabela}</div>', unsafe_allow_html=True)
+            # ==========================================
+            # RENDERIZAÇÃO DA TABELA (ÚNICA, COM STICKY CSS)
+            # ==========================================
+            st.markdown(f'<div class="tabela-container">{html_tabela}</div>', unsafe_allow_html=True)
             
-            # Excel Download
             df_excel = df_var_visual.copy()
             df_excel['AÇÃO'] = df_excel['Ação'].apply(lambda x: f"{x} - {dict_acoes.get(x, 'N/I')}" if x else "")
             df_excel['FONTE'] = df_excel['Fonte_3'].apply(lambda x: f"{x} - {dict_fontes_global.get(x, 'Outras Fontes')}" if x else "")
@@ -701,4 +930,7 @@ except Exception as e:
             for key in list(st.session_state.keys()):
                 del st.session_state[key]
             st.rerun()
+<<<<<<< HEAD
 # Forçando reinicialização do sistema
+=======
+>>>>>>> e4fba49b37b781d61105a1e89f4877a65e1699a3
