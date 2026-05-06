@@ -4,6 +4,11 @@ import numpy as np
 import plotly.express as px
 import os
 from io import BytesIO
+from st_aggrid import AgGrid, GridOptionsBuilder
+
+# IMPORTANDO O AGGRID (A Mágica do Excel)
+from st_aggrid import AgGrid, GridOptionsBuilder
+from st_aggrid import AgGrid, GridOptionsBuilder, JsCode
 
 # ==========================================
 # 1. CONFIGURAÇÃO DA PÁGINA
@@ -15,24 +20,20 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# ==========================================
-# 1.1 INICIALIZAÇÃO DO ESTADO (CORREÇÃO DA TELA EM BRANCO)
-# ==========================================
 if 'pagina_ativa' not in st.session_state:
-    # IMPORTANTE: Definir como 'capa' para o painel abrir o conteúdo
     st.session_state.pagina_ativa = 'capa' 
 
 # ==========================================
-# 2. BLOCO ÚNICO DE ESTILOS CSS (VERSÃO FINAL E AJUSTADA)
+# 2. BLOCO ÚNICO DE ESTILOS CSS (LIMPO E SEGURO)
 # ==========================================
 st.markdown("""
     <style>
-    /* 1. SEGURANÇA: ESCONDE APENAS O BOTÃO DE DEPLOY E O STATUS (MANTÉM SIDEBAR) */
+    /* Segurança: Esconde Deploy e GitHub */
     .stAppDeployButton { display: none !important; }
-    [data-testid="stStatusWidget"] { visibility: hidden !important; }
     footer { visibility: hidden !important; }
+    [data-testid="stHeader"] > div:first-child { display: none !important; }
     
-    /* 2. AJUSTE PARA O IFRAME (TÍTULO NÃO CORTAR) */
+    /* Iframe UEA: Título não cortar */
     .block-container { 
         padding-top: 100px !important; 
         max-width: 100% !important; 
@@ -43,58 +44,8 @@ st.markdown("""
         position: sticky; top: 0px; background-color: white; z-index: 99;
         padding-top: 10px !important; border-bottom: 2px solid #e5e7eb;
     }
-
-    /* 3. TABELA (CABEÇALHO AZUL E COLUNAS CONGELADAS) */
-    .tabela-container { 
-        max-height: 500px; overflow: auto; border: 1px solid #d1d5db; background-color: white;
-    }
     
-    table { border-collapse: separate; border-spacing: 0; width: 100%; table-layout: fixed; }
-
-    /* Estilo das Fontes - PADRONIZADO */
-    th, td { 
-        padding: 8px !important; 
-        font-size: 11px !important; /* Fonte menor para caber mais dados */
-        font-family: sans-serif !important;
-        white-space: nowrap; 
-        overflow: hidden;
-        text-overflow: ellipsis;
-        border-bottom: 1px solid #e5e7eb;
-        border-right: 1px solid #f0f0f0;
-    }
-
-    th { background-color: #004587 !important; color: white !important; position: sticky; top: 0; z-index: 100; }
-
-    /* --- AJUSTE DE LARGURA DAS COLUNAS (AQUI ESTÁ A SOLUÇÃO) --- */
-    
-    /* Coluna 1 (PT) */
-    th:nth-child(1), td:nth-child(1) { 
-        position: sticky; left: 0; width: 60px !important; 
-        z-index: 80; background-color: white !important; 
-    }
-
-    /* Coluna 2 (Ação) - Deixamos maior para o texto aparecer */
-    th:nth-child(2), td:nth-child(2) { 
-        position: sticky; left: 60px; width: 280px !important; 
-        z-index: 80; background-color: white !important; 
-    }
-
-    /* Coluna 3 (Fonte/Natureza) - AGORA BEM PEQUENA */
-    th:nth-child(3), td:nth-child(3) { 
-        position: sticky; left: 340px; width: 50px !important; 
-        z-index: 80; background-color: white !important; 
-        border-right: 2px solid #d1d5db !important;
-        text-align: center;
-    }
-
-    /* Cabeçalhos das fixas em azul (z-index maior que as células) */
-    th:nth-child(1), th:nth-child(2), th:nth-child(3) { z-index: 110 !important; }
-
-    /* Cores das Variações */
-    .pos { color: #059669 !important; font-weight: bold; }
-    .neg { color: #DC2626 !important; font-weight: bold; }
-    
-    tr:hover td { background-color: #f9fafb !important; }
+    [data-testid="stMetricValue"] { color: #004587 !important; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -577,71 +528,87 @@ try:
             st.markdown(f"<div class='periodo-destaque'>📅 {texto_periodo}</div>", unsafe_allow_html=True)
             st.subheader("Tabela de Variações")
             
-            df_var_visual = df_var_filtrada.copy()
-            df_var_visual_tela = df_var_visual.copy()
+            # --- 1. PREPARAÇÃO DOS DADOS PARA A PLANILHA (Excel interativo) ---
+            df_aggrid = df_var_filtrada.copy()
             
-            df_var_visual_tela['AÇÃO'] = df_var_visual['Ação'].apply(
-                lambda x: f'<div title="{x} - {dict_acoes.get(x, "N/I")}">{x}</div>' if x else ""
-            )
-            df_var_visual_tela['FONTE'] = df_var_visual['Fonte_3'].apply(
-                lambda x: f'<div title="{x} - {dict_fontes_global.get(x, "Outras Fontes")}">{x}</div>' if x else ""
-            )
-            df_var_visual_tela['NATUREZA'] = df_var_visual['Natureza_ID'].apply(
-                lambda x: f'<div title="{x} - {dict_naturezas.get(x, "N/I")}">{x}</div>' if x else ""
-            )
-            
-            colunas_identificacao = ['AÇÃO', 'FONTE', 'NATUREZA']
+            # Isolando as colunas financeiras originais
             categorias_alvo = ['Dotação Suplementar', 'Reduções', 'Autorizado', 'Empenhado', 'Disponível', 'Bloqueado']
-            
-            colunas_financeiras_originais = []
-            for col in df_var_visual.columns:
-                if any(cat.lower() in col.lower() for cat in categorias_alvo) and col not in colunas_identificacao:
+            colunas_financeiras = []
+            for col in df_aggrid.columns:
+                if any(cat.lower() in col.lower() for cat in categorias_alvo):
                     if not any(x in col for x in ['Data_', 'Mês', 'Tipo', 'Programa']):
-                        colunas_financeiras_originais.append(col)
+                        colunas_financeiras.append(col)
+            
+            # Trazendo os códigos para a tela e as descrições para os Tooltips (Hover)
+            df_aggrid['AÇÃO'] = df_aggrid['Ação']
+            df_aggrid['AÇÃO_DESC'] = df_aggrid['Ação'].apply(lambda x: f"{x} - {dict_acoes.get(x, 'N/I')}" if x else "")
+            
+            df_aggrid['FONTE'] = df_aggrid['Fonte_3']
+            df_aggrid['FONTE_DESC'] = df_aggrid['Fonte_3'].apply(lambda x: f"{x} - {dict_fontes_global.get(x, 'Outras Fontes')}" if x else "")
+            
+            df_aggrid['NATUREZA'] = df_aggrid['Natureza_ID']
+            df_aggrid['NATUREZA_DESC'] = df_aggrid['Natureza_ID'].apply(lambda x: f"{x} - {dict_naturezas.get(x, 'N/I')}" if x else "")
                         
-            df_var_visual_tela = df_var_visual_tela[colunas_identificacao + colunas_financeiras_originais]
+            # Organizando as colunas da tela
+            df_aggrid = df_aggrid[['AÇÃO', 'AÇÃO_DESC', 'FONTE', 'FONTE_DESC', 'NATUREZA', 'NATUREZA_DESC'] + colunas_financeiras]
             
-            linha_soma = df_var_visual_tela[colunas_financeiras_originais].sum()
+            # Adicionando a linha de TOTAL GERAL no final
+            linha_soma = df_aggrid[colunas_financeiras].sum()
             df_total = pd.DataFrame(linha_soma).T
-            for col in colunas_identificacao:
-                df_total[col] = "" 
-            df_total['AÇÃO'] = "<b>TOTAL GERAL</b>" 
+            df_total['AÇÃO'] = "TOTAL"
+            for col in ['AÇÃO_DESC', 'FONTE', 'FONTE_DESC', 'NATUREZA', 'NATUREZA_DESC']: 
+                df_total[col] = ""
+            df_aggrid = pd.concat([df_aggrid, df_total], ignore_index=True)
             
-            df_var_visual_tela = pd.concat([df_var_visual_tela, df_total], ignore_index=True)
+            # --- 2. CONFIGURAÇÃO DA PLANILHA AGGRID ---
+            gb = GridOptionsBuilder.from_dataframe(df_aggrid)
+            gb.configure_default_column(resizable=True, filter=True, sortable=True)
             
-            mapeamento_colunas = {}
-            for col in colunas_financeiras_originais:
-                nome_seguro = col.replace('Ant.', 'A\u200Bnt.') 
-                novo_nome = nome_seguro.replace('_', '<br>').replace(' ', '<br>')
-                novo_nome = novo_nome.replace('<br><br>', '<br>')
-                mapeamento_colunas[col] = f'<span translate="no" class="notranslate">{novo_nome}</span>'
-                
-            df_var_visual_tela = df_var_visual_tela.rename(columns=mapeamento_colunas)
-            colunas_financeiras_tela = list(mapeamento_colunas.values())
+            # Escondendo colunas de descrição (vão aparecer apenas quando o usuário passar o mouse)
+            gb.configure_column("AÇÃO_DESC", hide=True)
+            gb.configure_column("FONTE_DESC", hide=True)
+            gb.configure_column("NATUREZA_DESC", hide=True)
             
-            tabela_estilizada = (df_var_visual_tela.style
-                .apply(destacar_celulas_com_variacao, axis=None)
-                .format({col: formata_numero_duas_casas for col in colunas_financeiras_tela})
-                .set_properties(**{'text-align': 'right'}, subset=colunas_financeiras_tela)
-                .set_properties(**{'text-align': 'center'}, subset=colunas_identificacao)
-                .set_properties(subset=pd.IndexSlice[df_var_visual_tela.index[-1], :], **{'font-weight': 'bold', 'background-color': '#E5E7EB', 'color': '#0F172A'}) 
+            # 💡 O SEGREDO AQUI: CONGELANDO AS 3 PRIMEIRAS E FORÇANDO A LARGURA EXATA
+            gb.configure_column("AÇÃO", pinned='left', width=90, tooltipField="AÇÃO_DESC")
+            gb.configure_column("FONTE", pinned='left', width=75, tooltipField="FONTE_DESC") # <--- AQUI A FONTE FICA PEQUENA!
+            gb.configure_column("NATUREZA", pinned='left', width=100, tooltipField="NATUREZA_DESC")
+            
+            # Formatando as colunas de valor para formato financeiro Brasileiro (R$)
+            js_moeda = JsCode('''
+            function(params) { 
+                if(params.value == null) return ''; 
+                return params.value.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2}); 
+            }
+            ''')
+            
+            for col in colunas_financeiras:
+                novo_nome = col.replace('_Ant.', ' Ant.').replace('_', ' ') 
+                gb.configure_column(col, header_name=novo_nome, valueFormatter=js_moeda)
+            
+            gridOptions = gb.build()
+            
+            # --- 3. EXIBIÇÃO DA PLANILHA INTERATIVA ---
+            AgGrid(
+                df_aggrid,
+                gridOptions=gridOptions,
+                height=450,
+                theme='balham',
+                fit_columns_on_grid_load=False, # Impede o navegador de espremer as colunas
+                allow_unsafe_jscode=True # Permite a formatação das moedas
             )
             
-            try:
-                html_tabela = tabela_estilizada.hide(axis="index").to_html(escape=False)
-            except AttributeError:
-                html_tabela = tabela_estilizada.hide_index().render()
-                
-            st.markdown(f'<div class="tabela-container tabela-customizada">{html_tabela}</div>', unsafe_allow_html=True)
+            st.markdown("<br>", unsafe_allow_html=True)
             
-            df_excel = df_var_visual.copy()
+            # --- 4. EXPORTAÇÃO PARA EXCEL (SEU CÓDIGO ORIGINAL FOI MANTIDO AQUI!) ---
+            df_excel = df_var_filtrada.copy()
             df_excel['AÇÃO'] = df_excel['Ação'].apply(lambda x: f"{x} - {dict_acoes.get(x, 'N/I')}" if x else "")
             df_excel['FONTE'] = df_excel['Fonte_3'].apply(lambda x: f"{x} - {dict_fontes_global.get(x, 'Outras Fontes')}" if x else "")
             df_excel['NATUREZA'] = df_excel['Natureza_ID'].apply(lambda x: f"{x} - {dict_naturezas.get(x, 'N/I')}" if x else "")
-            df_excel = df_excel[colunas_identificacao + colunas_financeiras_originais]
+            df_excel = df_excel[['AÇÃO', 'FONTE', 'NATUREZA'] + colunas_financeiras]
             
-            df_total_excel = pd.DataFrame(df_excel[colunas_financeiras_originais].sum()).T
-            for col in colunas_identificacao: df_total_excel[col] = ""
+            df_total_excel = pd.DataFrame(df_excel[colunas_financeiras].sum()).T
+            for col in ['AÇÃO', 'FONTE', 'NATUREZA']: df_total_excel[col] = ""
             df_total_excel['AÇÃO'] = "TOTAL GERAL"
             df_excel = pd.concat([df_excel, df_total_excel], ignore_index=True)
             
@@ -650,6 +617,13 @@ try:
             buffer = BytesIO()
             with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
                 df_excel.to_excel(writer, index=False, sheet_name='Variações')
+            
+            st.download_button(
+                label="📥 Descarregar Relatório Excel (.xlsx)",
+                data=buffer.getvalue(),
+                file_name=f"Execucao_UEA_Variacoes_{dt_atual.replace('/', '-')}.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
             
             st.download_button(
                 label="📥 Descarregar Relatório Excel (.xlsx)",
