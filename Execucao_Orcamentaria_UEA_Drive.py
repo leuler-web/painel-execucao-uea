@@ -192,6 +192,11 @@ st.markdown("""
     /* Ajusta o espaçamento que sobra */
     .stApp { margin-top: 0px !important; }
     .stMain { padding-top: 0px !important; }
+
+    /* Tenta remover o botão "Gerenciar aplicativo" */
+    button[kind="header"] { display: none !important; }
+    .st-emotion-cache-1q3nhyv { display: none !important; }
+    [data-testid="baseButton-header"] { display: none !important; }
     
     [data-testid="stMetricValue"] { color: #2E7D32 !important; font-size: 1.2rem !important; }
     </style>
