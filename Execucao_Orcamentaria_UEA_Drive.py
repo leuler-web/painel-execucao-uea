@@ -563,28 +563,31 @@ try:
             # --- 2. CONFIGURAÇÃO DA PLANILHA AGGRID ---
             gb = GridOptionsBuilder.from_dataframe(df_aggrid)
             
-            # 💡 FORMATAÇÃO GLOBAL PARA TODA A TABELA DE UMA VEZ
-            gb.configure_default_column(
-                resizable=True,      # Permite arrastar largura
-                filter=False,        # <--- REMOVE OS FILTROS
-                sortable=True,       # Permite ordenar ao clicar no título
-                wrapHeaderText=True, # <--- Acomoda nomes grandes de colunas (Quebra linha)
-                autoHeaderHeight=True, 
-                wrapText=True,       # <--- Acomoda textos grandes nas células
-                autoHeight=True
+            # 💡 CONFIGURAÇÃO GLOBAL (Sem filtros, com quebra de linha e sem erro de atributo)
+            # Usamos o 'configure_grid_options' que é mais compatível
+            gb.configure_grid_options(
+                defaultColDef={
+                    "resizable": True,
+                    "filter": False,      # <--- AQUI OS FILTROS SOMEM DE VEZ
+                    "sortable": True,
+                    "wrapHeaderText": True,
+                    "autoHeaderHeight": True,
+                    "wrapText": True,
+                    "autoHeight": True,
+                }
             )
             
-            # Escondendo colunas de descrição
+            # Escondendo colunas de descrição técnica
             gb.configure_column("AÇÃO_DESC", hide=True)
             gb.configure_column("FONTE_DESC", hide=True)
             gb.configure_column("NATUREZA_DESC", hide=True)
             
-            # CONGELANDO AS 3 PRIMEIRAS
-            gb.configure_column("AÇÃO", pinned='left', width=90, tooltipField="AÇÃO_DESC")
-            gb.configure_column("FONTE", pinned='left', width=75, tooltipField="FONTE_DESC") 
-            gb.configure_column("NATUREZA", pinned='left', width=100, tooltipField="NATUREZA_DESC")
+            # CONGELANDO AS COLUNAS PRINCIPAIS
+            gb.configure_column("AÇÃO", pinned='left', width=100, tooltipField="AÇÃO_DESC")
+            gb.configure_column("FONTE", pinned='left', width=80, tooltipField="FONTE_DESC") 
+            gb.configure_column("NATUREZA", pinned='left', width=110, tooltipField="NATUREZA_DESC")
             
-            # Formatação de Moeda
+            # Formatação de Moeda (R$)
             js_moeda = JsCode('''
             function(params) { 
                 if(params.value == null) return ''; 
@@ -592,25 +595,25 @@ try:
             }
             ''')
 
-            # 💡 FORMATAÇÃO CONDICIONAL (AMARELO SE HOUVE VARIAÇÃO)
+            # 💡 FORMATAÇÃO CONDICIONAL (AMARELO NAS VARIAÇÕES)
             js_condicional_amarelo = JsCode('''
             function(params) {
-                // Se o valor existir e for diferente de zero (com pequena margem matemática)
                 if (params.value && Math.abs(params.value) > 0.01) {
                     return {
-                        'backgroundColor': '#FEF08A', // Amarelo
-                        'color': '#000000',           // Letra preta
+                        'backgroundColor': '#FFFF00', // Amarelo Vivo
+                        'color': 'black',
                         'fontWeight': 'bold'
                     };
                 }
-                return null; // Mantém a cor normal se for zero
+                return null;
             }
             ''')
             
+            # Aplicando as regras nas colunas financeiras
             for col in colunas_financeiras:
                 novo_nome = col.replace('_Ant.', ' Ant.').replace('_', ' ')
                 
-                # Aplica a regra amarela APENAS se a palavra "Var" ou "Variação" estiver no nome da coluna
+                # Se for uma coluna de variação, aplica o amarelo
                 if 'var' in col.lower() or 'variação' in col.lower():
                     gb.configure_column(col, header_name=novo_nome, valueFormatter=js_moeda, cellStyle=js_condicional_amarelo)
                 else:
@@ -618,14 +621,15 @@ try:
             
             gridOptions = gb.build()
             
-            # --- 3. EXIBIÇÃO DA PLANILHA INTERATIVA ---
+            # --- 3. EXIBIÇÃO DA PLANILHA ---
             AgGrid(
                 df_aggrid,
                 gridOptions=gridOptions,
-                height=480,
+                height=500,
                 theme='balham',
                 fit_columns_on_grid_load=False,
-                allow_unsafe_jscode=True # Essencial para o Amarelo e a Moeda funcionarem
+                allow_unsafe_jscode=True,  # OBRIGATÓRIO para o amarelo e a moeda funcionarem
+                enable_enterprise_modules=False # Tenta remover a mensagem de licença
             )
             
             st.markdown("<br>", unsafe_allow_html=True)
