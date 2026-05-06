@@ -746,8 +746,8 @@ try:
             # RENDERIZAÇÃO DA TABELA COM CABEÇALHO FIXO (CORRIGIDA - SEM DUPLICAÇÃO)
             # ==========================================
             
-                match_thead = re.search(r'<thead>(.*?)</thead>', html_tabela, re.DOTALL)
-                match_tbody = re.search(r'<tbody>(.*?)</tbody>', html_tabela, re.DOTALL)
+            match_thead = re.search(r'<thead>(.*?)</thead>', html_tabela, re.DOTALL)
+            match_tbody = re.search(r'<tbody>(.*?)</tbody>', html_tabela, re.DOTALL)
 
             if match_thead and match_tbody:
                 html_thead = match_thead.group(1)
