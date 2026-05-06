@@ -496,119 +496,112 @@ try:
                 else:
                     st.info("Não há valores empenhados para detalhar nesta Ação.")
 
-        with tab_evolucao:
-            st.markdown(f"<div class='destaque-ano'>Evolução Mensal da Execução - Ano {ano_dinamico} <span style='font-size: 16px; font-weight: normal; color: #6B7280;'>(última atualização: {dt_atual})</span></div>", unsafe_allow_html=True)
-            
-            colunas_ex = [col for col in ['Autorizado', 'Empenhado', 'Liquidado', 'Pago', 'Disponível'] if col in df_base.columns]
-            
-            df_m = df_base[mask_evo].groupby('Mês Referência')[colunas_ex].sum().reset_index()
-            if not df_m.empty:
-                df_m['Nome_Mes'] = df_m['Mês Referência'].apply(identificar_mes_streamlit)
-                df_m['mes_num'] = df_m['Nome_Mes'].map(ordem_meses)
-                df_m['Mês'] = df_m['Nome_Mes'].map(abrev_meses) + f'/{ano_dinamico}'
-                df_m = df_m.sort_values('mes_num')
-                df_melt = df_m.melt(id_vars=['Mês', 'mes_num'], value_vars=colunas_ex, var_name='Fase', value_name='Valor')
-                df_melt['Rotulo_F'] = df_melt['Valor'].apply(formata_abreviado)
-                
-                fig_line = px.line(df_melt, x='Mês', y='Valor', color='Fase', markers=True, text='Rotulo_F', color_discrete_sequence=['#64748B', '#1E3A8A', '#3B82F6', '#10B981', '#F59E0B'])
-                for trace in fig_line.data:
-                    trace.textfont.color = trace.line.color
-                    trace.textfont.size = 14
-                    trace.textfont.weight = "bold"
-                    trace.marker.size = 12
-                    trace.line.width = 3
-                    trace.textposition = "top center" 
-                
-                fig_line.update_layout(font=dict(size=18, color="black"), margin=dict(l=40, r=60, t=20, b=20), yaxis_range=[0, df_melt['Valor'].max() * 1.30], yaxis=dict(showticklabels=False), xaxis=dict(tickfont=dict(size=20, weight="bold")), legend=dict(orientation="h", y=1.05))
-                st.plotly_chart(fig_line, use_container_width=True)
-            else:
-                st.info("Não há dados de evolução mensal para os filtros selecionados.")
-
         with tab_tabela:
             st.markdown(f"<div class='periodo-destaque'>📅 {texto_periodo}</div>", unsafe_allow_html=True)
             st.subheader("Tabela de Variações")
             
-            # 1. Preparação dos dados (Criando uma cópia para não estragar o gráfico abaixo)
+            # 1. Preparação dos Dados
             df_aggrid = df_var_filtrada.copy()
             
-            # Identificando colunas financeiras
+            # Identificar colunas de valores (financeiras)
             categorias_alvo = ['Dotação Suplementar', 'Reduções', 'Autorizado', 'Empenhado', 'Disponível', 'Bloqueado', 'Variação', 'Var']
             colunas_financeiras = [col for col in df_aggrid.columns if any(cat.lower() in col.lower() for cat in categorias_alvo) 
                                   and not any(x in col for x in ['Data_', 'Mês', 'Tipo', 'Programa'])]
             
-            # Preparando colunas de exibição
+            # Criar colunas de exibição simplificadas
             df_aggrid['AÇÃO'] = df_aggrid['Ação']
             df_aggrid['FONTE'] = df_aggrid['Fonte_3']
             df_aggrid['NATUREZA'] = df_aggrid['Natureza_ID']
             
-            # Tooltips (Hover)
+            # Textos para o Hover (Tooltip)
             df_aggrid['AÇÃO_DESC'] = df_aggrid['Ação'].apply(lambda x: f"{x} - {dict_acoes.get(x, 'N/I')}")
             df_aggrid['FONTE_DESC'] = df_aggrid['Fonte_3'].apply(lambda x: f"{x} - {dict_fontes_global.get(x, 'N/I')}")
             df_aggrid['NATUREZA_DESC'] = df_aggrid['Natureza_ID'].apply(lambda x: f"{x} - {dict_naturezas.get(x, 'N/I')}")
             
-            # Ordenando colunas
-            df_aggrid = df_aggrid[['AÇÃO', 'AÇÃO_DESC', 'FONTE', 'FONTE_DESC', 'NATUREZA', 'NATUREZA_DESC'] + colunas_financeiras]
+            # Reordenar: Pinned (fixas) primeiro, depois as financeiras
+            colunas_finais = ['AÇÃO', 'FONTE', 'NATUREZA'] + colunas_financeiras
+            df_aggrid_display = df_aggrid[colunas_finais].copy()
             
-            # Linha de Total
-            linha_soma = df_aggrid[colunas_financeiras].sum()
+            # Adicionar linha de Total
+            linha_soma = df_aggrid_display[colunas_financeiras].sum()
             df_total = pd.DataFrame(linha_soma).T
             df_total['AÇÃO'] = "TOTAL GERAL"
-            df_aggrid = pd.concat([df_aggrid, df_total], ignore_index=True).fillna("")
+            df_aggrid_display = pd.concat([df_aggrid_display, df_total], ignore_index=True).fillna("")
 
-            # 2. Configuração da Grelha
-            gb = GridOptionsBuilder.from_dataframe(df_aggrid)
+            # 2. Configuração da Planilha (GridOptionsBuilder)
+            gb = GridOptionsBuilder.from_dataframe(df_aggrid_display)
             
-            # Configuração Padrão (RESOLVE O PROBLEMA DO ERRO E DOS FILTROS)
+            # CONFIGURAÇÃO PADRÃO PARA TODAS AS COLUNAS
             gb.configure_default_column(
-                filter=False,          # <--- MATA O FILTRO DE VEZ
+                filter=False,           # Remove o filtro
+                suppressMenu=True,      # Remove o ícone de menu/filtro que ocupa espaço
                 sortable=True,
                 resizable=True,
-                wrapHeaderText=True,   # Quebra linha no título
+                wrapHeaderText=True,    # Quebra de linha no cabeçalho
                 autoHeaderHeight=True,
-                wrapText=True,         # Quebra linha na célula
-                autoHeight=True
+                wrapText=True,          # Quebra de linha nas células
+                autoHeight=True,
+                minWidth=100            # Largura mínima para não espremer
             )
 
-            # TRAVANDO AS LARGURAS (Para você não ter que arrastar com o mouse)
-            gb.configure_column("AÇÃO", pinned='left', width=90, tooltipField="AÇÃO_DESC")
-            gb.configure_column("FONTE", pinned='left', width=70, tooltipField="FONTE_DESC")
-            gb.configure_column("NATUREZA", pinned='left', width=100, tooltipField="NATUREZA_DESC")
-            gb.configure_column("AÇÃO_DESC", hide=True)
-            gb.configure_column("FONTE_DESC", hide=True)
-            gb.configure_column("NATUREZA_DESC", hide=True)
+            # LARGURAS FIXAS (Para não precisar ajustar na mão)
+            gb.configure_column("AÇÃO", pinned='left', width=100, tooltipField="AÇÃO_DESC")
+            gb.configure_column("FONTE", pinned='left', width=80, tooltipField="FONTE_DESC")
+            gb.configure_column("NATUREZA", pinned='left', width=110, tooltipField="NATUREZA_DESC")
 
-            # Formatação de Moeda e Cor Amarela
-            js_moeda = JsCode("function(p){return p.value==null?'':p.value.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});}")
-            js_amarelo = JsCode("function(p){if(p.value&&Math.abs(p.value)>0.01)return{'backgroundColor':'#FFFF00','color':'black','fontWeight':'bold'};}")
+            # JavaScript para Moeda e Cor Amarela
+            js_moeda = JsCode("""
+                function(params) {
+                    if (params.value == null || params.value === "") return "";
+                    return params.value.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                }
+            """)
+            
+            js_amarelo = JsCode("""
+                function(params) {
+                    if (params.value && Math.abs(params.value) > 0.01) {
+                        return {
+                            'backgroundColor': '#FFFF00',
+                            'color': 'black',
+                            'fontWeight': 'bold'
+                        };
+                    }
+                    return null;
+                }
+            """)
 
+            # Aplicar formatação nas colunas financeiras
             for col in colunas_financeiras:
-                nome_limpo = col.replace('_', ' ').replace('Ant.', 'Ant')
+                # Ajuste de nome para exibição
+                header_name = col.replace('_', ' ').replace('Ant.', 'Ant')
+                
                 if 'var' in col.lower():
-                    gb.configure_column(col, header_name=nome_limpo, width=130, valueFormatter=js_moeda, cellStyle=js_amarelo)
+                    gb.configure_column(col, header_name=header_name, width=140, 
+                                      valueFormatter=js_moeda, cellStyle=js_amarelo)
                 else:
-                    gb.configure_column(col, header_name=nome_limpo, width=130, valueFormatter=js_moeda)
+                    gb.configure_column(col, header_name=header_name, width=140, 
+                                      valueFormatter=js_moeda)
 
             gridOptions = gb.build()
 
-            # 3. Exibição (Sem Enterprise para evitar mensagens de erro)
+            # 3. Exibição com Try-Except (Protege o gráfico de baixo)
             try:
                 AgGrid(
-                    df_aggrid,
+                    df_aggrid_display,
                     gridOptions=gridOptions,
                     height=450,
                     theme='balham',
                     allow_unsafe_jscode=True,
-                    enable_enterprise_modules=False,
-                    fit_columns_on_grid_load=False
+                    enable_enterprise_modules=False, # Tenta omitir aviso de licença
+                    fit_columns_on_grid_load=False    # Mantém as larguras que definimos no código
                 )
             except Exception as e:
-                st.error(f"Erro ao carregar a tabela interativa: {e}")
-                st.table(df_aggrid.head(20)) # Plano B caso o AgGrid falhe
+                st.error("Erro ao carregar a tabela interativa. Exibindo versão estática.")
+                st.dataframe(df_aggrid_display.style.format(precision=2))
 
             st.markdown("<br>", unsafe_allow_html=True)
             
-            # --- SEU BOTÃO DE EXCEL (Mantenha como está abaixo) ---
-            # ... (código do buffer e st.download_button que você já tem)
+            # --- O seu código do botão de Excel continua daqui para baixo ---
             
             # (AQUI CONTINUA O SEU CÓDIGO DO df_excel E DO st.download_button...)
             
