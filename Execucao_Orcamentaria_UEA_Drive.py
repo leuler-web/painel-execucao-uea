@@ -4,11 +4,6 @@ import numpy as np
 import plotly.express as px
 import os
 from io import BytesIO
-from st_aggrid import AgGrid, GridOptionsBuilder
-
-# IMPORTANDO O AGGRID (A Mágica do Excel)
-from st_aggrid import AgGrid, GridOptionsBuilder
-from st_aggrid import AgGrid, GridOptionsBuilder, JsCode
 
 # ==========================================
 # 1. CONFIGURAÇÃO DA PÁGINA
@@ -24,28 +19,19 @@ if 'pagina_ativa' not in st.session_state:
     st.session_state.pagina_ativa = 'capa' 
 
 # ==========================================
-# 2. BLOCO ÚNICO DE ESTILOS CSS (LIMPO E SEGURO)
+# 2. BLOCO ÚNICO DE ESTILOS CSS (100% SEGURO)
 # ==========================================
 st.markdown("""
     <style>
-    /* Segurança: Esconde Deploy e GitHub */
+    /* Esconde o botão de Deploy de forma segura (Sem sumir com o menu lateral!) */
     .stAppDeployButton { display: none !important; }
     footer { visibility: hidden !important; }
-    [data-testid="stHeader"] > div:first-child { display: none !important; }
     
-    /* Iframe UEA: Título não cortar */
+    /* Proteção para o iframe da UEA (Não cortar o título) */
     .block-container { 
         padding-top: 100px !important; 
         max-width: 100% !important; 
     }
-
-    /* Cabeçalho fixo (Título e KPIs) */
-    [data-testid="stVerticalBlock"] > div:has(div.unificar-header) {
-        position: sticky; top: 0px; background-color: white; z-index: 99;
-        padding-top: 10px !important; border-bottom: 2px solid #e5e7eb;
-    }
-    
-    [data-testid="stMetricValue"] { color: #004587 !important; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -500,78 +486,60 @@ try:
             st.markdown(f"<div class='periodo-destaque'>📅 {texto_periodo}</div>", unsafe_allow_html=True)
             st.subheader("Tabela de Variações")
             
-            # 1. Preparação dos Dados
-            df_aggrid = df_var_filtrada.copy()
+            # --- 1. PREPARANDO OS DADOS ---
+            df_tela = df_var_filtrada.copy()
             
             categorias_alvo = ['Dotação Suplementar', 'Reduções', 'Autorizado', 'Empenhado', 'Disponível', 'Bloqueado', 'Variação', 'Var']
-            colunas_financeiras = [col for col in df_aggrid.columns if any(cat.lower() in col.lower() for cat in categorias_alvo) 
-                                  and not any(x in col for x in ['Data_', 'Mês', 'Tipo', 'Programa'])]
+            colunas_financeiras = [col for col in df_tela.columns if any(cat.lower() in col.lower() for cat in categorias_alvo) and not any(x in col for x in ['Data_', 'Mês', 'Tipo', 'Programa'])]
             
-            df_aggrid['AÇÃO'] = df_aggrid['Ação']
-            df_aggrid['FONTE'] = df_aggrid['Fonte_3']
-            df_aggrid['NATUREZA'] = df_aggrid['Natureza_ID']
-            
-            # Tooltips para o usuário ver a descrição ao passar o mouse
-            df_aggrid['AÇÃO_DESC'] = df_aggrid['Ação'].apply(lambda x: f"{x} - {dict_acoes.get(x, 'N/I')}")
-            df_aggrid['FONTE_DESC'] = df_aggrid['Fonte_3'].apply(lambda x: f"{x} - {dict_fontes_global.get(x, 'N/I')}")
-            df_aggrid['NATUREZA_DESC'] = df_aggrid['Natureza_ID'].apply(lambda x: f"{x} - {dict_naturezas.get(x, 'N/I')}")
+            df_tela['AÇÃO'] = df_tela['Ação'].apply(lambda x: f"{x} - {dict_acoes.get(x, 'N/I')}")
+            df_tela['FONTE'] = df_tela['Fonte_3']
+            df_tela['NATUREZA'] = df_tela['Natureza_ID'].apply(lambda x: f"{x} - {dict_naturezas.get(x, 'N/I')}")
             
             colunas_finais = ['AÇÃO', 'FONTE', 'NATUREZA'] + colunas_financeiras
-            df_display = df_aggrid[colunas_finais].copy()
-
-            # 2. Configuração Manual (Evita o erro de AttributeError)
-            gb = GridOptionsBuilder.from_dataframe(df_display)
+            df_tela = df_tela[colunas_finais]
             
-            # Em vez de configure_default_column, usamos esta forma mais segura:
-            default_col_def = {
-                "filter": False,
-                "resizable": True,
-                "sortable": True,
-                "wrapHeaderText": True,
-                "autoHeaderHeight": True,
-                "wrapText": True,
-                "autoHeight": True,
-                "suppressMenu": True # Remove o ícone de filtro que ocupa espaço
-            }
+            # Adicionando Linha de Total Geral
+            linha_soma = df_tela[colunas_financeiras].sum()
+            df_total = pd.DataFrame(linha_soma).T
+            df_total['AÇÃO'] = "TOTAL GERAL"
+            df_tela = pd.concat([df_tela, df_total], ignore_index=True).fillna("")
+
+            # --- 2. FORMATAÇÃO CONDICIONAL NATIVA (AMARELO NAS VARIAÇÕES) ---
+            def pintar_amarelo(val):
+                try:
+                    if abs(float(val)) > 0.01:
+                        return 'background-color: #FEF08A; color: black;' # Amarelo
+                except:
+                    pass
+                return ''
             
-            # Aplicamos as configurações manuais
-            gb.configure_grid_options(defaultColDef=default_col_def)
-
-            # Larguras fixas para você não ter que ajustar na mão
-            gb.configure_column("AÇÃO", pinned='left', width=100, tooltipField="AÇÃO_DESC")
-            gb.configure_column("FONTE", pinned='left', width=80, tooltipField="FONTE_DESC")
-            gb.configure_column("NATUREZA", pinned='left', width=110, tooltipField="NATUREZA_DESC")
-
-            # Formatação de Moeda e Amarelo (Javascript)
-            js_moeda = JsCode("function(p){return p.value==null?'':p.value.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});}")
-            js_amarelo = JsCode("function(p){if(p.value&&Math.abs(p.value)>0.01)return{'backgroundColor':'#FFFF00','color':'black','fontWeight':'bold'};}")
-
-            for col in colunas_financeiras:
-                header = col.replace('_', ' ')
-                if 'var' in col.lower():
-                    gb.configure_column(col, header_name=header, width=140, valueFormatter=js_moeda, cellStyle=js_amarelo)
-                else:
-                    gb.configure_column(col, header_name=header, width=140, valueFormatter=js_moeda)
-
-            gridOptions = gb.build()
-
-            # 3. Execução Protegida (Se a tabela falhar, os gráficos continuam aparecendo!)
+            colunas_var = [col for col in colunas_financeiras if 'var' in col.lower()]
+            
+            # Aplica o amarelo e formata os números (R$)
             try:
-                AgGrid(
-                    df_display,
-                    gridOptions=gridOptions,
-                    height=450,
-                    theme='balham',
-                    allow_unsafe_jscode=True,
-                    fit_columns_on_grid_load=False
-                )
-            except Exception as e:
-                st.warning("A tabela interativa encontrou um problema, mas seus gráficos estão logo abaixo!")
-                st.dataframe(df_display) # Mostra tabela simples se a chique der erro
+                df_estilizado = df_tela.style.map(pintar_amarelo, subset=colunas_var).format({col: "{:,.2f}" for col in colunas_financeiras})
+            except:
+                df_estilizado = df_tela.style.applymap(pintar_amarelo, subset=colunas_var).format({col: "{:,.2f}" for col in colunas_financeiras})
 
+            # --- 3. DESENHANDO A TABELA ---
+            # Aqui configuramos a coluna FONTE para ser pequena e a AÇÃO grande
+            st.dataframe(
+                df_estilizado,
+                use_container_width=True,
+                height=450,
+                hide_index=True,
+                column_config={
+                    "FONTE": st.column_config.TextColumn("Fonte", width="small"),
+                    "AÇÃO": st.column_config.TextColumn("Ação", width="large"),
+                    "NATUREZA": st.column_config.TextColumn("Natureza", width="medium"),
+                }
+            )
+            
             st.markdown("<br>", unsafe_allow_html=True)
             
-            # --- O RESTANTE DO SEU CÓDIGO (BOTÃO EXCEL E GRÁFICOS) SEGUE NORMALMENTE ---
+            # --- AQUI SEGUE O SEU CÓDIGO ORIGINAL DO EXCEL ABAIXO ---
+            # ...
             
             # (AQUI CONTINUA O SEU CÓDIGO DO df_excel E DO st.download_button...)
             
