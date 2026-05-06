@@ -171,31 +171,56 @@ st.markdown("""
     .neg { color: #DC2626; font-weight: bold; }
     .zero { color: #6B7280; }
 
-        /* ============================================
-       8. LIMPEZA VISUAL (COM JAVASCRIPT PARA REMOVER HEADER E BOTÃO)
+            /* ============================================
+       8. LIMPEZA VISUAL (REMOÇÃO TOTAL VIA JAVASCRIPT)
     ============================================ */
     #MainMenu { visibility: hidden; }
     footer { visibility: hidden; }
     [data-testid="stMetricValue"] { color: #2E7D32 !important; font-size: 1.2rem !important; }
     </style>
     
-    <!-- SCRIPT PARA REMOVER ELEMENTOS INDESEJADOS -->
+    <!-- SCRIPT PARA REMOVER ELEMENTOS DO STREAMLIT CLOUD -->
     <script>
     (function() {
-        const removeElements = () => {
+        let tentativas = 0;
+        const maxTentativas = 20;
+        
+        const remover = () => {
+            tentativas++;
+            
+            // Método 1: Remove o header inteiro (onde fica "Gerenciar aplicativo")
             const header = document.querySelector('header[data-testid="stHeader"]');
-            if (header) header.style.display = 'none';
+            if (header && header.parentNode) {
+                header.parentNode.removeChild(header);
+            }
             
+            // Método 2: Remove a toolbar inferior (ícone do GitHub)
             const toolbar = document.querySelector('[data-testid="stToolbar"]');
-            if (toolbar) toolbar.style.display = 'none';
+            if (toolbar && toolbar.parentNode) {
+                toolbar.parentNode.removeChild(toolbar);
+            }
             
-            const decoration = document.querySelector('[data-testid="stDecoration"]');
-            if (decoration) decoration.style.display = 'none';
+            // Método 3: Remove o elemento report (Made with Streamlit)
+            const report = document.querySelector('[data-testid="stDecoration"]');
+            if (report && report.parentNode) {
+                report.parentNode.removeChild(report);
+            }
             
-            if (header && toolbar) clearInterval(intervalId);
+            // Método 4: Remove QUALQUER botão que contenha "Gerenciar" no texto
+            const botoes = document.querySelectorAll('button');
+            botoes.forEach(btn => {
+                if (btn.textContent.includes('Gerenciar')) {
+                    if (btn.parentNode) btn.parentNode.removeChild(btn);
+                }
+            });
+            
+            // Para após 20 tentativas (10 segundos)
+            if (tentativas >= maxTentativas) {
+                clearInterval(intervalo);
+            }
         };
         
-        const intervalId = setInterval(removeElements, 500);
+        const intervalo = setInterval(remover, 500);
     })();
     </script>
 """, unsafe_allow_html=True)
