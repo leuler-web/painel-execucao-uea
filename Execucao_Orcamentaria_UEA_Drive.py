@@ -63,7 +63,7 @@ st.markdown("""
     ============================================ */
     table {
         width: 100%;
-        min-width: 800px;  /* Garante scroll horizontal se necessário */
+        min-width: 800px;
         border-collapse: separate;
         border-spacing: 0;
         font-family: sans-serif;
@@ -91,66 +91,52 @@ st.markdown("""
        5. COLUNAS FIXAS À ESQUERDA (AÇÃO, FONTE, NATUREZA)
     ============================================ */
     
-    /* 5.1 COLUNA AÇÃO (1ª) */
-    thead th:nth-child(1),
+    /* Camada 1 (AÇÃO): left: 0 */
+    thead th:nth-child(1) {
+        position: sticky;
+        left: 0;
+        z-index: 25;
+        background-color: #1E3A8A !important;
+    }
     tbody td:nth-child(1) {
         position: sticky;
         left: 0;
         z-index: 15;
         background-color: white;
     }
-    thead th:nth-child(1) {
-        background-color: #1E3A8A !important;
+    
+    /* Camada 2 (FONTE): left: 60px (ajustável) */
+    thead th:nth-child(2) {
+        position: sticky;
+        left: 60px;
         z-index: 25;
+        background-color: #1E3A8A !important;
     }
-
-    /* 5.2 COLUNA FONTE (2ª) */
-    thead th:nth-child(2),
     tbody td:nth-child(2) {
         position: sticky;
-        left: 0;
+        left: 60px;
         z-index: 15;
         background-color: white;
     }
-    thead th:nth-child(2) {
-        background-color: #1E3A8A !important;
+    
+    /* Camada 3 (NATUREZA): left: 120px (ajustável) + sombra */
+    thead th:nth-child(3) {
+        position: sticky;
+        left: 120px;
         z-index: 25;
+        background-color: #1E3A8A !important;
+        box-shadow: 2px 0 5px -2px rgba(0,0,0,0.15);
     }
-
-    /* 5.3 COLUNA NATUREZA (3ª) */
-    thead th:nth-child(3),
     tbody td:nth-child(3) {
         position: sticky;
-        left: 0;
+        left: 120px;
         z-index: 15;
         background-color: white;
         box-shadow: 2px 0 5px -2px rgba(0,0,0,0.15);
     }
-    thead th:nth-child(3) {
-        background-color: #1E3A8A !important;
-        z-index: 25;
-    }
 
     /* ============================================
-       6. LÓGICA DE EMPILHAMENTO DAS COLUNAS FIXAS
-       Usamos left cumulativo APENAS se for possível via JS.
-       Aqui usamos uma abordagem CSS pura de 3 camadas.
-    ============================================ */
-    
-    /* Camada 1 (AÇÃO): left: 0 */
-    thead th:nth-child(1) { left: 0; }
-    tbody td:nth-child(1) { left: 0; }
-    
-    /* Camada 2 (FONTE): precisa saber a largura da 1ª coluna */
-    thead th:nth-child(2) { left: 60px; }   /* Ajustável */
-    tbody td:nth-child(2) { left: 60px; }
-    
-    /* Camada 3 (NATUREZA): soma das larguras anteriores */
-    thead th:nth-child(3) { left: 120px; }  /* Ajustável */
-    tbody td:nth-child(3) { left: 120px; }
-
-    /* ============================================
-       7. CORPO DA TABELA
+       6. CORPO DA TABELA
     ============================================ */
     tbody td {
         padding: 10px 8px;
@@ -179,14 +165,14 @@ st.markdown("""
     }
 
     /* ============================================
-       8. CORES DAS VARIAÇÕES
+       7. CORES DAS VARIAÇÕES
     ============================================ */
     .pos { color: #059669; font-weight: bold; }
     .neg { color: #DC2626; font-weight: bold; }
     .zero { color: #6B7280; }
 
     /* ============================================
-       9. LIMPEZA VISUAL
+       8. LIMPEZA VISUAL
     ============================================ */
     #MainMenu { visibility: hidden; }
     .stDeployButton { display: none !important; }
@@ -353,17 +339,12 @@ def carregar_dados_v181(path):
             if col in df.columns:
                 df[col] = df[col].astype(str).str.replace(r'\.0$', '', regex=True).str.strip().replace('nan', '')
         
-        # ========================================================================
-        # 💡 CORREÇÃO 1: BLINDAGEM DO TIPO DE MOVIMENTO (SEPARA ACUMULADO E MÊS)
-        # ========================================================================
         if 'Tipo Movimento' in df.columns:
             def classificar_movimento(x):
                 txt = str(x).upper().strip()
                 if txt in ['NAN', 'NONE', '', '0', '0.0']: return x
-                # Se o SIAFI chamou de 'Até o Mês' ou 'Acumulado', vai para a caixa certa
                 if 'ACUMULADO' in txt or 'ATÉ' in txt or 'ATE' in txt: 
                     return 'Acumulado'
-                # Todo o resto (como 'No Mês') vira 'Mês'
                 return 'Mês'
             
             df['Tipo Movimento'] = df['Tipo Movimento'].apply(classificar_movimento)
@@ -414,15 +395,12 @@ try:
         dt_atual = "N/D"
         texto_periodo = "Aguardando atualização da base de dados."
 
-    # ========================================================================
-    # 💡 CORREÇÃO 2: TRATAMENTO DE CHOQUE NO MÊS REFERÊNCIA (FUZZY MATCHING)
-    # ========================================================================
     if 'Mês Referência' in df_base.columns:
         def identificar_mes_streamlit(texto):
             t = str(texto).upper().strip()
             if 'JAN' in t: return 'Janeiro'
             if 'FEV' in t: return 'Fevereiro'
-            if 'MA' in t and 'R' in t: return 'Março' # O Exterminador de erros (Maro, Marco, Março)
+            if 'MA' in t and 'R' in t: return 'Março'
             if 'ABR' in t: return 'Abril'
             if 'MAI' in t: return 'Maio'
             if 'JUN' in t: return 'Junho'
@@ -468,7 +446,6 @@ try:
 
         lista_meses = df_base[['Mes_Nome', 'Mes_Num']].dropna().drop_duplicates().sort_values('Mes_Num')['Mes_Nome'].tolist()
         
-        # 💡 CORREÇÃO 3: REMOVIDA A LINHA QUE DELETAVA O ÚLTIMO MÊS DA LISTA!
         var_mes_str = st.sidebar.selectbox("Mês de Referência (Fechados)", ["Todos"] + lista_meses, key=f"filtro_mes_{st.session_state.botao_reset}")
 
         if 'Tipo Movimento' in df_base.columns:
@@ -735,11 +712,10 @@ try:
             except AttributeError:
                 html_tabela = tabela_estilizada.hide_index().render()
                 
-                        # ==========================================
+            # ==========================================
             # RENDERIZAÇÃO DA TABELA (ÚNICA, COM STICKY CSS)
             # ==========================================
             st.markdown(f'<div class="tabela-container">{html_tabela}</div>', unsafe_allow_html=True)
-            st.markdown(f'<div class="tabela-body-wrapper">{html_tabela}</div>', unsafe_allow_html=True)
             
             df_excel = df_var_visual.copy()
             df_excel['AÇÃO'] = df_excel['Ação'].apply(lambda x: f"{x} - {dict_acoes.get(x, 'N/I')}" if x else "")
