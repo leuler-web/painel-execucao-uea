@@ -12,37 +12,84 @@ st.set_page_config(
     page_title="PAINEL ORÇAMENTÁRIO - UEA", 
     layout="wide", 
     page_icon="📈",
-    initial_sidebar_state="expanded",
-    menu_items={
-        'Get Help': 'https://www.uea.edu.br',
-        'Report a bug': None, 
-        'About': "Painel de Execução Orçamentária UEA. Versão 2.0 (Blindada)"
-    }
+    initial_sidebar_state="expanded"
 )
 
 # ==========================================
-# 2. BLOCO ÚNICO DE ESTILOS CSS
+# 1.1 INICIALIZAÇÃO DO ESTADO (CORREÇÃO DA TELA EM BRANCO)
+# ==========================================
+if 'pagina_ativa' not in st.session_state:
+    # IMPORTANTE: Definir como 'capa' para o painel abrir o conteúdo
+    st.session_state.pagina_ativa = 'capa' 
+
+# ==========================================
+# 2. BLOCO ÚNICO DE ESTILOS CSS (IFRAME + TABELA UEA)
 # ==========================================
 st.markdown("""
     <style>
-    [data-testid="stMetricValue"] { color: #2E7D32 !important; }
-    #MainMenu {visibility: visible;}
-    footer {visibility: hidden;}
-    .stDeployButton {display: none !important;} 
-    .block-container { padding-top: 0rem !important; max-width: 100% !important; }
-
-    .tabela-container { max-height: 480px; overflow-y: auto; overflow-x: auto; border: 1px solid #D1D5DB; border-radius: 8px; background-color: white; margin-bottom: 20px; }
-    .tabela-customizada table { width: 100%; border-collapse: separate !important; border-spacing: 0; }
-    .tabela-customizada thead th { 
-        background-color: #1E3A8A !important; color: #FFFFFF !important; font-weight: 900 !important; font-size: 14px !important; text-align: center !important; position: sticky; top: 0; z-index: 100; padding: 10px 8px; border: 1px solid #0F172A !important;
+    /* --- A. AJUSTE PARA O SITE DA UEA (TÍTULO NÃO CORTAR) --- */
+    .block-container { 
+        padding-top: 100px !important; 
+        max-width: 100% !important; 
     }
-    .tabela-customizada tbody td:nth-child(1) { position: sticky !important; left: 0; z-index: 10; background-color: #F9FAFB !important; border-right: 2px solid #D1D5DB !important; }
-    .tabela-customizada tbody td:nth-child(2) { position: sticky !important; left: 65px; z-index: 10; background-color: #F9FAFB !important; border-right: 2px solid #D1D5DB !important; }
-    .tabela-customizada tbody td:nth-child(3) { position: sticky !important; left: 135px; z-index: 10; background-color: #F9FAFB !important; border-right: 2px solid #D1D5DB !important; }
-    .tabela-customizada thead th:nth-child(1) { position: sticky !important; left: 0; z-index: 110 !important; background-color: #1E3A8A !important; }
-    .tabela-customizada thead th:nth-child(2) { position: sticky !important; left: 65px; z-index: 110 !important; background-color: #1E3A8A !important; }
-    .tabela-customizada thead th:nth-child(3) { position: sticky !important; left: 135px; z-index: 110 !important; background-color: #1E3A8A !important; }
-    .tabela-customizada tbody td { padding: 8px 8px; border-bottom: 1px solid #E5E7EB; font-size: 13px; white-space: nowrap; }
+
+    /* Cabeçalho da página (Título e KPIs) fixo no topo */
+    [data-testid="stVerticalBlock"] > div:has(div.unificar-header) {
+        position: sticky;
+        top: 0px;
+        background-color: white;
+        z-index: 1000;
+        padding-top: 10px !important;
+        border-bottom: 2px solid #e5e7eb;
+    }
+
+    /* --- B. ESTILO DA TABELA (AZUL, BRANCO E COLUNAS FIXAS) --- */
+    .tabela-container { 
+        max-height: 500px; 
+        overflow: auto; 
+        border: 1px solid #d1d5db; 
+        border-radius: 8px;
+    }
+    
+    table { border-collapse: separate; border-spacing: 0; width: 100%; }
+
+    /* Cabeçalho da Tabela: Azul com Letras Brancas e Fixo no Topo */
+    th { 
+        background-color: #004587 !important; /* Azul Oficial UEA */
+        color: white !important; 
+        position: sticky; 
+        top: 0; 
+        z-index: 100; 
+        padding: 12px;
+        text-align: left;
+        font-size: 13px;
+        border-bottom: 2px solid #003366;
+    }
+
+    /* FIXAR AS 3 PRIMEIRAS COLUNAS (Natureza, Descrição, etc) */
+    /* Coluna 1 */
+    th:nth-child(1), td:nth-child(1) { position: sticky; left: 0; z-index: 50; background-color: #f9fafb; }
+    th:nth-child(1) { z-index: 110; background-color: #004587 !important; }
+
+    /* Coluna 2 */
+    th:nth-child(2), td:nth-child(2) { position: sticky; left: 80px; z-index: 50; background-color: #f9fafb; }
+    th:nth-child(2) { z-index: 110; background-color: #004587 !important; }
+
+    /* Coluna 3 */
+    th:nth-child(3), td:nth-child(3) { position: sticky; left: 240px; z-index: 50; background-color: #f9fafb; }
+    th:nth-child(3) { z-index: 110; background-color: #004587 !important; }
+
+    td { padding: 10px; border-bottom: 1px solid #e5e7eb; font-size: 13px; background-color: white; }
+    
+    /* Indicadores de Variação */
+    .pos { color: #059669; font-weight: bold; }
+    .neg { color: #DC2626; font-weight: bold; }
+
+    /* --- C. LIMPEZA VISUAL --- */
+    #MainMenu { visibility: hidden; }
+    .stDeployButton { display: none !important; }
+    footer { visibility: hidden; }
+    h1 { font-size: 1.6rem !important; color: #111827 !important; }
     </style>
 """, unsafe_allow_html=True)
 
