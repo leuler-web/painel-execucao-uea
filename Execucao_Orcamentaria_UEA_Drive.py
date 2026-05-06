@@ -23,11 +23,19 @@ if 'pagina_ativa' not in st.session_state:
     st.session_state.pagina_ativa = 'capa' 
 
 # ==========================================
-# 2. BLOCO ÚNICO DE ESTILOS CSS (VERSÃO "PAREDE" - SEM TRANSPARÊNCIA)
+# 2. BLOCO ÚNICO DE ESTILOS CSS (VERSÃO BLINDADA)
 # ==========================================
 st.markdown("""
     <style>
-    /* 1. AJUSTE PARA O IFRAME (TÍTULO) */
+    /* 1. ESCONDER TOTALMENTE ACESSO AO GITHUB E MENUS */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    .stDeployButton {display: none !important;}
+    [data-testid="stStatusWidget"] {visibility: hidden;}
+    header[data-testid="stHeader"] { background: transparent !important; }
+    header[data-testid="stHeader"] > div:first-child { display: none !important; }
+    
+    /* 2. AJUSTE PARA O IFRAME (TÍTULO) */
     .block-container { padding-top: 100px !important; max-width: 100% !important; }
 
     [data-testid="stVerticalBlock"] > div:has(div.unificar-header) {
@@ -35,77 +43,70 @@ st.markdown("""
         padding-top: 10px !important; border-bottom: 2px solid #e5e7eb;
     }
 
-    /* 2. TABELA COM COLUNAS FIXAS REAIS */
+    /* 3. TABELA PADRONIZADA (FONTE IGUAL E COLUNAS FIXAS) */
     .tabela-container { 
         max-height: 500px; 
         overflow: auto; 
         border: 1px solid #d1d5db;
+        background-color: white;
     }
     
     table { border-collapse: separate; border-spacing: 0; width: 100%; }
 
-    /* Estilo Base das Células */
+    /* PADRONIZAÇÃO DE TODAS AS FONTES DA TABELA */
     th, td { 
-        padding: 10px; 
-        font-size: 13px; 
+        padding: 10px !important; 
+        font-size: 12px !important; /* Tamanho igual para todas as colunas */
+        font-family: sans-serif !important;
         white-space: nowrap; 
         border-bottom: 1px solid #e5e7eb;
         border-right: 1px solid #f0f0f0;
+        color: #333 !important;
     }
 
-    /* CABEÇALHO AZUL (GERAL) */
+    /* CABEÇALHO AZUL UEA */
     th { 
         background-color: #004587 !important; 
         color: white !important; 
         position: sticky; 
         top: 0; 
-        z-index: 200; /* Fica acima de tudo */
+        z-index: 400; /* Acima de tudo */
+        font-weight: bold !important;
     }
 
-    /* --- CONFIGURAÇÃO DAS 3 COLUNAS FIXAS (A "PAREDE") --- */
+    /* --- PAREDE PARA AS 3 COLUNAS FIXAS (SEM VAZAMENTO) --- */
     
-    /* Larguras Definidas para evitar buracos:
-       Col 1: 100px | Col 2: 250px | Col 3: 150px
-    */
-
-    /* COLUNA 1 */
+    /* Coluna 1 (PT) - Largura 70px */
     th:nth-child(1), td:nth-child(1) { 
-        position: sticky; left: 0; min-width: 100px; max-width: 100px; 
-        z-index: 100; background-color: white !important; 
-    }
-    /* COLUNA 2 */
-    th:nth-child(2), td:nth-child(2) { 
-        position: sticky; left: 100px; min-width: 250px; max-width: 250px; 
-        z-index: 100; background-color: white !important; 
-    }
-    /* COLUNA 3 */
-    th:nth-child(3), td:nth-child(3) { 
-        position: sticky; left: 350px; min-width: 150px; max-width: 150px; 
-        z-index: 100; background-color: white !important; 
-        border-right: 2px solid #d1d5db !important; /* Linha mais grossa para separar o bloco fixo */
+        position: sticky; left: 0; min-width: 70px; max-width: 70px; 
+        z-index: 300; background-color: white !important; 
     }
 
-    /* Ajuste do Cabeçalho das colunas fixas (tem que ser azul e ficar acima das células) */
+    /* Coluna 2 (Ação) - Largura 250px */
+    th:nth-child(2), td:nth-child(2) { 
+        position: sticky; left: 70px; min-width: 250px; max-width: 250px; 
+        z-index: 300; background-color: white !important; 
+    }
+
+    /* Coluna 3 (Natureza) - Largura 80px */
+    th:nth-child(3), td:nth-child(3) { 
+        position: sticky; left: 320px; min-width: 80px; max-width: 80px; 
+        z-index: 300; background-color: white !important; 
+        border-right: 2px solid #d1d5db !important; /* Linha divisória */
+    }
+
+    /* Cabeçalhos das fixas em azul */
     th:nth-child(1), th:nth-child(2), th:nth-child(3) { 
-        z-index: 300 !important; 
+        z-index: 500 !important; 
         background-color: #004587 !important; 
     }
 
-    /* Efeito de Hover que não quebra o fixo */
-    tr:hover td { background-color: #f9fafb !important; }
-    tr:hover td:nth-child(1), tr:hover td:nth-child(2), tr:hover td:nth-child(3) { 
-        background-color: #f3f4f6 !important; 
-    }
-
     /* Cores das Variações */
-    .pos { color: #059669; font-weight: bold; }
-    .neg { color: #DC2626; font-weight: bold; }
+    .pos { color: #059669 !important; font-weight: bold !important; }
+    .neg { color: #DC2626 !important; font-weight: bold !important; }
 
-    /* LIMPEZA */
-    #MainMenu { visibility: hidden; }
-    .stDeployButton { display: none !important; }
-    footer { visibility: hidden; }
-    h1 { font-size: 1.6rem !important; color: #111827 !important; }
+    /* Hover */
+    tr:hover td { background-color: #f9fafb !important; }
     </style>
 """, unsafe_allow_html=True)
 
