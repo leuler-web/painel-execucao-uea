@@ -23,11 +23,11 @@ if 'pagina_ativa' not in st.session_state:
     st.session_state.pagina_ativa = 'capa' 
 
 # ==========================================
-# 2. BLOCO ÚNICO DE ESTILOS CSS (IFRAME + TABELA UEA)
+# 2. BLOCO ÚNICO DE ESTILOS CSS (TABELA UNIFICADA + IFRAME)
 # ==========================================
 st.markdown("""
     <style>
-    /* --- A. AJUSTE PARA O SITE DA UEA (TÍTULO NÃO CORTAR) --- */
+    /* 1. AJUSTE PARA O IFRAME (TÍTULO NÃO CORTAR) */
     .block-container { 
         padding-top: 100px !important; 
         max-width: 100% !important; 
@@ -43,49 +43,66 @@ st.markdown("""
         border-bottom: 2px solid #e5e7eb;
     }
 
-    /* --- B. ESTILO DA TABELA (AZUL, BRANCO E COLUNAS FIXAS) --- */
+    /* 2. ESTILO DA TABELA (CABEÇALHO AZUL E COLUNAS FIXAS SEM SEPARAÇÃO) */
     .tabela-container { 
         max-height: 500px; 
         overflow: auto; 
-        border: 1px solid #d1d5db; 
-        border-radius: 8px;
+        border: 1px solid #d1d5db;
     }
     
-    table { border-collapse: separate; border-spacing: 0; width: 100%; }
+    table { 
+        border-collapse: separate; /* Necessário para colunas fixas funcionarem bem */
+        border-spacing: 0; 
+        width: 100%; 
+    }
 
-    /* Cabeçalho da Tabela: Azul com Letras Brancas e Fixo no Topo */
+    /* Estilo Geral do Cabeçalho (Azul UEA) */
     th { 
-        background-color: #004587 !important; /* Azul Oficial UEA */
+        background-color: #004587 !important; 
         color: white !important; 
         position: sticky; 
         top: 0; 
-        z-index: 100; 
+        z-index: 100; /* Fica acima de tudo */
         padding: 12px;
         text-align: left;
         font-size: 13px;
         border-bottom: 2px solid #003366;
+        border-right: 1px solid #0056a3; /* Bordas internas sutis no azul */
     }
 
-    /* FIXAR AS 3 PRIMEIRAS COLUNAS (Natureza, Descrição, etc) */
+    /* FIXAR AS 3 PRIMEIRAS COLUNAS */
     /* Coluna 1 */
-    th:nth-child(1), td:nth-child(1) { position: sticky; left: 0; z-index: 50; background-color: #f9fafb; }
-    th:nth-child(1) { z-index: 110; background-color: #004587 !important; }
-
+    th:nth-child(1), td:nth-child(1) { position: sticky; left: 0; z-index: 20; }
     /* Coluna 2 */
-    th:nth-child(2), td:nth-child(2) { position: sticky; left: 80px; z-index: 50; background-color: #f9fafb; }
-    th:nth-child(2) { z-index: 110; background-color: #004587 !important; }
-
+    th:nth-child(2), td:nth-child(2) { position: sticky; left: 100px; z-index: 20; }
     /* Coluna 3 */
-    th:nth-child(3), td:nth-child(3) { position: sticky; left: 240px; z-index: 50; background-color: #f9fafb; }
-    th:nth-child(3) { z-index: 110; background-color: #004587 !important; }
+    th:nth-child(3), td:nth-child(3) { position: sticky; left: 300px; z-index: 20; }
 
-    td { padding: 10px; border-bottom: 1px solid #e5e7eb; font-size: 13px; background-color: white; }
-    
-    /* Indicadores de Variação */
+    /* Garantir que as células fixas tenham fundo branco para não serem transparentes */
+    td:nth-child(1), td:nth-child(2), td:nth-child(3) {
+        background-color: white !important;
+        border-right: 1px solid #e5e7eb !important;
+    }
+
+    /* Quando passar o mouse, a linha inteira (inclusive as fixas) muda de cor */
+    tr:hover td { background-color: #f3f4f6 !important; }
+
+    /* Cabeçalhos das colunas fixas (precisam de z-index maior que as células fixas) */
+    th:nth-child(1), th:nth-child(2), th:nth-child(3) { z-index: 110; }
+
+    td { 
+        padding: 10px; 
+        border-bottom: 1px solid #e5e7eb; 
+        border-right: 1px solid #f3f4f6;
+        font-size: 13px; 
+        white-space: nowrap; /* Evita que o texto quebre e desalinhe a linha */
+    }
+
+    /* Cores das Variações */
     .pos { color: #059669; font-weight: bold; }
     .neg { color: #DC2626; font-weight: bold; }
 
-    /* --- C. LIMPEZA VISUAL --- */
+    /* 3. LIMPEZA VISUAL */
     #MainMenu { visibility: hidden; }
     .stDeployButton { display: none !important; }
     footer { visibility: hidden; }
