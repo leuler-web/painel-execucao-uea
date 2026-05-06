@@ -21,11 +21,11 @@ st.set_page_config(
 )
 
 # ==========================================
-# 2. BLOCO ÚNICO DE ESTILOS CSS (TOPO FIXO + TABELA COM CABEÇALHO AZUL E 3 COLUNAS FIXAS - VERSÃO CORRIGIDA)
+# 2. BLOCO ÚNICO DE ESTILOS CSS (PLANILHA COMPLETA: TOPO + CABEÇALHO + 3 COLUNAS FIXAS)
 # ==========================================
 st.markdown("""
     <style>
-    /* --- 1. CONGELAMENTO DO TOPO (TÍTULO + KPIs) --- */
+    /* --- 1. CONGELAMENTO DO TOPO DO PAINEL (TÍTULO + KPIs) --- */
     .topo-congelado {
         position: sticky;
         top: 0px;
@@ -46,23 +46,28 @@ st.markdown("""
 
     .stTabs { margin-top: -20px !important; }
 
-    /* --- 2. CONTAINER DA TABELA COM SCROLL DUPLO --- */
+    /* ============================================
+       2. ESTRUTURA DA TABELA (PLANILHA)
+       Camadas de scroll e fixação
+    ============================================ */
+    /* Container externo: controla APENAS scroll vertical */
     .tabela-wrapper {
-        max-height: 500px;           /* Altura máxima => scroll vertical */
-        overflow-y: auto;            /* Scroll vertical ativado aqui */
+        max-height: 500px;
+        overflow-y: auto;
         border: 1px solid #e5e7eb;
         border-radius: 8px;
         position: relative;
     }
 
+    /* Container interno: controla APENAS scroll horizontal */
     .tabela-scroll-horizontal {
-        overflow-x: auto;            /* Scroll horizontal delegado a esta div interna */
+        overflow-x: auto;
         width: 100%;
     }
 
-    /* --- 3. TABELA EM SI --- */
+    /* Tabela com largura dinâmica */
     table {
-        width: max-content;          /* Permite que a tabela tenha largura maior que o container */
+        width: max-content;
         min-width: 100%;
         border-collapse: separate;
         border-spacing: 0;
@@ -70,92 +75,104 @@ st.markdown("""
         table-layout: auto;
     }
 
-    /* --- 4. CABEÇALHO AZUL COM LETRAS BRANCAS E FIXO NO TOPO --- */
+    /* ============================================
+       3. CABEÇALHO FIXO NO TOPO (AZUL) - TODAS AS COLUNAS
+       Estratégia: todos os th são sticky no topo,
+       mas os das 3 primeiras têm z-index MAIOR
+    ============================================ */
     thead th {
         position: sticky;
         top: 0;
         background-color: #1E3A8A !important;
         color: white !important;
-        z-index: 30;                /* Valor alto para pairar sobre tudo */
         padding: 12px 8px;
         text-align: left;
         font-size: 13px;
         font-weight: bold;
         border-bottom: 2px solid #D1D5DB;
         white-space: nowrap;
-        /* Remove sombra que pode causar glitch visual */
-        box-shadow: none !important;
+        z-index: 10; /* Base para cabeçalho normal */
     }
 
-    /* --- 5. COLUNAS FIXAS À ESQUERDA (AÇÃO, FONTE, NATUREZA) --- */
-    /* Todas as fixas ganham z-index=25 (abaixo do cabeçalho=30, acima do corpo normal) */
+    /* ============================================
+       4. COLUNAS FIXAS À ESQUERDA (AÇÃO, FONTE, NATUREZA)
+       Precisam de z-index ALTO para cobrir as outras células
+       E também vencer o cabeçalho no eixo horizontal
+    ============================================ */
     
-    /* 5.1. COLUNA AÇÃO */
+    /* 4.1 COLUNA AÇÃO (1ª) */
     td:nth-child(1),
     th:nth-child(1) {
         position: sticky;
         left: 0;
-        z-index: 25;
+        z-index: 20; /* > 10 (cabeçalho normal) */
         background-color: white;
     }
-
-    /* Cabeçalho da coluna AÇÃO deve manter fundo azul */
     thead th:nth-child(1) {
         background-color: #1E3A8A !important;
+        z-index: 30; /* A MAIS ALTA DE TODAS: cabeçalho + fixa esquerda */
     }
 
-    /* 5.2. COLUNA FONTE */
+    /* 4.2 COLUNA FONTE (2ª) */
     td:nth-child(2),
     th:nth-child(2) {
         position: sticky;
-        left: 100px;   /* Ajustável */
-        z-index: 25;
+        left: 100px;  /* Ajuste fino conforme largura real da coluna AÇÃO */
+        z-index: 20;
         background-color: white;
     }
     thead th:nth-child(2) {
         background-color: #1E3A8A !important;
+        z-index: 30;
     }
 
-    /* 5.3. COLUNA NATUREZA */
+    /* 4.3 COLUNA NATUREZA (3ª) */
     td:nth-child(3),
     th:nth-child(3) {
         position: sticky;
-        left: 180px;   /* Ajustável */
-        z-index: 25;
+        left: 180px;  /* Ajuste: 100px da AÇÃO + 80px da FONTE */
+        z-index: 20;
         background-color: white;
-        /* Sombra para profundidade (opcional) */
-        box-shadow: 2px 0 5px -2px rgba(0,0,0,0.2);
+        box-shadow: 2px 0 5px -2px rgba(0,0,0,0.2); /* Sombra sutil de profundidade */
     }
     thead th:nth-child(3) {
         background-color: #1E3A8A !important;
+        z-index: 30;
     }
 
-    /* --- 6. CORPO DA TABELA --- */
+    /* ============================================
+       5. CORPO DA TABELA
+    ============================================ */
     td {
         padding: 10px 8px;
         border-bottom: 1px solid #F3F4F6;
         font-size: 13px;
         color: #4B5563;
         white-space: nowrap;
-        background-color: white; /* Fundo padrão */
+        background-color: white;
     }
 
-    /* Hover: pinta linha inteira, inclusive fixas */
+    /* Hover sobre a linha inteira */
     tr:hover td {
         background-color: #F9FAFB !important;
     }
+    /* Hover nas colunas fixas também */
     tr:hover td:nth-child(1),
     tr:hover td:nth-child(2),
     tr:hover td:nth-child(3) {
         background-color: #F9FAFB !important;
     }
 
-    /* --- 7. CORES DAS VARIAÇÕES --- */
+    /* ============================================
+       6. CORES DAS VARIAÇÕES
+    ============================================ */
     .pos { color: #059669; font-weight: bold; }
     .neg { color: #DC2626; font-weight: bold; }
     .zero { color: #6B7280; }
 
-    /* --- 8. LIMPEZA VISUAL --- */
+    /* ============================================
+       7. LIMPEZA VISUAL
+    ============================================ */
     #MainMenu { visibility: hidden; }
     .stDeployButton { display: none !important; }
     footer { visibility: hidden; }
