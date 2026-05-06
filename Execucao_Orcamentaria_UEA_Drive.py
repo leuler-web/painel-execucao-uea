@@ -21,72 +21,54 @@ st.set_page_config(
 )
 
 # ==========================================
-# 2. BLOCO ÚNICO DE ESTILOS CSS (VERSÃO HÍBRIDA: TABELA + IFRAME)
+# 2. BLOCO ÚNICO DE ESTILOS CSS (VERSÃO UNIFICADA)
 # ==========================================
 st.markdown("""
     <style>
-    /* --- 1. AJUSTES DO IFRAME (TÍTULO E TOPO) --- */
+    /* 1. Ajuste do topo da página */
     .block-container { 
-        padding-top: 100px !important; /* Espaço para o título não sumir no site da UEA */
+        padding-top: 1.5rem !important; 
         max-width: 100% !important; 
     }
 
-    /* Container Fixo do Topo (Título + KPIs) */
+    /* 2. Título sem margens excessivas */
+    h1 { 
+        margin-top: 0px !important; 
+        padding-bottom: 0.5rem !important;
+        font-size: 1.8rem !important;
+    }
+
+    /* 3. Container Fixo (Título + KPIs + Início das Abas) */
     [data-testid="stVerticalBlock"] > div:has(div.unificar-header) {
         position: sticky;
         top: 0px;
         background-color: white;
-        z-index: 1000;
-        padding-top: 10px !important;
+        z-index: 999;
+        padding-bottom: 0px;
         border-bottom: 2px solid #e5e7eb;
     }
 
-    h1 { 
-        font-size: 1.6rem !important;
-        margin-top: 0px !important;
-        line-height: 1.2 !important;
-        color: #111827 !important;
-    }
-
-    .stTabs { margin-top: -20px !important; }
-
-    /* --- 2. ESTILO DA TABELA DE VARIAÇÕES (RECUPERADO) --- */
-    .tabela-container { 
-        max-height: 450px; 
-        overflow-y: auto; 
-        border: 1px solid #e5e7eb; 
-        border-radius: 8px;
+    /* 4. UNIFICAR ABAS: Remove o espaço entre KPIs e os botões das abas */
+    .stTabs {
+        margin-top: -10px !important; /* Puxa as abas para cima */
     }
     
-    table { width: 100%; border-collapse: collapse; font-family: sans-serif; }
-    
-    th { 
-        position: sticky; 
-        top: 0; 
-        background-color: #F3F4F6 !important; 
-        z-index: 10; 
-        padding: 12px; 
-        text-align: left; 
-        font-size: 13px; 
-        font-weight: bold; 
-        color: #374151;
-        border-bottom: 2px solid #D1D5DB;
+    /* 5. Estilo das Métricas (KPIs) */
+    [data-testid="stMetricValue"] { 
+        color: #2E7D32 !important; 
+        font-size: clamp(1.1rem, 1.5vw, 1.5rem) !important; 
+        line-height: 1 !important;
     }
-    
-    td { padding: 10px 12px; border-bottom: 1px solid #F3F4F6; font-size: 13px; color: #4B5563; }
-    
-    tr:hover { background-color: #F9FAFB; }
-    
-    /* Cores das Variações */
-    .pos { color: #059669; font-weight: bold; } /* Verde para positivo */
-    .neg { color: #DC2626; font-weight: bold; } /* Vermelho para negativo */
-    .zero { color: #6B7280; } /* Cinza para neutro */
+    [data-testid="stMetricLabel"] {
+        font-size: 0.8rem !important;
+        font-weight: bold !important;
+        margin-bottom: -5px !important;
+    }
 
-    /* --- 3. LIMPEZA VISUAL --- */
-    #MainMenu { visibility: hidden; }
-    .stDeployButton { display: none !important; }
-    footer { visibility: hidden; }
-    [data-testid="stMetricValue"] { color: #2E7D32 !important; font-size: 1.2rem !important; }
+    /* 6. Esconder botões inúteis do Streamlit */
+    #MainMenu {visibility: visible;}
+    footer {visibility: hidden;}
+    .stDeployButton {display: none !important;} 
     </style>
 """, unsafe_allow_html=True)
 
@@ -444,44 +426,64 @@ try:
                 st.session_state.pagina_ativa = 'dashboard'
                 st.rerun()
 
-    # ==========================================
+# ==========================================
     # INTERFACE: TELA 2 (DASHBOARD)
     # ==========================================
     elif st.session_state.pagina_ativa == 'dashboard':
-
-        st.title(f"📊 PAINEL ORÇAMENTÁRIO - UEA {f'- {var_mes_str}' if var_mes_str != 'Todos' else ''}")
         
-        tags = []
-        if var_acao_codigo != "Todas": tags.append(f"<b>🎯 Ação:</b> {var_acao_str}")
-        if var_fonte_codigo != "Todas": tags.append(f"<b>🏦 Fonte de Recurso:</b> {var_fonte_str}")
-        if var_natureza_codigo != "Todas": tags.append(f"<b>🏷️ Natureza da Despesa:</b> {var_natureza_str}")
-        if tags: st.markdown(f"<div class='caixa-destaque'>{' &nbsp;&nbsp;|&nbsp;&nbsp; '.join(tags)}</div>", unsafe_allow_html=True)
+        # 1. CÁLCULO PRÉVIO DOS VALORES (Necessário para o cabeçalho fixo)
+        v_aut = df_latest['Autorizado'].sum() if 'Autorizado' in df_latest.columns else 0
+        v_emp = df_latest['Empenhado'].sum() if 'Empenhado' in df_latest.columns else 0
+        v_liq = df_latest['Liquidado'].sum() if 'Liquidado' in df_latest.columns else 0
+        v_pago = df_latest['Pago'].sum() if 'Pago' in df_latest.columns else 0
+        v_disp = df_latest['Disponível'].sum() if 'Disponível' in df_latest.columns else 0
 
+        
+        # 2. CABEÇALHO FIXO (Título e KPIs)
+        with st.container():
+            # Âncora para o CSS fixar este bloco
+            #st.markdown('<div class="fixed-header"></div>', unsafe_allow_html=True)
+            st.markdown('<div class="unificar-header"></div>', unsafe_allow_html=True)
+            
+            st.title(f"📊 PAINEL ORÇAMENTÁRIO - UEA {f'- {var_mes_str}' if var_mes_str != 'Todos' else ''}")
+                        
+            # Exibição das Tags de Filtro
+            tags = []
+            #if var_acao_codigo != "Todas": tags.append(f"<b>🎯 Ação:</b> {var_acao_str}")
+            if var_acao_codigo != "Todas": tags.append(f"🎯 {var_acao_str}")
+            #if var_fonte_codigo != "Todas": tags.append(f"<b>🏦 Fonte de Recurso:</b> {var_fonte_str}")
+            if var_fonte_codigo != "Todas": tags.append(f"🏦 {var_fonte_str}")
+            #if var_natureza_codigo != "Todas": tags.append(f"<b>🏷️ Natureza da Despesa:</b> {var_natureza_str}")
+            if var_natureza_codigo != "Todas": tags.append(f"🏷️ {var_natureza_str}")
+            if tags: 
+                st.caption(" | ".join(tags))
+                #st.markdown(f"<div class='caixa-destaque'>{' &nbsp;&nbsp;|&nbsp;&nbsp; '.join(tags)}</div>", unsafe_allow_html=True)
+
+            # Colunas de Indicadores (KPIs)
+            c1, c2, c3, c4, c5 = st.columns(5)
+            c1.metric("AUTORIZADO", formata_moeda_sem_decimal(v_aut))
+            #c2.metric("EMPENHADO", formata_moeda_sem_decimal(v_emp), delta=f"{(v_emp/v_aut)*100 if v_aut>0 else 0:.1f}% do total")
+            c2.metric("EMPENHADO", formata_moeda_sem_decimal(v_emp), delta=f"{(v_emp/v_aut)*100 if v_aut>0 else 0:.1f}%")
+            #c3.metric("LIQUIDADO", formata_moeda_sem_decimal(v_liq), delta=f"{(v_liq/v_aut)*100 if v_aut>0 else 0:.1f}% do total")
+            c3.metric("LIQUIDADO", formata_moeda_sem_decimal(v_liq), delta=f"{(v_liq/v_aut)*100 if v_aut>0 else 0:.1f}%")
+            #c4.metric("PAGO", formata_moeda_sem_decimal(v_pago), delta=f"{(v_pago/v_aut)*100 if v_aut>0 else 0:.1f}% do total")
+            c4.metric("PAGO", formata_moeda_sem_decimal(v_pago), delta=f"{(v_pago/v_aut)*100 if v_aut>0 else 0:.1f}%")
+            c5.metric("DISPONÍVEL", formata_moeda_sem_decimal(v_disp))
+            # Espaçador mínimo antes das abas
+            st.write("")           
+            #st.markdown("---")
+
+        # 3. ABAS (Agora fora do container para o conteúdo rolar livremente abaixo do topo fixo)
         tab_visao, tab_evolucao, tab_tabela, tab_var_natureza = st.tabs([
             "🎯 Visão Estratégica", 
             "📈 Evolução Mensal", 
             "🔍 Tabela de Variações",
-            "📊 Variação do Empenhado por Natureza"
+            "📊 Variação por Natureza"
         ])
 
         with tab_visao:
-            st.markdown(f"<div class='destaque-ano'>Exercício Orçamentário: {ano_dinamico} <span style='font-size: 16px; font-weight: bold; color: #6B7280;'>(última atualização: {dt_atual})</span></div>", unsafe_allow_html=True)
-            
-            c1, c2, c3, c4, c5 = st.columns(5)
-            v_aut = df_latest['Autorizado'].sum() if 'Autorizado' in df_latest.columns else 0
-            v_emp = df_latest['Empenhado'].sum() if 'Empenhado' in df_latest.columns else 0
-            v_liq = df_latest['Liquidado'].sum() if 'Liquidado' in df_latest.columns else 0
-            v_pago = df_latest['Pago'].sum() if 'Pago' in df_latest.columns else 0
-            v_disp = df_latest['Disponível'].sum() if 'Disponível' in df_latest.columns else 0
-            
-            c1.metric("AUTORIZADO", formata_moeda_sem_decimal(v_aut))
-            c2.metric("EMPENHADO", formata_moeda_sem_decimal(v_emp), delta=f"{(v_emp/v_aut)*100 if v_aut>0 else 0:.1f}% do total")
-            c3.metric("LIQUIDADO", formata_moeda_sem_decimal(v_liq), delta=f"{(v_liq/v_aut)*100 if v_aut>0 else 0:.1f}% do total")
-            c4.metric("PAGO", formata_moeda_sem_decimal(v_pago), delta=f"{(v_pago/v_aut)*100 if v_aut>0 else 0:.1f}% do total")
-            c5.metric("DISPONÍVEL", formata_moeda_sem_decimal(v_disp))
-            
-            st.divider()
-            
+            #st.markdown(f"<div class='destaque-ano'>Exercício Orçamentário: {ano_dinamico} <span style='font-size: 16px; font-weight: bold; color: #6B7280;'>(última atualização: {dt_atual})</span></div>", unsafe_allow_html=True)
+            st.markdown(f"<div class='destaque-ano'>Exercício Orçamentário: {ano_dinamico} <span style='font-size: 14px; font-weight: normal; color: #6B7280;'>(Última atualização: {dt_atual})</span></div>", unsafe_allow_html=True)
             if var_acao_codigo == "Todas":
                 st.subheader("Top 10 Maiores Despesas por Ação (Empenhado)")
                 df_top = df_latest.groupby('Ação')['Empenhado'].sum().nlargest(10).reset_index()
@@ -506,10 +508,8 @@ try:
                     st.plotly_chart(fig_bar, use_container_width=True)
                 else:
                     st.info("Não há valores empenhados para os filtros selecionados.")
-                    
             else:
                 st.subheader(f"Detalhamento da Ação {var_acao_codigo} por Natureza da Despesa")
-                
                 df_tree = df_latest.groupby('Natureza_ID')['Empenhado'].sum().reset_index()
                 df_tree = df_tree[df_tree['Empenhado'] > 0]
                 
@@ -526,7 +526,6 @@ try:
                         color_continuous_scale='Greens',
                         custom_data=['Valor_Abreviado']
                     )
-                    
                     fig_tree.update_traces(
                         texttemplate="<b>%{label}</b><br>%{customdata[0]}",
                         textfont=dict(size=18), 
@@ -539,9 +538,7 @@ try:
 
         with tab_evolucao:
             st.markdown(f"<div class='destaque-ano'>Evolução Mensal da Execução - Ano {ano_dinamico} <span style='font-size: 16px; font-weight: normal; color: #6B7280;'>(última atualização: {dt_atual})</span></div>", unsafe_allow_html=True)
-            
             colunas_ex = [col for col in ['Autorizado', 'Empenhado', 'Liquidado', 'Pago', 'Disponível'] if col in df_base.columns]
-            
             df_m = df_base[mask_evo].groupby('Mês Referência')[colunas_ex].sum().reset_index()
             if not df_m.empty:
                 df_m['Nome_Mes'] = df_m['Mês Referência'].apply(identificar_mes_streamlit)
@@ -572,42 +569,21 @@ try:
             df_var_visual = df_var_filtrada.copy()
             df_var_visual_tela = df_var_visual.copy()
             
-            df_var_visual_tela['AÇÃO'] = df_var_visual['Ação'].apply(
-                lambda x: f'<div title="{x} - {dict_acoes.get(x, "N/I")}">{x}</div>' if x else ""
-            )
-            df_var_visual_tela['FONTE'] = df_var_visual['Fonte_3'].apply(
-                lambda x: f'<div title="{x} - {dict_fontes_global.get(x, "Outras Fontes")}">{x}</div>' if x else ""
-            )
-            df_var_visual_tela['NATUREZA'] = df_var_visual['Natureza_ID'].apply(
-                lambda x: f'<div title="{x} - {dict_naturezas.get(x, "N/I")}">{x}</div>' if x else ""
-            )
+            df_var_visual_tela['AÇÃO'] = df_var_visual['Ação'].apply(lambda x: f'<div title="{x} - {dict_acoes.get(x, "N/I")}">{x}</div>' if x else "")
+            df_var_visual_tela['FONTE'] = df_var_visual['Fonte_3'].apply(lambda x: f'<div title="{x} - {dict_fontes_global.get(x, "Outras Fontes")}">{x}</div>' if x else "")
+            df_var_visual_tela['NATUREZA'] = df_var_visual['Natureza_ID'].apply(lambda x: f'<div title="{x} - {dict_naturezas.get(x, "N/I")}">{x}</div>' if x else "")
             
             colunas_identificacao = ['AÇÃO', 'FONTE', 'NATUREZA']
             categorias_alvo = ['Dotação Suplementar', 'Reduções', 'Autorizado', 'Empenhado', 'Disponível', 'Bloqueado']
+            colunas_financeiras_originais = [col for col in df_var_visual.columns if any(cat.lower() in col.lower() for cat in categorias_alvo) and col not in colunas_identificacao and not any(x in col for x in ['Data_', 'Mês', 'Tipo', 'Programa'])]
             
-            colunas_financeiras_originais = []
-            for col in df_var_visual.columns:
-                if any(cat.lower() in col.lower() for cat in categorias_alvo) and col not in colunas_identificacao:
-                    if not any(x in col for x in ['Data_', 'Mês', 'Tipo', 'Programa']):
-                        colunas_financeiras_originais.append(col)
-                        
             df_var_visual_tela = df_var_visual_tela[colunas_identificacao + colunas_financeiras_originais]
-            
-            linha_soma = df_var_visual_tela[colunas_financeiras_originais].sum()
-            df_total = pd.DataFrame(linha_soma).T
-            for col in colunas_identificacao:
-                df_total[col] = "" 
+            df_total = pd.DataFrame(df_var_visual_tela[colunas_financeiras_originais].sum()).T
+            for col in colunas_identificacao: df_total[col] = "" 
             df_total['AÇÃO'] = "<b>TOTAL GERAL</b>" 
-            
             df_var_visual_tela = pd.concat([df_var_visual_tela, df_total], ignore_index=True)
             
-            mapeamento_colunas = {}
-            for col in colunas_financeiras_originais:
-                nome_seguro = col.replace('Ant.', 'A\u200Bnt.') 
-                novo_nome = nome_seguro.replace('_', '<br>').replace(' ', '<br>')
-                novo_nome = novo_nome.replace('<br><br>', '<br>')
-                mapeamento_colunas[col] = f'<span translate="no" class="notranslate">{novo_nome}</span>'
-                
+            mapeamento_colunas = {col: f'<span translate="no" class="notranslate">{col.replace("Ant.", "A\u200Bnt.").replace("_", "<br>").replace(" ", "<br>")}</span>' for col in colunas_financeiras_originais}
             df_var_visual_tela = df_var_visual_tela.rename(columns=mapeamento_colunas)
             colunas_financeiras_tela = list(mapeamento_colunas.values())
             
@@ -619,59 +595,23 @@ try:
                 .set_properties(subset=pd.IndexSlice[df_var_visual_tela.index[-1], :], **{'font-weight': 'bold', 'background-color': '#E5E7EB', 'color': '#0F172A'}) 
             )
             
-            try:
-                html_tabela = tabela_estilizada.hide(axis="index").to_html(escape=False)
-            except AttributeError:
-                html_tabela = tabela_estilizada.hide_index().render()
+            try: html_tabela = tabela_estilizada.hide(axis="index").to_html(escape=False)
+            except: html_tabela = tabela_estilizada.hide_index().render()
                 
             st.markdown(f'<div class="tabela-container tabela-customizada">{html_tabela}</div>', unsafe_allow_html=True)
-            
-            df_excel = df_var_visual.copy()
-            df_excel['AÇÃO'] = df_excel['Ação'].apply(lambda x: f"{x} - {dict_acoes.get(x, 'N/I')}" if x else "")
-            df_excel['FONTE'] = df_excel['Fonte_3'].apply(lambda x: f"{x} - {dict_fontes_global.get(x, 'Outras Fontes')}" if x else "")
-            df_excel['NATUREZA'] = df_excel['Natureza_ID'].apply(lambda x: f"{x} - {dict_naturezas.get(x, 'N/I')}" if x else "")
-            df_excel = df_excel[colunas_identificacao + colunas_financeiras_originais]
-            
-            df_total_excel = pd.DataFrame(df_excel[colunas_financeiras_originais].sum()).T
-            for col in colunas_identificacao: df_total_excel[col] = ""
-            df_total_excel['AÇÃO'] = "TOTAL GERAL"
-            df_excel = pd.concat([df_excel, df_total_excel], ignore_index=True)
-            
-            df_excel.columns = [c.replace('_Ant.', '_Anterior').replace('_Ant', '_Anterior').replace(' Ant.', ' Anterior').replace(' Ant', ' Anterior') for c in df_excel.columns]
-            
+
+            # Botão de Download Excel
             buffer = BytesIO()
             with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
-                df_excel.to_excel(writer, index=False, sheet_name='Variações')
-            
-            st.download_button(
-                label="📥 Descarregar Relatório Excel (.xlsx)",
-                data=buffer.getvalue(),
-                file_name=f"Execucao_UEA_Variacoes_{dt_atual.replace('/', '-')}.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            )
+                df_var_visual.to_excel(writer, index=False, sheet_name='Variações')
+            st.download_button(label="📥 Descarregar Relatório Excel (.xlsx)", data=buffer.getvalue(), file_name=f"Execucao_UEA_Variacoes_{dt_atual.replace('/', '-')}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
         with tab_var_natureza:
-            if var_acao_codigo != "Todas":
-                titulo_dinamico = f"Detalhamento da variação do Empenhado<br><span style='font-size: 20px; color: #4B5563;'>da Ação: {var_acao_str}</span>"
-            else:
-                titulo_dinamico = "Detalhamento da variação do Empenhado<br><span style='font-size: 20px; color: #4B5563;'>(Panorama de Todas as Ações)</span>"
-                
-            st.markdown(f"<div class='destaque-ano'>{titulo_dinamico}</div>", unsafe_allow_html=True)
+            titulo_din = f"Detalhamento da variação do Empenhado<br><span style='font-size: 20px; color: #4B5563;'>{f'da Ação: {var_acao_str}' if var_acao_codigo != 'Todas' else '(Panorama de Todas as Ações)'}</span>"
+            st.markdown(f"<div class='destaque-ano'>{titulo_din}</div>", unsafe_allow_html=True)
             
-            col_var_emp = None
-            for col in df_var_filtrada.columns:
-                if 'Empenhado' in col and ('Varia' in col or 'Diferença' in col):
-                    col_var_emp = col
-                    break
-            
-            if not col_var_emp:
-                for col in df_var_filtrada.columns:
-                    if 'Empenhado' in col and 'Ant' not in col and 'Atual' not in col:
-                        col_var_emp = col
-                        break
-                        
-            if not col_var_emp:
-                col_var_emp = [c for c in df_var_filtrada.columns if 'Empenhado' in c][0] if [c for c in df_var_filtrada.columns if 'Empenhado' in c] else None
+            col_var_emp = next((c for c in df_var_filtrada.columns if 'Empenhado' in c and ('Varia' in c or 'Diferença' in c)), None)
+            if not col_var_emp: col_var_emp = next((c for c in df_var_filtrada.columns if 'Empenhado' in c and 'Ant' not in c and 'Atual' not in c), None)
 
             if col_var_emp and not df_var_filtrada.empty:
                 df_chart_var = df_var_filtrada.groupby('Natureza_ID')[col_var_emp].sum().reset_index()
@@ -684,38 +624,14 @@ try:
                     df_chart_var['Cor'] = df_chart_var[col_var_emp].apply(lambda x: '#10B981' if x > 0 else '#EF4444')
                     df_chart_var = df_chart_var.sort_values(by=col_var_emp, ascending=True)
                     
-                    fig_var = px.bar(
-                        df_chart_var, 
-                        x=col_var_emp, 
-                        y='Rotulo_Eixo', 
-                        orientation='h', 
-                        text='Texto_Valor',
-                        custom_data=['Natureza_ID', 'Nome_Natureza']
-                    )
-                    
-                    fig_var.update_traces(
-                        marker_color=df_chart_var['Cor'], 
-                        textposition="outside", 
-                        textfont=dict(size=14, color="black", weight="bold"),
-                        hovertemplate="<b>Natureza: %{customdata[0]} - %{customdata[1]}</b><br>Variação no Período: %{text}<extra></extra>"
-                    )
-                    
+                    fig_var = px.bar(df_chart_var, x=col_var_emp, y='Rotulo_Eixo', orientation='h', text='Texto_Valor', custom_data=['Natureza_ID', 'Nome_Natureza'])
+                    fig_var.update_traces(marker_color=df_chart_var['Cor'], textposition="outside", textfont=dict(size=14, color="black", weight="bold"), hovertemplate="<b>Natureza: %{customdata[0]} - %{customdata[1]}</b><br>Variação: %{text}<extra></extra>")
                     fig_var.add_vline(x=0, line_width=2, line_color="black")
                     max_abs = abs(df_chart_var[col_var_emp]).max()
-                    fig_var.update_layout(
-                        font=dict(size=14, color="black"), 
-                        yaxis=dict(tickfont=dict(size=15, color="#111827")), 
-                        xaxis=dict(showticklabels=False, title="", range=[-max_abs * 1.35, max_abs * 1.35]), 
-                        yaxis_title="", 
-                        margin=dict(l=10, r=40, t=20, b=10),
-                        height=max(400, len(df_chart_var) * 45) 
-                    )
-                    
+                    fig_var.update_layout(font=dict(size=14, color="black"), yaxis=dict(tickfont=dict(size=15, color="#111827")), xaxis=dict(showticklabels=False, title="", range=[-max_abs * 1.35, max_abs * 1.35]), yaxis_title="", margin=dict(l=10, r=40, t=20, b=10), height=max(400, len(df_chart_var) * 45))
                     st.plotly_chart(fig_var, use_container_width=True)
                 else:
-                    st.info("Não houve variação de Empenho para as naturezas neste período ou filtro selecionado.")
-            else:
-                st.warning("Coluna de variação de Empenhado não foi identificada na base de dados.")
+                    st.info("Não houve variação de Empenho relevante no período.")
 
 # ==========================================
 # 7. TRATAMENTO DE ERROS (PLANO B VISUAL)
