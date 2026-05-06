@@ -22,7 +22,7 @@ st.set_page_config(
 )
 
 # ==========================================
-# 2. BLOCO ÚNICO DE ESTILOS CSS (PLANILHA FINAL: CABEÇALHO AZUL FIXO + 3 COLUNAS FIXAS + TOPO CONGELADO)
+# 2. BLOCO ÚNICO DE ESTILOS CSS (TABELA ÚNICA COM STICKY - FUNCIONA NO STREAMLIT)
 # ==========================================
 st.markdown("""
     <style>
@@ -48,132 +48,125 @@ st.markdown("""
     .stTabs { margin-top: -20px !important; }
 
     /* ============================================
-       2. CONTAINER PRINCIPAL DA TABELA (PLANILHA)
+       2. CONTAINER ÚNICO DA TABELA COM SCROLL
     ============================================ */
     .tabela-container {
+        max-height: 480px;
+        overflow: auto;
         border: 1px solid #e5e7eb;
         border-radius: 8px;
-        overflow: hidden; /* Cantos arredondados funcionam */
+        position: relative;
     }
 
     /* ============================================
-       3. CABEÇALHO FIXO (THEAD INDEPENDENTE)
-       Sem scroll, ocupa 100% da largura visível.
-    ============================================ */
-    .tabela-header-wrapper {
-        overflow-x: auto;  /* Permite scroll horizontal SÓ no cabeçalho */
-        overflow-y: hidden;
-        width: 100%;
-        /* Esconde a barra de scroll do cabeçalho para sincronizar visualmente */
-        scrollbar-width: thin;
-    }
-
-    /* Esconde totalmente a scrollbar do cabeçalho no Chrome/Safari */
-    .tabela-header-wrapper::-webkit-scrollbar {
-        height: 0px;
-        background: transparent;
-    }
-
-    /* ============================================
-       4. CORPO COM SCROLL VERTICAL
-       O cabeçalho fica fora desta div, portanto NÃO sofre scroll vertical
-    ============================================ */
-    .tabela-body-wrapper {
-        max-height: 450px;      /* Altura máxima = scroll vertical aqui */
-        overflow-y: auto;
-        overflow-x: auto;
-        width: 100%;
-        /*
-           Sincronização de scroll horizontal:
-           Vamos usar JavaScript no final para linkar header e body.
-        */
-    }
-
-    /* ============================================
-       5. ESTILO DAS TABELAS (AMBAS: HEADER E BODY)
-       Precisam ter EXATAMENTE a mesma largura de colunas.
+       3. TABELA
     ============================================ */
     table {
-        width: max-content;
-        min-width: 100%;
+        width: 100%;
+        min-width: 800px;  /* Garante scroll horizontal se necessário */
         border-collapse: separate;
         border-spacing: 0;
         font-family: sans-serif;
         table-layout: auto;
     }
 
-    /* --- 5.1 CABEÇALHO AZUL (APENAS NO THEAD INDEPENDENTE) --- */
-    .tabela-header-table thead th {
+    /* ============================================
+       4. CABEÇALHO AZUL FIXO NO TOPO (TODAS AS COLUNAS)
+    ============================================ */
+    thead th {
+        position: sticky;
+        top: 0;
         background-color: #1E3A8A !important;
         color: white !important;
         padding: 12px 8px;
-        text-align: left;
+        text-align: center;
         font-size: 13px;
         font-weight: bold;
         border-bottom: 2px solid #D1D5DB;
         white-space: nowrap;
-    }
-
-    /* --- 5.2 CABEÇALHO OCULTO NO CORPO (para manter alinhamento de colunas) --- */
-    .tabela-body-table thead {
-        display: none;  /* Esconde o cabeçalho do corpo, pois já temos o header separado */
+        z-index: 20;
     }
 
     /* ============================================
-       6. COLUNAS FIXAS À ESQUERDA (AÇÃO, FONTE, NATUREZA)
-       APLICADAS TANTO NO HEADER QUANTO NO BODY
+       5. COLUNAS FIXAS À ESQUERDA (AÇÃO, FONTE, NATUREZA)
     ============================================ */
     
-    /* 6.1 COLUNA AÇÃO (1ª) */
-    .tabela-header-table th:nth-child(1),
-    .tabela-body-table td:nth-child(1) {
+    /* 5.1 COLUNA AÇÃO (1ª) */
+    thead th:nth-child(1),
+    tbody td:nth-child(1) {
         position: sticky;
         left: 0;
         z-index: 15;
         background-color: white;
     }
-    .tabela-header-table th:nth-child(1) {
+    thead th:nth-child(1) {
         background-color: #1E3A8A !important;
-        z-index: 20;
+        z-index: 25;
     }
 
-    /* 6.2 COLUNA FONTE (2ª) */
-    .tabela-header-table th:nth-child(2),
-    .tabela-body-table td:nth-child(2) {
+    /* 5.2 COLUNA FONTE (2ª) */
+    thead th:nth-child(2),
+    tbody td:nth-child(2) {
         position: sticky;
-        left: 100px;  /* Ajustável conforme largura real */
+        left: 0;
         z-index: 15;
         background-color: white;
     }
-    .tabela-header-table th:nth-child(2) {
+    thead th:nth-child(2) {
         background-color: #1E3A8A !important;
-        z-index: 20;
+        z-index: 25;
     }
 
-    /* 6.3 COLUNA NATUREZA (3ª) */
-    .tabela-header-table th:nth-child(3),
-    .tabela-body-table td:nth-child(3) {
+    /* 5.3 COLUNA NATUREZA (3ª) */
+    thead th:nth-child(3),
+    tbody td:nth-child(3) {
         position: sticky;
-        left: 180px;  /* Ajustável: 100 + 80 */
+        left: 0;
         z-index: 15;
         background-color: white;
-        box-shadow: 2px 0 5px -2px rgba(0,0,0,0.2);
+        box-shadow: 2px 0 5px -2px rgba(0,0,0,0.15);
     }
-    .tabela-header-table th:nth-child(3) {
+    thead th:nth-child(3) {
         background-color: #1E3A8A !important;
-        z-index: 20;
+        z-index: 25;
     }
 
     /* ============================================
-       7. CORPO DA TABELA (LINHAS)
+       6. LÓGICA DE EMPILHAMENTO DAS COLUNAS FIXAS
+       Usamos left cumulativo APENAS se for possível via JS.
+       Aqui usamos uma abordagem CSS pura de 3 camadas.
     ============================================ */
-    td {
+    
+    /* Camada 1 (AÇÃO): left: 0 */
+    thead th:nth-child(1) { left: 0; }
+    tbody td:nth-child(1) { left: 0; }
+    
+    /* Camada 2 (FONTE): precisa saber a largura da 1ª coluna */
+    thead th:nth-child(2) { left: 60px; }   /* Ajustável */
+    tbody td:nth-child(2) { left: 60px; }
+    
+    /* Camada 3 (NATUREZA): soma das larguras anteriores */
+    thead th:nth-child(3) { left: 120px; }  /* Ajustável */
+    tbody td:nth-child(3) { left: 120px; }
+
+    /* ============================================
+       7. CORPO DA TABELA
+    ============================================ */
+    tbody td {
         padding: 10px 8px;
         border-bottom: 1px solid #F3F4F6;
         font-size: 13px;
         color: #4B5563;
         white-space: nowrap;
         background-color: white;
+        text-align: right;
+    }
+    
+    /* As 3 primeiras colunas centralizadas */
+    tbody td:nth-child(1),
+    tbody td:nth-child(2),
+    tbody td:nth-child(3) {
+        text-align: center;
     }
 
     tr:hover td {
@@ -743,43 +736,10 @@ try:
                 html_tabela = tabela_estilizada.hide_index().render()
                 
                         # ==========================================
-            # RENDERIZAÇÃO DA TABELA COM CABEÇALHO FIXO
+            # RENDERIZAÇÃO DA TABELA (ÚNICA, COM STICKY CSS)
             # ==========================================
-            match_thead = re.search(r'<thead>(.*?)</thead>', html_tabela, re.DOTALL)
-            match_tbody = re.search(r'<tbody>(.*?)</tbody>', html_tabela, re.DOTALL)
-
-            if match_thead and match_tbody:
-                html_thead = match_thead.group(1)
-                html_tbody = match_tbody.group(1)
-                
-                match_colgroup = re.search(r'<colgroup>(.*?)</colgroup>', html_tabela, re.DOTALL)
-                colgroup_html = f'<colgroup>{match_colgroup.group(1)}</colgroup>' if match_colgroup else ''
-                
-                # Monta o HTML em uma linha só para evitar quebras no Streamlit
-                html_final = (
-                    '<div class="tabela-container">'
-                    '<div class="tabela-header-wrapper" id="header-wrapper">'
-                    f'<table class="tabela-header-table">{colgroup_html}<thead>{html_thead}</thead></table>'
-                    '</div>'
-                    '<div class="tabela-body-wrapper" id="body-wrapper">'
-                    f'<table class="tabela-body-table">{colgroup_html}<tbody>{html_tbody}</tbody></table>'
-                    '</div>'
-                    '</div>'
-                    '<script>'
-                    '(function(){'
-                    'const hw=document.getElementById("header-wrapper");'
-                    'const bw=document.getElementById("body-wrapper");'
-                    'if(hw&&bw){'
-                    'bw.addEventListener("scroll",function(){hw.scrollLeft=bw.scrollLeft;});'
-                    'hw.addEventListener("scroll",function(){bw.scrollLeft=hw.scrollLeft;});'
-                    '}'
-                    '})();'
-                    '</script>'
-                )
-                
-                st.markdown(html_final, unsafe_allow_html=True)
-            else:
-                st.markdown(f'<div class="tabela-body-wrapper">{html_tabela}</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="tabela-container">{html_tabela}</div>', unsafe_allow_html=True)
+            st.markdown(f'<div class="tabela-body-wrapper">{html_tabela}</div>', unsafe_allow_html=True)
             
             df_excel = df_var_visual.copy()
             df_excel['AÇÃO'] = df_excel['Ação'].apply(lambda x: f"{x} - {dict_acoes.get(x, 'N/I')}" if x else "")
