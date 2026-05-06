@@ -742,10 +742,9 @@ try:
             except AttributeError:
                 html_tabela = tabela_estilizada.hide_index().render()
                 
+                        # ==========================================
+            # RENDERIZAÇÃO DA TABELA COM CABEÇALHO FIXO
             # ==========================================
-            # RENDERIZAÇÃO DA TABELA COM CABEÇALHO FIXO (CORRIGIDA - SEM DUPLICAÇÃO)
-            # ==========================================
-            
             match_thead = re.search(r'<thead>(.*?)</thead>', html_tabela, re.DOTALL)
             match_tbody = re.search(r'<tbody>(.*?)</tbody>', html_tabela, re.DOTALL)
 
@@ -753,52 +752,30 @@ try:
                 html_thead = match_thead.group(1)
                 html_tbody = match_tbody.group(1)
                 
-                # Monta uma colgroup com as mesmas larguras para sincronizar
-                # Extrai as tags <col> ou <colgroup> se existirem
                 match_colgroup = re.search(r'<colgroup>(.*?)</colgroup>', html_tabela, re.DOTALL)
                 colgroup_html = f'<colgroup>{match_colgroup.group(1)}</colgroup>' if match_colgroup else ''
                 
-                html_final = f'''
-                <div class="tabela-container">
-                    <!-- CABEÇALHO FIXO (sempre visível, sem scroll vertical) -->
-                    <div class="tabela-header-wrapper" id="header-wrapper">
-                        <table class="tabela-header-table">
-                            {colgroup_html}
-                            <thead>
-                                {html_thead}
-                            </thead>
-                        </table>
-                    </div>
-                    
-                    <!-- CORPO COM SCROLL VERTICAL (SEM thead duplicado!) -->
-                    <div class="tabela-body-wrapper" id="body-wrapper">
-                        <table class="tabela-body-table">
-                            {colgroup_html}
-                            <!-- CORPO DIRETO, sem thead escondido -->
-                            <tbody>
-                                {html_tbody}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                
-                <!-- SCRIPT PARA SINCRONIZAR SCROLL HORIZONTAL -->
-                <script>
-                (function() {{
-                    const headerWrapper = document.getElementById('header-wrapper');
-                    const bodyWrapper = document.getElementById('body-wrapper');
-                    
-                    if (headerWrapper && bodyWrapper) {{
-                        bodyWrapper.addEventListener('scroll', function() {{
-                            headerWrapper.scrollLeft = bodyWrapper.scrollLeft;
-                        }});
-                        headerWrapper.addEventListener('scroll', function() {{
-                            bodyWrapper.scrollLeft = headerWrapper.scrollLeft;
-                        }});
-                    }}
-                }})();
-                </script>
-                '''
+                # Monta o HTML em uma linha só para evitar quebras no Streamlit
+                html_final = (
+                    '<div class="tabela-container">'
+                    '<div class="tabela-header-wrapper" id="header-wrapper">'
+                    f'<table class="tabela-header-table">{colgroup_html}<thead>{html_thead}</thead></table>'
+                    '</div>'
+                    '<div class="tabela-body-wrapper" id="body-wrapper">'
+                    f'<table class="tabela-body-table">{colgroup_html}<tbody>{html_tbody}</tbody></table>'
+                    '</div>'
+                    '</div>'
+                    '<script>'
+                    '(function(){'
+                    'const hw=document.getElementById("header-wrapper");'
+                    'const bw=document.getElementById("body-wrapper");'
+                    'if(hw&&bw){'
+                    'bw.addEventListener("scroll",function(){hw.scrollLeft=bw.scrollLeft;});'
+                    'hw.addEventListener("scroll",function(){bw.scrollLeft=hw.scrollLeft;});'
+                    '}'
+                    '})();'
+                    '</script>'
+                )
                 
                 st.markdown(html_final, unsafe_allow_html=True)
             else:
