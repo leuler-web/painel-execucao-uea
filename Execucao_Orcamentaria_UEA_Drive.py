@@ -23,77 +23,77 @@ if 'pagina_ativa' not in st.session_state:
     st.session_state.pagina_ativa = 'capa' 
 
 # ==========================================
-# 2. BLOCO ÚNICO DE ESTILOS CSS (VERSÃO REVISADA E SEGURA)
+# 2. BLOCO ÚNICO DE ESTILOS CSS (VERSÃO FINAL E AJUSTADA)
 # ==========================================
 st.markdown("""
     <style>
-    /* 1. ESCONDER APENAS O GITHUB E O MENU DEPLOY (SEM QUEBRAR A SIDEBAR) */
+    /* 1. SEGURANÇA: ESCONDE APENAS O BOTÃO DE DEPLOY E O STATUS (MANTÉM SIDEBAR) */
     .stAppDeployButton { display: none !important; }
     [data-testid="stStatusWidget"] { visibility: hidden !important; }
     footer { visibility: hidden !important; }
-
+    
     /* 2. AJUSTE PARA O IFRAME (TÍTULO NÃO CORTAR) */
     .block-container { 
         padding-top: 100px !important; 
         max-width: 100% !important; 
     }
 
-    /* Cabeçalho da página (Título e KPIs) fixo no topo */
+    /* Cabeçalho fixo (Título e KPIs) */
     [data-testid="stVerticalBlock"] > div:has(div.unificar-header) {
-        position: sticky; top: 0px; background-color: white; z-index: 999;
+        position: sticky; top: 0px; background-color: white; z-index: 99;
         padding-top: 10px !important; border-bottom: 2px solid #e5e7eb;
     }
 
-    /* 3. TABELA COM COLUNAS FIXAS E LARGURA DE FONTE AJUSTADA */
+    /* 3. TABELA (CABEÇALHO AZUL E COLUNAS CONGELADAS) */
     .tabela-container { 
-        max-height: 500px; 
-        overflow: auto; 
-        border: 1px solid #d1d5db;
-        background-color: white;
+        max-height: 500px; overflow: auto; border: 1px solid #d1d5db; background-color: white;
     }
     
-    table { border-collapse: separate; border-spacing: 0; width: 100%; }
+    table { border-collapse: separate; border-spacing: 0; width: 100%; table-layout: fixed; }
 
-    /* Estilo Geral de Fontes */
+    /* Estilo das Fontes - PADRONIZADO */
     th, td { 
         padding: 8px !important; 
-        font-size: 12px !important; 
+        font-size: 11px !important; /* Fonte menor para caber mais dados */
         font-family: sans-serif !important;
         white-space: nowrap; 
+        overflow: hidden;
+        text-overflow: ellipsis;
         border-bottom: 1px solid #e5e7eb;
         border-right: 1px solid #f0f0f0;
     }
 
-    th { background-color: #004587 !important; color: white !important; position: sticky; top: 0; z-index: 500; }
+    th { background-color: #004587 !important; color: white !important; position: sticky; top: 0; z-index: 100; }
 
-    /* FIXANDO AS COLUNAS E AJUSTANDO LARGURAS */
+    /* --- AJUSTE DE LARGURA DAS COLUNAS (AQUI ESTÁ A SOLUÇÃO) --- */
     
-    /* Coluna 1 (PT) - 80px */
+    /* Coluna 1 (PT) */
     th:nth-child(1), td:nth-child(1) { 
-        position: sticky; left: 0; min-width: 80px; max-width: 80px; 
-        z-index: 400; background-color: white !important; 
+        position: sticky; left: 0; width: 60px !important; 
+        z-index: 80; background-color: white !important; 
     }
 
-    /* Coluna 2 (Ação) - 300px */
+    /* Coluna 2 (Ação) - Deixamos maior para o texto aparecer */
     th:nth-child(2), td:nth-child(2) { 
-        position: sticky; left: 80px; min-width: 300px; max-width: 300px; 
-        z-index: 400; background-color: white !important; 
+        position: sticky; left: 60px; width: 280px !important; 
+        z-index: 80; background-color: white !important; 
     }
 
-    /* Coluna 3 (Natureza/Fonte) - LARGURA REDUZIDA PARA 80px */
+    /* Coluna 3 (Fonte/Natureza) - AGORA BEM PEQUENA */
     th:nth-child(3), td:nth-child(3) { 
-        position: sticky; left: 380px; min-width: 80px; max-width: 80px; 
-        z-index: 400; background-color: white !important; 
+        position: sticky; left: 340px; width: 50px !important; 
+        z-index: 80; background-color: white !important; 
         border-right: 2px solid #d1d5db !important;
+        text-align: center;
     }
 
-    /* Garantir que o cabeçalho das fixas seja azul */
-    th:nth-child(1), th:nth-child(2), th:nth-child(3) { z-index: 600 !important; background-color: #004587 !important; }
+    /* Cabeçalhos das fixas em azul (z-index maior que as células) */
+    th:nth-child(1), th:nth-child(2), th:nth-child(3) { z-index: 110 !important; }
 
     /* Cores das Variações */
     .pos { color: #059669 !important; font-weight: bold; }
     .neg { color: #DC2626 !important; font-weight: bold; }
-
+    
     tr:hover td { background-color: #f9fafb !important; }
     </style>
 """, unsafe_allow_html=True)
