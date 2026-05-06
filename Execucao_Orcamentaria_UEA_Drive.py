@@ -744,11 +744,10 @@ try:
             import re
 
             match_thead = re.search(r'<thead>(.*?)</thead>', html_tabela, re.DOTALL)
-            match_tbody = re.search(r'<tbody>(.*?)</tbody>', html_tabela, re.DOTALL)
-
+            
             if match_thead and match_tbody:
                 html_thead = match_thead.group(1)
-                html_tbody = match_tbody.group(1)
+                #html_tbody = match_tbody.group(1)
                 
                 html_final = f'''
                 <div class="tabela-container">
