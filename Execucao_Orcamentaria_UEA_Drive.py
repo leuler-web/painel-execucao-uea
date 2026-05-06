@@ -216,59 +216,36 @@ st.markdown("""
     .neg { color: #DC2626; font-weight: bold; }
     .zero { color: #6B7280; }
 
-            /* ============================================
-       8. LIMPEZA VISUAL (REMOÇÃO TOTAL VIA JAVASCRIPT)
+        /* ============================================
+       8. LIMPEZA VISUAL (CSS PURO - SELETORES ESPECÍFICOS)
     ============================================ */
-    #MainMenu { visibility: hidden; }
-    footer { visibility: hidden; }
+    #MainMenu { visibility: hidden !important; }
+    footer { visibility: hidden !important; }
+    
+    /* Esconde o header com "Gerenciar aplicativo" */
+    header[data-testid="stHeader"] { display: none !important; }
+    
+    /* Esconde a toolbar inferior (botão do GitHub / Gerenciar aplicativo) */
+    div[data-testid="stToolbar"] { display: none !important; }
+    
+    /* Esconde o link "Made with Streamlit" */
+    div[data-testid="stDecoration"] { display: none !important; }
+    
+    /* Esconde QUALQUER elemento com a classe do toolbar */
+    .st-emotion-cache-1f3f2m8 { display: none !important; }
+    
+    /* Ajusta o espaçamento que sobra */
+    .stApp { margin-top: 0px !important; }
+    .stMain { padding-top: 0px !important; }
+
+    /* Tenta remover o botão "Gerenciar aplicativo" */
+    button[kind="header"] { display: none !important; }
+    .st-emotion-cache-1q3nhyv { display: none !important; }
+    [data-testid="baseButton-header"] { display: none !important; }
+    
     [data-testid="stMetricValue"] { color: #2E7D32 !important; font-size: 1.2rem !important; }
 >>>>>>> e4fba49b37b781d61105a1e89f4877a65e1699a3
     </style>
-    
-    <!-- SCRIPT PARA REMOVER ELEMENTOS DO STREAMLIT CLOUD -->
-    <script>
-    (function() {
-        let tentativas = 0;
-        const maxTentativas = 20;
-        
-        const remover = () => {
-            tentativas++;
-            
-            // Método 1: Remove o header inteiro (onde fica "Gerenciar aplicativo")
-            const header = document.querySelector('header[data-testid="stHeader"]');
-            if (header && header.parentNode) {
-                header.parentNode.removeChild(header);
-            }
-            
-            // Método 2: Remove a toolbar inferior (ícone do GitHub)
-            const toolbar = document.querySelector('[data-testid="stToolbar"]');
-            if (toolbar && toolbar.parentNode) {
-                toolbar.parentNode.removeChild(toolbar);
-            }
-            
-            // Método 3: Remove o elemento report (Made with Streamlit)
-            const report = document.querySelector('[data-testid="stDecoration"]');
-            if (report && report.parentNode) {
-                report.parentNode.removeChild(report);
-            }
-            
-            // Método 4: Remove QUALQUER botão que contenha "Gerenciar" no texto
-            const botoes = document.querySelectorAll('button');
-            botoes.forEach(btn => {
-                if (btn.textContent.includes('Gerenciar')) {
-                    if (btn.parentNode) btn.parentNode.removeChild(btn);
-                }
-            });
-            
-            // Para após 20 tentativas (10 segundos)
-            if (tentativas >= maxTentativas) {
-                clearInterval(intervalo);
-            }
-        };
-        
-        const intervalo = setInterval(remover, 500);
-    })();
-    </script>
 """, unsafe_allow_html=True)
 
 # ==========================================
