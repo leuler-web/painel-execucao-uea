@@ -21,12 +21,11 @@ st.set_page_config(
 )
 
 # ==========================================
-# 2. BLOCO ÚNICO DE ESTILOS CSS (TOPO FIXO + TABELA COM CABEÇALHO AZUL E 3 COLUNAS FIXAS)
+# 2. BLOCO ÚNICO DE ESTILOS CSS (TOPO FIXO + TABELA COM CABEÇALHO AZUL E 3 COLUNAS FIXAS - VERSÃO CORRIGIDA)
 # ==========================================
 st.markdown("""
     <style>
     /* --- 1. CONGELAMENTO DO TOPO (TÍTULO + KPIs) --- */
-    /* Container que envolve título e métricas */
     .topo-congelado {
         position: sticky;
         top: 0px;
@@ -47,114 +46,116 @@ st.markdown("""
 
     .stTabs { margin-top: -20px !important; }
 
-    /* --- 2. TABELA COM CABEÇALHO AZUL E COLUNAS FIXAS --- */
-    .tabela-container {
-        max-height: 500px;
-        overflow: auto;           /* ATENÇÃO: 'auto', não 'y' somente, para permitir scroll horizontal também */
+    /* --- 2. CONTAINER DA TABELA COM SCROLL DUPLO --- */
+    .tabela-wrapper {
+        max-height: 500px;           /* Altura máxima => scroll vertical */
+        overflow-y: auto;            /* Scroll vertical ativado aqui */
         border: 1px solid #e5e7eb;
         border-radius: 8px;
         position: relative;
     }
 
-    table {
+    .tabela-scroll-horizontal {
+        overflow-x: auto;            /* Scroll horizontal delegado a esta div interna */
         width: 100%;
-        border-collapse: separate;  /* Muda para separate para border-radius funcionar no thead */
+    }
+
+    /* --- 3. TABELA EM SI --- */
+    table {
+        width: max-content;          /* Permite que a tabela tenha largura maior que o container */
+        min-width: 100%;
+        border-collapse: separate;
         border-spacing: 0;
         font-family: sans-serif;
         table-layout: auto;
-        white-space: nowrap;        /* Garante que as colunas não quebrem e força scroll horizontal */
     }
 
-    /* --- 2.1 CABEÇALHO AZUL COM LETRAS BRANCAS --- */
-    th {
+    /* --- 4. CABEÇALHO AZUL COM LETRAS BRANCAS E FIXO NO TOPO --- */
+    thead th {
         position: sticky;
         top: 0;
-        background-color: #1E3A8A !important; /* Azul forte */
+        background-color: #1E3A8A !important;
         color: white !important;
-        z-index: 20;              /* Garante que fica sobre as colunas fixas laterais no eixo Z */
+        z-index: 30;                /* Valor alto para pairar sobre tudo */
         padding: 12px 8px;
-        text-align: left;         /* Ajuste para center se quiser, mas left é mais seguro com nomes longos */
+        text-align: left;
         font-size: 13px;
         font-weight: bold;
         border-bottom: 2px solid #D1D5DB;
         white-space: nowrap;
+        /* Remove sombra que pode causar glitch visual */
+        box-shadow: none !important;
     }
 
-    /* --- 2.2 COLUNAS FIXADAS À ESQUERDA (AÇÃO, FONTE, NATUREZA) --- */
-    /* Seletor para a 1ª coluna da tabela (AÇÃO) */
-    table th:nth-child(1),
-    table td:nth-child(1) {
+    /* --- 5. COLUNAS FIXAS À ESQUERDA (AÇÃO, FONTE, NATUREZA) --- */
+    /* Todas as fixas ganham z-index=25 (abaixo do cabeçalho=30, acima do corpo normal) */
+    
+    /* 5.1. COLUNA AÇÃO */
+    td:nth-child(1),
+    th:nth-child(1) {
         position: sticky;
         left: 0;
+        z-index: 25;
         background-color: white;
-        z-index: 15;
     }
 
-    /* Seletor para a 2ª coluna da tabela (FONTE) */
-    table th:nth-child(2),
-    table td:nth-child(2) {
+    /* Cabeçalho da coluna AÇÃO deve manter fundo azul */
+    thead th:nth-child(1) {
+        background-color: #1E3A8A !important;
+    }
+
+    /* 5.2. COLUNA FONTE */
+    td:nth-child(2),
+    th:nth-child(2) {
         position: sticky;
-        left: 120px; /* Ajuste fino: modifique esse valor conforme a largura real da 1ª coluna */
+        left: 100px;   /* Ajustável */
+        z-index: 25;
         background-color: white;
-        z-index: 15;
+    }
+    thead th:nth-child(2) {
+        background-color: #1E3A8A !important;
     }
 
-    /* Seletor para a 3ª coluna da tabela (NATUREZA) */
-    table th:nth-child(3),
-    table td:nth-child(3) {
+    /* 5.3. COLUNA NATUREZA */
+    td:nth-child(3),
+    th:nth-child(3) {
         position: sticky;
-        left: 200px; /* Ajuste: 120px da 1ª + 80px da 2ª. Ajuste conforme seus dados */
+        left: 180px;   /* Ajustável */
+        z-index: 25;
         background-color: white;
-        z-index: 15;
+        /* Sombra para profundidade (opcional) */
+        box-shadow: 2px 0 5px -2px rgba(0,0,0,0.2);
+    }
+    thead th:nth-child(3) {
+        background-color: #1E3A8A !important;
     }
 
-    /* --- 2.3 CORREÇÕES VISUAIS DAS COLUNAS FIXAS --- */
-    /* Células do corpo (td) fixas precisam de fundo explícito */
-    table td:nth-child(1),
-    table td:nth-child(2),
-    table td:nth-child(3) {
-        background-color: white;
-    }
-
-    /* Ao passar o mouse (hover), a linha fixa também deve mudar de cor */
-    tr:hover td:nth-child(1),
-    tr:hover td:nth-child(2),
-    tr:hover td:nth-child(3) {
-        background-color: #F9FAFB;
-    }
-
-    /* Sombra sutil à direita da última coluna fixa para dar profundidade */
-    table th:nth-child(3),
-    table td:nth-child(3) {
-        box-shadow: 2px 0px 5px -2px rgba(0, 0, 0, 0.2);
-    }
-
-    /* --- 2.4 DEMAIS CÉLULAS --- */
+    /* --- 6. CORPO DA TABELA --- */
     td {
         padding: 10px 8px;
         border-bottom: 1px solid #F3F4F6;
         font-size: 13px;
         color: #4B5563;
         white-space: nowrap;
+        background-color: white; /* Fundo padrão */
     }
 
+    /* Hover: pinta linha inteira, inclusive fixas */
     tr:hover td {
-        background-color: #F9FAFB;
+        background-color: #F9FAFB !important;
     }
-
-    /* Preservar o hover nas fixas (reforço) */
     tr:hover td:nth-child(1),
     tr:hover td:nth-child(2),
     tr:hover td:nth-child(3) {
         background-color: #F9FAFB !important;
     }
 
-    /* Cores das Variações */
+    /* --- 7. CORES DAS VARIAÇÕES --- */
     .pos { color: #059669; font-weight: bold; }
     .neg { color: #DC2626; font-weight: bold; }
     .zero { color: #6B7280; }
 
-    /* --- 3. LIMPEZA VISUAL --- */
+    /* --- 8. LIMPEZA VISUAL --- */
     #MainMenu { visibility: hidden; }
     .stDeployButton { display: none !important; }
     footer { visibility: hidden; }
@@ -702,7 +703,14 @@ try:
             except AttributeError:
                 html_tabela = tabela_estilizada.hide_index().render()
                 
-            st.markdown(f'<div class="tabela-container tabela-customizada">{html_tabela}</div>', unsafe_allow_html=True)
+            st.markdown(
+                f'<div class="tabela-wrapper">'
+                f'<div class="tabela-scroll-horizontal">'
+                f'{html_tabela}'
+                f'</div>'
+                f'</div>',
+                unsafe_allow_html=True
+            )
             
             df_excel = df_var_visual.copy()
             df_excel['AÇÃO'] = df_excel['Ação'].apply(lambda x: f"{x} - {dict_acoes.get(x, 'N/I')}" if x else "")
