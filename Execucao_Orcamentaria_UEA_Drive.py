@@ -171,14 +171,33 @@ st.markdown("""
     .neg { color: #DC2626; font-weight: bold; }
     .zero { color: #6B7280; }
 
-    /* ============================================
-       8. LIMPEZA VISUAL
+        /* ============================================
+       8. LIMPEZA VISUAL (COM JAVASCRIPT PARA REMOVER HEADER E BOTÃO)
     ============================================ */
     #MainMenu { visibility: hidden; }
-    .stDeployButton { display: none !important; }
     footer { visibility: hidden; }
     [data-testid="stMetricValue"] { color: #2E7D32 !important; font-size: 1.2rem !important; }
     </style>
+    
+    <!-- SCRIPT PARA REMOVER ELEMENTOS INDESEJADOS -->
+    <script>
+    (function() {
+        const removeElements = () => {
+            const header = document.querySelector('header[data-testid="stHeader"]');
+            if (header) header.style.display = 'none';
+            
+            const toolbar = document.querySelector('[data-testid="stToolbar"]');
+            if (toolbar) toolbar.style.display = 'none';
+            
+            const decoration = document.querySelector('[data-testid="stDecoration"]');
+            if (decoration) decoration.style.display = 'none';
+            
+            if (header && toolbar) clearInterval(intervalId);
+        };
+        
+        const intervalId = setInterval(removeElements, 500);
+    })();
+    </script>
 """, unsafe_allow_html=True)
 
 # ==========================================
