@@ -12,28 +12,26 @@ st.set_page_config(
     page_title="PAINEL ORÇAMENTÁRIO - UEA", 
     layout="wide", 
     page_icon="📈",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="expanded",
+    menu_items={
+        'Get Help': 'https://www.uea.edu.br',
+        'Report a bug': None, 
+        'About': "Painel de Execução Orçamentária UEA. Versão 2.0 (Blindada)"
+    }
 )
 
 # ==========================================
-# 1.1 INICIALIZAÇÃO DO ESTADO (CORREÇÃO DA TELA EM BRANCO)
-# ==========================================
-if 'pagina_ativa' not in st.session_state:
-    # IMPORTANTE: Definir como 'capa' para o painel abrir o conteúdo
-    st.session_state.pagina_ativa = 'capa' 
-
-# ==========================================
-# 2. BLOCO ÚNICO DE ESTILOS CSS (TABELA UNIFICADA + IFRAME)
+# 2. BLOCO ÚNICO DE ESTILOS CSS (VERSÃO HÍBRIDA: TABELA + IFRAME)
 # ==========================================
 st.markdown("""
     <style>
-    /* 1. AJUSTE PARA O IFRAME (TÍTULO NÃO CORTAR) */
+    /* --- 1. AJUSTES DO IFRAME (TÍTULO E TOPO) --- */
     .block-container { 
-        padding-top: 100px !important; 
+        padding-top: 100px !important; /* Espaço para o título não sumir no site da UEA */
         max-width: 100% !important; 
     }
 
-    /* Cabeçalho da página (Título e KPIs) fixo no topo */
+    /* Container Fixo do Topo (Título + KPIs) */
     [data-testid="stVerticalBlock"] > div:has(div.unificar-header) {
         position: sticky;
         top: 0px;
@@ -43,70 +41,52 @@ st.markdown("""
         border-bottom: 2px solid #e5e7eb;
     }
 
-    /* 2. ESTILO DA TABELA (CABEÇALHO AZUL E COLUNAS FIXAS SEM SEPARAÇÃO) */
+    h1 { 
+        font-size: 1.6rem !important;
+        margin-top: 0px !important;
+        line-height: 1.2 !important;
+        color: #111827 !important;
+    }
+
+    .stTabs { margin-top: -20px !important; }
+
+    /* --- 2. ESTILO DA TABELA DE VARIAÇÕES (RECUPERADO) --- */
     .tabela-container { 
-        max-height: 500px; 
-        overflow: auto; 
-        border: 1px solid #d1d5db;
+        max-height: 450px; 
+        overflow-y: auto; 
+        border: 1px solid #e5e7eb; 
+        border-radius: 8px;
     }
     
-    table { 
-        border-collapse: separate; /* Necessário para colunas fixas funcionarem bem */
-        border-spacing: 0; 
-        width: 100%; 
-    }
-
-    /* Estilo Geral do Cabeçalho (Azul UEA) */
+    table { width: 100%; border-collapse: collapse; font-family: sans-serif; }
+    
     th { 
-        background-color: #004587 !important; 
-        color: white !important; 
         position: sticky; 
         top: 0; 
-        z-index: 100; /* Fica acima de tudo */
-        padding: 12px;
-        text-align: left;
-        font-size: 13px;
-        border-bottom: 2px solid #003366;
-        border-right: 1px solid #0056a3; /* Bordas internas sutis no azul */
-    }
-
-    /* FIXAR AS 3 PRIMEIRAS COLUNAS */
-    /* Coluna 1 */
-    th:nth-child(1), td:nth-child(1) { position: sticky; left: 0; z-index: 20; }
-    /* Coluna 2 */
-    th:nth-child(2), td:nth-child(2) { position: sticky; left: 100px; z-index: 20; }
-    /* Coluna 3 */
-    th:nth-child(3), td:nth-child(3) { position: sticky; left: 300px; z-index: 20; }
-
-    /* Garantir que as células fixas tenham fundo branco para não serem transparentes */
-    td:nth-child(1), td:nth-child(2), td:nth-child(3) {
-        background-color: white !important;
-        border-right: 1px solid #e5e7eb !important;
-    }
-
-    /* Quando passar o mouse, a linha inteira (inclusive as fixas) muda de cor */
-    tr:hover td { background-color: #f3f4f6 !important; }
-
-    /* Cabeçalhos das colunas fixas (precisam de z-index maior que as células fixas) */
-    th:nth-child(1), th:nth-child(2), th:nth-child(3) { z-index: 110; }
-
-    td { 
-        padding: 10px; 
-        border-bottom: 1px solid #e5e7eb; 
-        border-right: 1px solid #f3f4f6;
+        background-color: #F3F4F6 !important; 
+        z-index: 10; 
+        padding: 12px; 
+        text-align: left; 
         font-size: 13px; 
-        white-space: nowrap; /* Evita que o texto quebre e desalinhe a linha */
+        font-weight: bold; 
+        color: #374151;
+        border-bottom: 2px solid #D1D5DB;
     }
-
+    
+    td { padding: 10px 12px; border-bottom: 1px solid #F3F4F6; font-size: 13px; color: #4B5563; }
+    
+    tr:hover { background-color: #F9FAFB; }
+    
     /* Cores das Variações */
-    .pos { color: #059669; font-weight: bold; }
-    .neg { color: #DC2626; font-weight: bold; }
+    .pos { color: #059669; font-weight: bold; } /* Verde para positivo */
+    .neg { color: #DC2626; font-weight: bold; } /* Vermelho para negativo */
+    .zero { color: #6B7280; } /* Cinza para neutro */
 
-    /* 3. LIMPEZA VISUAL */
+    /* --- 3. LIMPEZA VISUAL --- */
     #MainMenu { visibility: hidden; }
     .stDeployButton { display: none !important; }
     footer { visibility: hidden; }
-    h1 { font-size: 1.6rem !important; color: #111827 !important; }
+    [data-testid="stMetricValue"] { color: #2E7D32 !important; font-size: 1.2rem !important; }
     </style>
 """, unsafe_allow_html=True)
 
