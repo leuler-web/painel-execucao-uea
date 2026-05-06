@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import plotly.express as px
 import os
+import re   
 from io import BytesIO
 
 # ==========================================
@@ -744,8 +745,7 @@ try:
             # ==========================================
             # RENDERIZAÇÃO DA TABELA COM CABEÇALHO FIXO (CORRIGIDA - SEM DUPLICAÇÃO)
             # ==========================================
-            import re
-
+            
             match_thead = re.search(r'<thead>(.*?)</thead>', html_tabela, re.DOTALL)
             match_tbody = re.search(r'<tbody>(.*?)</tbody>', html_tabela, re.DOTALL)
 
