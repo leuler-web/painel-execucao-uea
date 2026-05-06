@@ -21,7 +21,7 @@ st.set_page_config(
 )
 
 # ==========================================
-# 2. BLOCO ÚNICO DE ESTILOS CSS (PLANILHA COMPLETA: TOPO + CABEÇALHO + 3 COLUNAS FIXAS)
+# 2. BLOCO ÚNICO DE ESTILOS CSS (PLANILHA FINAL: CABEÇALHO AZUL FIXO + 3 COLUNAS FIXAS + TOPO CONGELADO)
 # ==========================================
 st.markdown("""
     <style>
@@ -47,25 +47,51 @@ st.markdown("""
     .stTabs { margin-top: -20px !important; }
 
     /* ============================================
-       2. ESTRUTURA DA TABELA (PLANILHA)
-       Camadas de scroll e fixação
+       2. CONTAINER PRINCIPAL DA TABELA (PLANILHA)
     ============================================ */
-    /* Container externo: controla APENAS scroll vertical */
-    .tabela-wrapper {
-        max-height: 500px;
-        overflow-y: auto;
+    .tabela-container {
         border: 1px solid #e5e7eb;
         border-radius: 8px;
-        position: relative;
+        overflow: hidden; /* Cantos arredondados funcionam */
     }
 
-    /* Container interno: controla APENAS scroll horizontal */
-    .tabela-scroll-horizontal {
+    /* ============================================
+       3. CABEÇALHO FIXO (THEAD INDEPENDENTE)
+       Sem scroll, ocupa 100% da largura visível.
+    ============================================ */
+    .tabela-header-wrapper {
+        overflow-x: auto;  /* Permite scroll horizontal SÓ no cabeçalho */
+        overflow-y: hidden;
+        width: 100%;
+        /* Esconde a barra de scroll do cabeçalho para sincronizar visualmente */
+        scrollbar-width: thin;
+    }
+
+    /* Esconde totalmente a scrollbar do cabeçalho no Chrome/Safari */
+    .tabela-header-wrapper::-webkit-scrollbar {
+        height: 0px;
+        background: transparent;
+    }
+
+    /* ============================================
+       4. CORPO COM SCROLL VERTICAL
+       O cabeçalho fica fora desta div, portanto NÃO sofre scroll vertical
+    ============================================ */
+    .tabela-body-wrapper {
+        max-height: 450px;      /* Altura máxima = scroll vertical aqui */
+        overflow-y: auto;
         overflow-x: auto;
         width: 100%;
+        /*
+           Sincronização de scroll horizontal:
+           Vamos usar JavaScript no final para linkar header e body.
+        */
     }
 
-    /* Tabela com largura dinâmica */
+    /* ============================================
+       5. ESTILO DAS TABELAS (AMBAS: HEADER E BODY)
+       Precisam ter EXATAMENTE a mesma largura de colunas.
+    ============================================ */
     table {
         width: max-content;
         min-width: 100%;
@@ -75,14 +101,8 @@ st.markdown("""
         table-layout: auto;
     }
 
-    /* ============================================
-       3. CABEÇALHO FIXO NO TOPO (AZUL) - TODAS AS COLUNAS
-       Estratégia: todos os th são sticky no topo,
-       mas os das 3 primeiras têm z-index MAIOR
-    ============================================ */
-    thead th {
-        position: sticky;
-        top: 0;
+    /* --- 5.1 CABEÇALHO AZUL (APENAS NO THEAD INDEPENDENTE) --- */
+    .tabela-header-table thead th {
         background-color: #1E3A8A !important;
         color: white !important;
         padding: 12px 8px;
@@ -91,57 +111,60 @@ st.markdown("""
         font-weight: bold;
         border-bottom: 2px solid #D1D5DB;
         white-space: nowrap;
-        z-index: 10; /* Base para cabeçalho normal */
+    }
+
+    /* --- 5.2 CABEÇALHO OCULTO NO CORPO (para manter alinhamento de colunas) --- */
+    .tabela-body-table thead {
+        display: none;  /* Esconde o cabeçalho do corpo, pois já temos o header separado */
     }
 
     /* ============================================
-       4. COLUNAS FIXAS À ESQUERDA (AÇÃO, FONTE, NATUREZA)
-       Precisam de z-index ALTO para cobrir as outras células
-       E também vencer o cabeçalho no eixo horizontal
+       6. COLUNAS FIXAS À ESQUERDA (AÇÃO, FONTE, NATUREZA)
+       APLICADAS TANTO NO HEADER QUANTO NO BODY
     ============================================ */
     
-    /* 4.1 COLUNA AÇÃO (1ª) */
-    td:nth-child(1),
-    th:nth-child(1) {
+    /* 6.1 COLUNA AÇÃO (1ª) */
+    .tabela-header-table th:nth-child(1),
+    .tabela-body-table td:nth-child(1) {
         position: sticky;
         left: 0;
-        z-index: 20; /* > 10 (cabeçalho normal) */
+        z-index: 15;
         background-color: white;
     }
-    thead th:nth-child(1) {
+    .tabela-header-table th:nth-child(1) {
         background-color: #1E3A8A !important;
-        z-index: 30; /* A MAIS ALTA DE TODAS: cabeçalho + fixa esquerda */
+        z-index: 20;
     }
 
-    /* 4.2 COLUNA FONTE (2ª) */
-    td:nth-child(2),
-    th:nth-child(2) {
+    /* 6.2 COLUNA FONTE (2ª) */
+    .tabela-header-table th:nth-child(2),
+    .tabela-body-table td:nth-child(2) {
         position: sticky;
-        left: 100px;  /* Ajuste fino conforme largura real da coluna AÇÃO */
-        z-index: 20;
+        left: 100px;  /* Ajustável conforme largura real */
+        z-index: 15;
         background-color: white;
     }
-    thead th:nth-child(2) {
+    .tabela-header-table th:nth-child(2) {
         background-color: #1E3A8A !important;
-        z-index: 30;
+        z-index: 20;
     }
 
-    /* 4.3 COLUNA NATUREZA (3ª) */
-    td:nth-child(3),
-    th:nth-child(3) {
+    /* 6.3 COLUNA NATUREZA (3ª) */
+    .tabela-header-table th:nth-child(3),
+    .tabela-body-table td:nth-child(3) {
         position: sticky;
-        left: 180px;  /* Ajuste: 100px da AÇÃO + 80px da FONTE */
-        z-index: 20;
+        left: 180px;  /* Ajustável: 100 + 80 */
+        z-index: 15;
         background-color: white;
-        box-shadow: 2px 0 5px -2px rgba(0,0,0,0.2); /* Sombra sutil de profundidade */
+        box-shadow: 2px 0 5px -2px rgba(0,0,0,0.2);
     }
-    thead th:nth-child(3) {
+    .tabela-header-table th:nth-child(3) {
         background-color: #1E3A8A !important;
-        z-index: 30;
+        z-index: 20;
     }
 
     /* ============================================
-       5. CORPO DA TABELA
+       7. CORPO DA TABELA (LINHAS)
     ============================================ */
     td {
         padding: 10px 8px;
@@ -152,11 +175,9 @@ st.markdown("""
         background-color: white;
     }
 
-    /* Hover sobre a linha inteira */
     tr:hover td {
         background-color: #F9FAFB !important;
     }
-    /* Hover nas colunas fixas também */
     tr:hover td:nth-child(1),
     tr:hover td:nth-child(2),
     tr:hover td:nth-child(3) {
@@ -164,14 +185,14 @@ st.markdown("""
     }
 
     /* ============================================
-       6. CORES DAS VARIAÇÕES
+       8. CORES DAS VARIAÇÕES
     ============================================ */
     .pos { color: #059669; font-weight: bold; }
     .neg { color: #DC2626; font-weight: bold; }
     .zero { color: #6B7280; }
 
     /* ============================================
-       7. LIMPEZA VISUAL
+       9. LIMPEZA VISUAL
     ============================================ */
     #MainMenu { visibility: hidden; }
     .stDeployButton { display: none !important; }
@@ -720,14 +741,54 @@ try:
             except AttributeError:
                 html_tabela = tabela_estilizada.hide_index().render()
                 
-            st.markdown(
-                f'<div class="tabela-wrapper">'
-                f'<div class="tabela-scroll-horizontal">'
-                f'{html_tabela}'
-                f'</div>'
-                f'</div>',
-                unsafe_allow_html=True
-            )
+            import re
+
+            match_thead = re.search(r'<thead>(.*?)</thead>', html_tabela, re.DOTALL)
+            match_tbody = re.search(r'<tbody>(.*?)</tbody>', html_tabela, re.DOTALL)
+
+            if match_thead and match_tbody:
+                html_thead = match_thead.group(1)
+                html_tbody = match_tbody.group(1)
+                
+                html_final = f'''
+                <div class="tabela-container">
+                    <div class="tabela-header-wrapper" id="header-wrapper">
+                        <table class="tabela-header-table">
+                            <thead>
+                                {html_thead}
+                            </thead>
+                        </table>
+                    </div>
+                    <div class="tabela-body-wrapper" id="body-wrapper">
+                        <table class="tabela-body-table">
+                            <thead>
+                                {html_thead}
+                            </thead>
+                            <tbody>
+                                {html_tbody}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <script>
+                (function() {{
+                    const headerWrapper = document.getElementById('header-wrapper');
+                    const bodyWrapper = document.getElementById('body-wrapper');
+                    if (headerWrapper && bodyWrapper) {{
+                        bodyWrapper.addEventListener('scroll', function() {{
+                            headerWrapper.scrollLeft = bodyWrapper.scrollLeft;
+                        }});
+                        headerWrapper.addEventListener('scroll', function() {{
+                            bodyWrapper.scrollLeft = headerWrapper.scrollLeft;
+                        }});
+                    }}
+                }})();
+                </script>
+                '''
+                
+                st.markdown(html_final, unsafe_allow_html=True)
+            else:
+                st.markdown(f'<div class="tabela-body-wrapper">{html_tabela}</div>', unsafe_allow_html=True)
             
             df_excel = df_var_visual.copy()
             df_excel['AÇÃO'] = df_excel['Ação'].apply(lambda x: f"{x} - {dict_acoes.get(x, 'N/I')}" if x else "")
