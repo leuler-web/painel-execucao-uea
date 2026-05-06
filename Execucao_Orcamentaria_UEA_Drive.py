@@ -532,14 +532,14 @@ try:
             df_aggrid = df_var_filtrada.copy()
             
             # Isolando as colunas financeiras originais
-            categorias_alvo = ['Dotação Suplementar', 'Reduções', 'Autorizado', 'Empenhado', 'Disponível', 'Bloqueado']
+            categorias_alvo = ['Dotação Suplementar', 'Reduções', 'Autorizado', 'Empenhado', 'Disponível', 'Bloqueado', 'Variação', 'Var']
             colunas_financeiras = []
             for col in df_aggrid.columns:
                 if any(cat.lower() in col.lower() for cat in categorias_alvo):
                     if not any(x in col for x in ['Data_', 'Mês', 'Tipo', 'Programa']):
                         colunas_financeiras.append(col)
             
-            # Trazendo os códigos para a tela e as descrições para os Tooltips (Hover)
+            # Trazendo os códigos para a tela e as descrições para os Tooltips
             df_aggrid['AÇÃO'] = df_aggrid['Ação']
             df_aggrid['AÇÃO_DESC'] = df_aggrid['Ação'].apply(lambda x: f"{x} - {dict_acoes.get(x, 'N/I')}" if x else "")
             
@@ -562,29 +562,59 @@ try:
             
             # --- 2. CONFIGURAÇÃO DA PLANILHA AGGRID ---
             gb = GridOptionsBuilder.from_dataframe(df_aggrid)
-            gb.configure_default_column(resizable=True, filter=True, sortable=True)
             
-            # Escondendo colunas de descrição (vão aparecer apenas quando o usuário passar o mouse)
+            # 💡 FORMATAÇÃO GLOBAL PARA TODA A TABELA DE UMA VEZ
+            gb.configure_default_column(
+                resizable=True,      # Permite arrastar largura
+                filter=False,        # <--- REMOVE OS FILTROS
+                sortable=True,       # Permite ordenar ao clicar no título
+                wrapHeaderText=True, # <--- Acomoda nomes grandes de colunas (Quebra linha)
+                autoHeaderHeight=True, 
+                wrapText=True,       # <--- Acomoda textos grandes nas células
+                autoHeight=True
+            )
+            
+            # Escondendo colunas de descrição
             gb.configure_column("AÇÃO_DESC", hide=True)
             gb.configure_column("FONTE_DESC", hide=True)
             gb.configure_column("NATUREZA_DESC", hide=True)
             
-            # 💡 O SEGREDO AQUI: CONGELANDO AS 3 PRIMEIRAS E FORÇANDO A LARGURA EXATA
+            # CONGELANDO AS 3 PRIMEIRAS
             gb.configure_column("AÇÃO", pinned='left', width=90, tooltipField="AÇÃO_DESC")
-            gb.configure_column("FONTE", pinned='left', width=75, tooltipField="FONTE_DESC") # <--- AQUI A FONTE FICA PEQUENA!
+            gb.configure_column("FONTE", pinned='left', width=75, tooltipField="FONTE_DESC") 
             gb.configure_column("NATUREZA", pinned='left', width=100, tooltipField="NATUREZA_DESC")
             
-            # Formatando as colunas de valor para formato financeiro Brasileiro (R$)
+            # Formatação de Moeda
             js_moeda = JsCode('''
             function(params) { 
                 if(params.value == null) return ''; 
                 return params.value.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2}); 
             }
             ''')
+
+            # 💡 FORMATAÇÃO CONDICIONAL (AMARELO SE HOUVE VARIAÇÃO)
+            js_condicional_amarelo = JsCode('''
+            function(params) {
+                // Se o valor existir e for diferente de zero (com pequena margem matemática)
+                if (params.value && Math.abs(params.value) > 0.01) {
+                    return {
+                        'backgroundColor': '#FEF08A', // Amarelo
+                        'color': '#000000',           // Letra preta
+                        'fontWeight': 'bold'
+                    };
+                }
+                return null; // Mantém a cor normal se for zero
+            }
+            ''')
             
             for col in colunas_financeiras:
-                novo_nome = col.replace('_Ant.', ' Ant.').replace('_', ' ') 
-                gb.configure_column(col, header_name=novo_nome, valueFormatter=js_moeda)
+                novo_nome = col.replace('_Ant.', ' Ant.').replace('_', ' ')
+                
+                # Aplica a regra amarela APENAS se a palavra "Var" ou "Variação" estiver no nome da coluna
+                if 'var' in col.lower() or 'variação' in col.lower():
+                    gb.configure_column(col, header_name=novo_nome, valueFormatter=js_moeda, cellStyle=js_condicional_amarelo)
+                else:
+                    gb.configure_column(col, header_name=novo_nome, valueFormatter=js_moeda)
             
             gridOptions = gb.build()
             
@@ -592,38 +622,15 @@ try:
             AgGrid(
                 df_aggrid,
                 gridOptions=gridOptions,
-                height=450,
+                height=480,
                 theme='balham',
-                fit_columns_on_grid_load=False, # Impede o navegador de espremer as colunas
-                allow_unsafe_jscode=True # Permite a formatação das moedas
+                fit_columns_on_grid_load=False,
+                allow_unsafe_jscode=True # Essencial para o Amarelo e a Moeda funcionarem
             )
             
             st.markdown("<br>", unsafe_allow_html=True)
             
-            # --- 4. EXPORTAÇÃO PARA EXCEL (SEU CÓDIGO ORIGINAL FOI MANTIDO AQUI!) ---
-            df_excel = df_var_filtrada.copy()
-            df_excel['AÇÃO'] = df_excel['Ação'].apply(lambda x: f"{x} - {dict_acoes.get(x, 'N/I')}" if x else "")
-            df_excel['FONTE'] = df_excel['Fonte_3'].apply(lambda x: f"{x} - {dict_fontes_global.get(x, 'Outras Fontes')}" if x else "")
-            df_excel['NATUREZA'] = df_excel['Natureza_ID'].apply(lambda x: f"{x} - {dict_naturezas.get(x, 'N/I')}" if x else "")
-            df_excel = df_excel[['AÇÃO', 'FONTE', 'NATUREZA'] + colunas_financeiras]
-            
-            df_total_excel = pd.DataFrame(df_excel[colunas_financeiras].sum()).T
-            for col in ['AÇÃO', 'FONTE', 'NATUREZA']: df_total_excel[col] = ""
-            df_total_excel['AÇÃO'] = "TOTAL GERAL"
-            df_excel = pd.concat([df_excel, df_total_excel], ignore_index=True)
-            
-            df_excel.columns = [c.replace('_Ant.', '_Anterior').replace('_Ant', '_Anterior').replace(' Ant.', ' Anterior').replace(' Ant', ' Anterior') for c in df_excel.columns]
-            
-            buffer = BytesIO()
-            with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
-                df_excel.to_excel(writer, index=False, sheet_name='Variações')
-            
-            st.download_button(
-                label="📥 Descarregar Relatório Excel (.xlsx)",
-                data=buffer.getvalue(),
-                file_name=f"Execucao_UEA_Variacoes_{dt_atual.replace('/', '-')}.xlsx",
-                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            )
+            # (AQUI CONTINUA O SEU CÓDIGO DO df_excel E DO st.download_button...)
             
             st.download_button(
                 label="📥 Descarregar Relatório Excel (.xlsx)",
