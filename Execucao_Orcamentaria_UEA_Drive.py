@@ -20,57 +20,64 @@ st.set_page_config(
     }
 )
 
-# ==========================================
-# 2. BLOCO ÚNICO DE ESTILOS CSS (VERSÃO UNIFICADA)
-# ==========================================
-st.markdown("""
-    <style>
-    /* 1. Ajuste do topo da página */
-    .block-container { 
-        padding-top: 1.5rem !important; 
-        max-width: 100% !important; 
-    }
+with tab_tabela:
+            st.markdown(f"<div class='periodo-destaque'>📅 {texto_periodo}</div>", unsafe_allow_html=True)
+            st.subheader("Tabela de Variações")
+            
+            # --- 1. PREPARANDO OS DADOS ---
+            df_tela = df_var_filtrada.copy()
+            
+            categorias_alvo = ['Dotação Suplementar', 'Reduções', 'Autorizado', 'Empenhado', 'Disponível', 'Bloqueado', 'Variação', 'Var']
+            colunas_financeiras = [col for col in df_tela.columns if any(cat.lower() in col.lower() for cat in categorias_alvo) and not any(x in col for x in ['Data_', 'Mês', 'Tipo', 'Programa'])]
+            
+            df_tela['AÇÃO'] = df_tela['Ação'].apply(lambda x: f"{x} - {dict_acoes.get(x, 'N/I')}")
+            df_tela['FONTE'] = df_tela['Fonte_3']
+            df_tela['NATUREZA'] = df_tela['Natureza_ID'].apply(lambda x: f"{x} - {dict_naturezas.get(x, 'N/I')}")
+            
+            colunas_finais = ['AÇÃO', 'FONTE', 'NATUREZA'] + colunas_financeiras
+            df_tela = df_tela[colunas_finais]
+            
+            # Adicionando Linha de Total Geral
+            linha_soma = df_tela[colunas_financeiras].sum()
+            df_total = pd.DataFrame(linha_soma).T
+            df_total['AÇÃO'] = "TOTAL GERAL"
+            df_tela = pd.concat([df_tela, df_total], ignore_index=True).fillna("")
 
-    /* 2. Título sem margens excessivas */
-    h1 { 
-        margin-top: 0px !important; 
-        padding-bottom: 0.5rem !important;
-        font-size: 1.8rem !important;
-    }
+            # --- 2. FORMATAÇÃO CONDICIONAL NATIVA (AMARELO NAS VARIAÇÕES) ---
+            def pintar_amarelo(val):
+                try:
+                    if abs(float(val)) > 0.01:
+                        return 'background-color: #FEF08A; color: black;' # Amarelo
+                except:
+                    pass
+                return ''
+            
+            colunas_var = [col for col in colunas_financeiras if 'var' in col.lower()]
+            
+            # Aplica o amarelo e formata os números (R$)
+            try:
+                df_estilizado = df_tela.style.map(pintar_amarelo, subset=colunas_var).format({col: "{:,.2f}" for col in colunas_financeiras})
+            except:
+                df_estilizado = df_tela.style.applymap(pintar_amarelo, subset=colunas_var).format({col: "{:,.2f}" for col in colunas_financeiras})
 
-    /* 3. Container Fixo (Título + KPIs + Início das Abas) */
-    [data-testid="stVerticalBlock"] > div:has(div.unificar-header) {
-        position: sticky;
-        top: 0px;
-        background-color: white;
-        z-index: 999;
-        padding-bottom: 0px;
-        border-bottom: 2px solid #e5e7eb;
-    }
-
-    /* 4. UNIFICAR ABAS: Remove o espaço entre KPIs e os botões das abas */
-    .stTabs {
-        margin-top: -10px !important; /* Puxa as abas para cima */
-    }
-    
-    /* 5. Estilo das Métricas (KPIs) */
-    [data-testid="stMetricValue"] { 
-        color: #2E7D32 !important; 
-        font-size: clamp(1.1rem, 1.5vw, 1.5rem) !important; 
-        line-height: 1 !important;
-    }
-    [data-testid="stMetricLabel"] {
-        font-size: 0.8rem !important;
-        font-weight: bold !important;
-        margin-bottom: -5px !important;
-    }
-
-    /* 6. Esconder botões inúteis do Streamlit */
-    #MainMenu {visibility: visible;}
-    footer {visibility: hidden;}
-    .stDeployButton {display: none !important;} 
-    </style>
-""", unsafe_allow_html=True)
+            # --- 3. DESENHANDO A TABELA ---
+            # Aqui configuramos a coluna FONTE para ser pequena e a AÇÃO grande
+            st.dataframe(
+                df_estilizado,
+                use_container_width=True,
+                height=450,
+                hide_index=True,
+                column_config={
+                    "FONTE": st.column_config.TextColumn("Fonte", width="small"),
+                    "AÇÃO": st.column_config.TextColumn("Ação", width="large"),
+                    "NATUREZA": st.column_config.TextColumn("Natureza", width="medium"),
+                }
+            )
+            
+            st.markdown("<br>", unsafe_allow_html=True)
+            
+            # --- AQUI SEGUE O SEU CÓDIGO ORIGINAL DO EXCEL ABAIXO ---
+            # ...
 
 # ==========================================
 # 3. GESTÃO DE ESTADO
