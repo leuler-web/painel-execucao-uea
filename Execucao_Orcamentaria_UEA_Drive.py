@@ -21,24 +21,21 @@ st.set_page_config(
 )
 
 # ==========================================
-# 2. BLOCO ÚNICO DE ESTILOS CSS (VERSÃO HÍBRIDA: TABELA + IFRAME)
+# 2. BLOCO ÚNICO DE ESTILOS CSS (TOPO FIXO + TABELA COM CABEÇALHO AZUL E 3 COLUNAS FIXAS)
 # ==========================================
 st.markdown("""
     <style>
-    /* --- 1. AJUSTES DO IFRAME (TÍTULO E TOPO) --- */
-    .block-container { 
-        padding-top: 100px !important; /* Espaço para o título não sumir no site da UEA */
-        max-width: 100% !important; 
-    }
-
-    /* Container Fixo do Topo (Título + KPIs) */
-    [data-testid="stVerticalBlock"] > div:has(div.unificar-header) {
+    /* --- 1. CONGELAMENTO DO TOPO (TÍTULO + KPIs) --- */
+    /* Container que envolve título e métricas */
+    .topo-congelado {
         position: sticky;
         top: 0px;
         background-color: white;
         z-index: 1000;
-        padding-top: 10px !important;
+        padding-top: 10px;
+        padding-bottom: 5px;
         border-bottom: 2px solid #e5e7eb;
+        margin-bottom: 15px;
     }
 
     h1 { 
@@ -50,37 +47,112 @@ st.markdown("""
 
     .stTabs { margin-top: -20px !important; }
 
-    /* --- 2. ESTILO DA TABELA DE VARIAÇÕES (RECUPERADO) --- */
-    .tabela-container { 
-        max-height: 450px; 
-        overflow-y: auto; 
-        border: 1px solid #e5e7eb; 
+    /* --- 2. TABELA COM CABEÇALHO AZUL E COLUNAS FIXAS --- */
+    .tabela-container {
+        max-height: 500px;
+        overflow: auto;           /* ATENÇÃO: 'auto', não 'y' somente, para permitir scroll horizontal também */
+        border: 1px solid #e5e7eb;
         border-radius: 8px;
+        position: relative;
     }
-    
-    table { width: 100%; border-collapse: collapse; font-family: sans-serif; }
-    
-    th { 
-        position: sticky; 
-        top: 0; 
-        background-color: #F3F4F6 !important; 
-        z-index: 10; 
-        padding: 12px; 
-        text-align: left; 
-        font-size: 13px; 
-        font-weight: bold; 
-        color: #374151;
+
+    table {
+        width: 100%;
+        border-collapse: separate;  /* Muda para separate para border-radius funcionar no thead */
+        border-spacing: 0;
+        font-family: sans-serif;
+        table-layout: auto;
+        white-space: nowrap;        /* Garante que as colunas não quebrem e força scroll horizontal */
+    }
+
+    /* --- 2.1 CABEÇALHO AZUL COM LETRAS BRANCAS --- */
+    th {
+        position: sticky;
+        top: 0;
+        background-color: #1E3A8A !important; /* Azul forte */
+        color: white !important;
+        z-index: 20;              /* Garante que fica sobre as colunas fixas laterais no eixo Z */
+        padding: 12px 8px;
+        text-align: left;         /* Ajuste para center se quiser, mas left é mais seguro com nomes longos */
+        font-size: 13px;
+        font-weight: bold;
         border-bottom: 2px solid #D1D5DB;
+        white-space: nowrap;
     }
-    
-    td { padding: 10px 12px; border-bottom: 1px solid #F3F4F6; font-size: 13px; color: #4B5563; }
-    
-    tr:hover { background-color: #F9FAFB; }
-    
+
+    /* --- 2.2 COLUNAS FIXADAS À ESQUERDA (AÇÃO, FONTE, NATUREZA) --- */
+    /* Seletor para a 1ª coluna da tabela (AÇÃO) */
+    table th:nth-child(1),
+    table td:nth-child(1) {
+        position: sticky;
+        left: 0;
+        background-color: white;
+        z-index: 15;
+    }
+
+    /* Seletor para a 2ª coluna da tabela (FONTE) */
+    table th:nth-child(2),
+    table td:nth-child(2) {
+        position: sticky;
+        left: 120px; /* Ajuste fino: modifique esse valor conforme a largura real da 1ª coluna */
+        background-color: white;
+        z-index: 15;
+    }
+
+    /* Seletor para a 3ª coluna da tabela (NATUREZA) */
+    table th:nth-child(3),
+    table td:nth-child(3) {
+        position: sticky;
+        left: 200px; /* Ajuste: 120px da 1ª + 80px da 2ª. Ajuste conforme seus dados */
+        background-color: white;
+        z-index: 15;
+    }
+
+    /* --- 2.3 CORREÇÕES VISUAIS DAS COLUNAS FIXAS --- */
+    /* Células do corpo (td) fixas precisam de fundo explícito */
+    table td:nth-child(1),
+    table td:nth-child(2),
+    table td:nth-child(3) {
+        background-color: white;
+    }
+
+    /* Ao passar o mouse (hover), a linha fixa também deve mudar de cor */
+    tr:hover td:nth-child(1),
+    tr:hover td:nth-child(2),
+    tr:hover td:nth-child(3) {
+        background-color: #F9FAFB;
+    }
+
+    /* Sombra sutil à direita da última coluna fixa para dar profundidade */
+    table th:nth-child(3),
+    table td:nth-child(3) {
+        box-shadow: 2px 0px 5px -2px rgba(0, 0, 0, 0.2);
+    }
+
+    /* --- 2.4 DEMAIS CÉLULAS --- */
+    td {
+        padding: 10px 8px;
+        border-bottom: 1px solid #F3F4F6;
+        font-size: 13px;
+        color: #4B5563;
+        white-space: nowrap;
+    }
+
+    tr:hover td {
+        background-color: #F9FAFB;
+    }
+
+    /* Preservar o hover nas fixas (reforço) */
+    tr:hover td:nth-child(1),
+    tr:hover td:nth-child(2),
+    tr:hover td:nth-child(3) {
+        background-color: #F9FAFB !important;
+    }
+
     /* Cores das Variações */
-    .pos { color: #059669; font-weight: bold; } /* Verde para positivo */
-    .neg { color: #DC2626; font-weight: bold; } /* Vermelho para negativo */
-    .zero { color: #6B7280; } /* Cinza para neutro */
+    .pos { color: #059669; font-weight: bold; }
+    .neg { color: #DC2626; font-weight: bold; }
+    .zero { color: #6B7280; }
 
     /* --- 3. LIMPEZA VISUAL --- */
     #MainMenu { visibility: hidden; }
@@ -465,20 +537,26 @@ try:
         ])
 
         with tab_visao:
+            # --- INÍCIO DO BLOCO CONGELADO ---
+            st.markdown('<div class="topo-congelado">', unsafe_allow_html=True)
+
             st.markdown(f"<div class='destaque-ano'>Exercício Orçamentário: {ano_dinamico} <span style='font-size: 16px; font-weight: bold; color: #6B7280;'>(última atualização: {dt_atual})</span></div>", unsafe_allow_html=True)
-            
+
             c1, c2, c3, c4, c5 = st.columns(5)
             v_aut = df_latest['Autorizado'].sum() if 'Autorizado' in df_latest.columns else 0
             v_emp = df_latest['Empenhado'].sum() if 'Empenhado' in df_latest.columns else 0
             v_liq = df_latest['Liquidado'].sum() if 'Liquidado' in df_latest.columns else 0
             v_pago = df_latest['Pago'].sum() if 'Pago' in df_latest.columns else 0
             v_disp = df_latest['Disponível'].sum() if 'Disponível' in df_latest.columns else 0
-            
+
             c1.metric("AUTORIZADO", formata_moeda_sem_decimal(v_aut))
             c2.metric("EMPENHADO", formata_moeda_sem_decimal(v_emp), delta=f"{(v_emp/v_aut)*100 if v_aut>0 else 0:.1f}% do total")
             c3.metric("LIQUIDADO", formata_moeda_sem_decimal(v_liq), delta=f"{(v_liq/v_aut)*100 if v_aut>0 else 0:.1f}% do total")
             c4.metric("PAGO", formata_moeda_sem_decimal(v_pago), delta=f"{(v_pago/v_aut)*100 if v_aut>0 else 0:.1f}% do total")
             c5.metric("DISPONÍVEL", formata_moeda_sem_decimal(v_disp))
+
+            st.markdown('</div>', unsafe_allow_html=True)
+            # --- FIM DO BLOCO CONGELADO ---
             
             st.divider()
             
