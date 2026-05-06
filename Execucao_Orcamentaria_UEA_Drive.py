@@ -171,46 +171,32 @@ st.markdown("""
     .neg { color: #DC2626; font-weight: bold; }
     .zero { color: #6B7280; }
 
-    /* ============================================
-       8. LIMPEZA VISUAL (OBSERVER - VIGIA E REMOVE)
+        /* ============================================
+       8. LIMPEZA VISUAL (CSS PURO - SELETORES ESPECÍFICOS)
     ============================================ */
-    #MainMenu { visibility: hidden; }
-    footer { visibility: hidden; }
+    #MainMenu { visibility: hidden !important; }
+    footer { visibility: hidden !important; }
+    
+    /* Esconde o header com "Gerenciar aplicativo" */
+    header[data-testid="stHeader"] { display: none !important; }
+    
+    /* Esconde a toolbar inferior (botão do GitHub / Gerenciar aplicativo) */
+    div[data-testid="stToolbar"] { display: none !important; }
+    
+    /* Esconde o link "Made with Streamlit" */
+    div[data-testid="stDecoration"] { display: none !important; }
+    
+    /* Esconde QUALQUER elemento com a classe do toolbar */
+    .st-emotion-cache-1f3f2m8 { display: none !important; }
+    
+    /* Ajusta o espaçamento que sobra */
+    .stApp { margin-top: 0px !important; }
+    .stMain { padding-top: 0px !important; }
+    
     [data-testid="stMetricValue"] { color: #2E7D32 !important; font-size: 1.2rem !important; }
     </style>
-    
-    <script>
-    (function() {
-        const removerElementos = () => {
-            // Lista de seletores para remover
-            const seletores = [
-                'header[data-testid="stHeader"]',
-                '[data-testid="stToolbar"]',
-                '[data-testid="stDecoration"]',
-                'button:has-text("Gerenciar")'
-            ];
-            
-            seletores.forEach(sel => {
-                try {
-                    const els = document.querySelectorAll(sel);
-                    els.forEach(el => {
-                        if (el && el.parentNode) {
-                            el.remove();
-                        }
-                    });
-                } catch(e) {}
-            });
-        };
-        
-        // Executa imediatamente
-        removerElementos();
-        
-        // E observa mudanças no DOM para remover novamente se aparecer
-        const observer = new MutationObserver(() => removerElementos());
-        observer.observe(document.body, { childList: true, subtree: true });
-    })();
-    </script>
 """, unsafe_allow_html=True)
+
 # ==========================================
 # 3. GESTÃO DE ESTADO
 # ==========================================
