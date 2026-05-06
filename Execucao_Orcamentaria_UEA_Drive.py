@@ -12,26 +12,81 @@ st.set_page_config(
     page_title="PAINEL ORÇAMENTÁRIO - UEA", 
     layout="wide", 
     page_icon="📈",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="expanded",
+    menu_items={
+        'Get Help': 'https://www.uea.edu.br',
+        'Report a bug': None, 
+        'About': "Painel de Execução Orçamentária UEA. Versão 2.0 (Blindada)"
+    }
 )
 
-if 'pagina_ativa' not in st.session_state:
-    st.session_state.pagina_ativa = 'capa' 
-
 # ==========================================
-# 2. BLOCO ÚNICO DE ESTILOS CSS (100% SEGURO)
+# 2. BLOCO ÚNICO DE ESTILOS CSS (VERSÃO HÍBRIDA: TABELA + IFRAME)
 # ==========================================
 st.markdown("""
     <style>
-    /* Esconde o botão de Deploy de forma segura (Sem sumir com o menu lateral!) */
-    .stAppDeployButton { display: none !important; }
-    footer { visibility: hidden !important; }
-    
-    /* Proteção para o iframe da UEA (Não cortar o título) */
+    /* --- 1. AJUSTES DO IFRAME (TÍTULO E TOPO) --- */
     .block-container { 
-        padding-top: 100px !important; 
+        padding-top: 100px !important; /* Espaço para o título não sumir no site da UEA */
         max-width: 100% !important; 
     }
+
+    /* Container Fixo do Topo (Título + KPIs) */
+    [data-testid="stVerticalBlock"] > div:has(div.unificar-header) {
+        position: sticky;
+        top: 0px;
+        background-color: white;
+        z-index: 1000;
+        padding-top: 10px !important;
+        border-bottom: 2px solid #e5e7eb;
+    }
+
+    h1 { 
+        font-size: 1.6rem !important;
+        margin-top: 0px !important;
+        line-height: 1.2 !important;
+        color: #111827 !important;
+    }
+
+    .stTabs { margin-top: -20px !important; }
+
+    /* --- 2. ESTILO DA TABELA DE VARIAÇÕES (RECUPERADO) --- */
+    .tabela-container { 
+        max-height: 450px; 
+        overflow-y: auto; 
+        border: 1px solid #e5e7eb; 
+        border-radius: 8px;
+    }
+    
+    table { width: 100%; border-collapse: collapse; font-family: sans-serif; }
+    
+    th { 
+        position: sticky; 
+        top: 0; 
+        background-color: #F3F4F6 !important; 
+        z-index: 10; 
+        padding: 12px; 
+        text-align: left; 
+        font-size: 13px; 
+        font-weight: bold; 
+        color: #374151;
+        border-bottom: 2px solid #D1D5DB;
+    }
+    
+    td { padding: 10px 12px; border-bottom: 1px solid #F3F4F6; font-size: 13px; color: #4B5563; }
+    
+    tr:hover { background-color: #F9FAFB; }
+    
+    /* Cores das Variações */
+    .pos { color: #059669; font-weight: bold; } /* Verde para positivo */
+    .neg { color: #DC2626; font-weight: bold; } /* Vermelho para negativo */
+    .zero { color: #6B7280; } /* Cinza para neutro */
+
+    /* --- 3. LIMPEZA VISUAL --- */
+    #MainMenu { visibility: hidden; }
+    .stDeployButton { display: none !important; }
+    footer { visibility: hidden; }
+    [data-testid="stMetricValue"] { color: #2E7D32 !important; font-size: 1.2rem !important; }
     </style>
 """, unsafe_allow_html=True)
 
@@ -482,66 +537,111 @@ try:
                 else:
                     st.info("Não há valores empenhados para detalhar nesta Ação.")
 
+        with tab_evolucao:
+            st.markdown(f"<div class='destaque-ano'>Evolução Mensal da Execução - Ano {ano_dinamico} <span style='font-size: 16px; font-weight: normal; color: #6B7280;'>(última atualização: {dt_atual})</span></div>", unsafe_allow_html=True)
+            
+            colunas_ex = [col for col in ['Autorizado', 'Empenhado', 'Liquidado', 'Pago', 'Disponível'] if col in df_base.columns]
+            
+            df_m = df_base[mask_evo].groupby('Mês Referência')[colunas_ex].sum().reset_index()
+            if not df_m.empty:
+                df_m['Nome_Mes'] = df_m['Mês Referência'].apply(identificar_mes_streamlit)
+                df_m['mes_num'] = df_m['Nome_Mes'].map(ordem_meses)
+                df_m['Mês'] = df_m['Nome_Mes'].map(abrev_meses) + f'/{ano_dinamico}'
+                df_m = df_m.sort_values('mes_num')
+                df_melt = df_m.melt(id_vars=['Mês', 'mes_num'], value_vars=colunas_ex, var_name='Fase', value_name='Valor')
+                df_melt['Rotulo_F'] = df_melt['Valor'].apply(formata_abreviado)
+                
+                fig_line = px.line(df_melt, x='Mês', y='Valor', color='Fase', markers=True, text='Rotulo_F', color_discrete_sequence=['#64748B', '#1E3A8A', '#3B82F6', '#10B981', '#F59E0B'])
+                for trace in fig_line.data:
+                    trace.textfont.color = trace.line.color
+                    trace.textfont.size = 14
+                    trace.textfont.weight = "bold"
+                    trace.marker.size = 12
+                    trace.line.width = 3
+                    trace.textposition = "top center" 
+                
+                fig_line.update_layout(font=dict(size=18, color="black"), margin=dict(l=40, r=60, t=20, b=20), yaxis_range=[0, df_melt['Valor'].max() * 1.30], yaxis=dict(showticklabels=False), xaxis=dict(tickfont=dict(size=20, weight="bold")), legend=dict(orientation="h", y=1.05))
+                st.plotly_chart(fig_line, use_container_width=True)
+            else:
+                st.info("Não há dados de evolução mensal para os filtros selecionados.")
+
         with tab_tabela:
             st.markdown(f"<div class='periodo-destaque'>📅 {texto_periodo}</div>", unsafe_allow_html=True)
             st.subheader("Tabela de Variações")
             
-            # --- 1. PREPARANDO OS DADOS ---
-            df_tela = df_var_filtrada.copy()
+            df_var_visual = df_var_filtrada.copy()
+            df_var_visual_tela = df_var_visual.copy()
             
-            categorias_alvo = ['Dotação Suplementar', 'Reduções', 'Autorizado', 'Empenhado', 'Disponível', 'Bloqueado', 'Variação', 'Var']
-            colunas_financeiras = [col for col in df_tela.columns if any(cat.lower() in col.lower() for cat in categorias_alvo) and not any(x in col for x in ['Data_', 'Mês', 'Tipo', 'Programa'])]
-            
-            df_tela['AÇÃO'] = df_tela['Ação'].apply(lambda x: f"{x} - {dict_acoes.get(x, 'N/I')}")
-            df_tela['FONTE'] = df_tela['Fonte_3']
-            df_tela['NATUREZA'] = df_tela['Natureza_ID'].apply(lambda x: f"{x} - {dict_naturezas.get(x, 'N/I')}")
-            
-            colunas_finais = ['AÇÃO', 'FONTE', 'NATUREZA'] + colunas_financeiras
-            df_tela = df_tela[colunas_finais]
-            
-            # Adicionando Linha de Total Geral
-            linha_soma = df_tela[colunas_financeiras].sum()
-            df_total = pd.DataFrame(linha_soma).T
-            df_total['AÇÃO'] = "TOTAL GERAL"
-            df_tela = pd.concat([df_tela, df_total], ignore_index=True).fillna("")
-
-            # --- 2. FORMATAÇÃO CONDICIONAL NATIVA (AMARELO NAS VARIAÇÕES) ---
-            def pintar_amarelo(val):
-                try:
-                    if abs(float(val)) > 0.01:
-                        return 'background-color: #FEF08A; color: black;' # Amarelo
-                except:
-                    pass
-                return ''
-            
-            colunas_var = [col for col in colunas_financeiras if 'var' in col.lower()]
-            
-            # Aplica o amarelo e formata os números (R$)
-            try:
-                df_estilizado = df_tela.style.map(pintar_amarelo, subset=colunas_var).format({col: "{:,.2f}" for col in colunas_financeiras})
-            except:
-                df_estilizado = df_tela.style.applymap(pintar_amarelo, subset=colunas_var).format({col: "{:,.2f}" for col in colunas_financeiras})
-
-            # --- 3. DESENHANDO A TABELA ---
-            # Aqui configuramos a coluna FONTE para ser pequena e a AÇÃO grande
-            st.dataframe(
-                df_estilizado,
-                use_container_width=True,
-                height=450,
-                hide_index=True,
-                column_config={
-                    "FONTE": st.column_config.TextColumn("Fonte", width="small"),
-                    "AÇÃO": st.column_config.TextColumn("Ação", width="large"),
-                    "NATUREZA": st.column_config.TextColumn("Natureza", width="medium"),
-                }
+            df_var_visual_tela['AÇÃO'] = df_var_visual['Ação'].apply(
+                lambda x: f'<div title="{x} - {dict_acoes.get(x, "N/I")}">{x}</div>' if x else ""
+            )
+            df_var_visual_tela['FONTE'] = df_var_visual['Fonte_3'].apply(
+                lambda x: f'<div title="{x} - {dict_fontes_global.get(x, "Outras Fontes")}">{x}</div>' if x else ""
+            )
+            df_var_visual_tela['NATUREZA'] = df_var_visual['Natureza_ID'].apply(
+                lambda x: f'<div title="{x} - {dict_naturezas.get(x, "N/I")}">{x}</div>' if x else ""
             )
             
-            st.markdown("<br>", unsafe_allow_html=True)
+            colunas_identificacao = ['AÇÃO', 'FONTE', 'NATUREZA']
+            categorias_alvo = ['Dotação Suplementar', 'Reduções', 'Autorizado', 'Empenhado', 'Disponível', 'Bloqueado']
             
-            # --- AQUI SEGUE O SEU CÓDIGO ORIGINAL DO EXCEL ABAIXO ---
-            # ...
+            colunas_financeiras_originais = []
+            for col in df_var_visual.columns:
+                if any(cat.lower() in col.lower() for cat in categorias_alvo) and col not in colunas_identificacao:
+                    if not any(x in col for x in ['Data_', 'Mês', 'Tipo', 'Programa']):
+                        colunas_financeiras_originais.append(col)
+                        
+            df_var_visual_tela = df_var_visual_tela[colunas_identificacao + colunas_financeiras_originais]
             
-            # (AQUI CONTINUA O SEU CÓDIGO DO df_excel E DO st.download_button...)
+            linha_soma = df_var_visual_tela[colunas_financeiras_originais].sum()
+            df_total = pd.DataFrame(linha_soma).T
+            for col in colunas_identificacao:
+                df_total[col] = "" 
+            df_total['AÇÃO'] = "<b>TOTAL GERAL</b>" 
+            
+            df_var_visual_tela = pd.concat([df_var_visual_tela, df_total], ignore_index=True)
+            
+            mapeamento_colunas = {}
+            for col in colunas_financeiras_originais:
+                nome_seguro = col.replace('Ant.', 'A\u200Bnt.') 
+                novo_nome = nome_seguro.replace('_', '<br>').replace(' ', '<br>')
+                novo_nome = novo_nome.replace('<br><br>', '<br>')
+                mapeamento_colunas[col] = f'<span translate="no" class="notranslate">{novo_nome}</span>'
+                
+            df_var_visual_tela = df_var_visual_tela.rename(columns=mapeamento_colunas)
+            colunas_financeiras_tela = list(mapeamento_colunas.values())
+            
+            tabela_estilizada = (df_var_visual_tela.style
+                .apply(destacar_celulas_com_variacao, axis=None)
+                .format({col: formata_numero_duas_casas for col in colunas_financeiras_tela})
+                .set_properties(**{'text-align': 'right'}, subset=colunas_financeiras_tela)
+                .set_properties(**{'text-align': 'center'}, subset=colunas_identificacao)
+                .set_properties(subset=pd.IndexSlice[df_var_visual_tela.index[-1], :], **{'font-weight': 'bold', 'background-color': '#E5E7EB', 'color': '#0F172A'}) 
+            )
+            
+            try:
+                html_tabela = tabela_estilizada.hide(axis="index").to_html(escape=False)
+            except AttributeError:
+                html_tabela = tabela_estilizada.hide_index().render()
+                
+            st.markdown(f'<div class="tabela-container tabela-customizada">{html_tabela}</div>', unsafe_allow_html=True)
+            
+            df_excel = df_var_visual.copy()
+            df_excel['AÇÃO'] = df_excel['Ação'].apply(lambda x: f"{x} - {dict_acoes.get(x, 'N/I')}" if x else "")
+            df_excel['FONTE'] = df_excel['Fonte_3'].apply(lambda x: f"{x} - {dict_fontes_global.get(x, 'Outras Fontes')}" if x else "")
+            df_excel['NATUREZA'] = df_excel['Natureza_ID'].apply(lambda x: f"{x} - {dict_naturezas.get(x, 'N/I')}" if x else "")
+            df_excel = df_excel[colunas_identificacao + colunas_financeiras_originais]
+            
+            df_total_excel = pd.DataFrame(df_excel[colunas_financeiras_originais].sum()).T
+            for col in colunas_identificacao: df_total_excel[col] = ""
+            df_total_excel['AÇÃO'] = "TOTAL GERAL"
+            df_excel = pd.concat([df_excel, df_total_excel], ignore_index=True)
+            
+            df_excel.columns = [c.replace('_Ant.', '_Anterior').replace('_Ant', '_Anterior').replace(' Ant.', ' Anterior').replace(' Ant', ' Anterior') for c in df_excel.columns]
+            
+            buffer = BytesIO()
+            with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
+                df_excel.to_excel(writer, index=False, sheet_name='Variações')
             
             st.download_button(
                 label="📥 Descarregar Relatório Excel (.xlsx)",
