@@ -5,3 +5,5 @@ openpyxl
 xlsxwriter
 streamlit-plotly-events
 PyGithub
+numpy
+streamlit-aggrid
