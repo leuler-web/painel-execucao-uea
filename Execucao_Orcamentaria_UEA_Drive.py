@@ -528,111 +528,87 @@ try:
             st.markdown(f"<div class='periodo-destaque'>📅 {texto_periodo}</div>", unsafe_allow_html=True)
             st.subheader("Tabela de Variações")
             
-            # --- 1. PREPARAÇÃO DOS DADOS PARA A PLANILHA (Excel interativo) ---
+            # 1. Preparação dos dados (Criando uma cópia para não estragar o gráfico abaixo)
             df_aggrid = df_var_filtrada.copy()
             
-            # Isolando as colunas financeiras originais
+            # Identificando colunas financeiras
             categorias_alvo = ['Dotação Suplementar', 'Reduções', 'Autorizado', 'Empenhado', 'Disponível', 'Bloqueado', 'Variação', 'Var']
-            colunas_financeiras = []
-            for col in df_aggrid.columns:
-                if any(cat.lower() in col.lower() for cat in categorias_alvo):
-                    if not any(x in col for x in ['Data_', 'Mês', 'Tipo', 'Programa']):
-                        colunas_financeiras.append(col)
+            colunas_financeiras = [col for col in df_aggrid.columns if any(cat.lower() in col.lower() for cat in categorias_alvo) 
+                                  and not any(x in col for x in ['Data_', 'Mês', 'Tipo', 'Programa'])]
             
-            # Trazendo os códigos para a tela e as descrições para os Tooltips
+            # Preparando colunas de exibição
             df_aggrid['AÇÃO'] = df_aggrid['Ação']
-            df_aggrid['AÇÃO_DESC'] = df_aggrid['Ação'].apply(lambda x: f"{x} - {dict_acoes.get(x, 'N/I')}" if x else "")
-            
             df_aggrid['FONTE'] = df_aggrid['Fonte_3']
-            df_aggrid['FONTE_DESC'] = df_aggrid['Fonte_3'].apply(lambda x: f"{x} - {dict_fontes_global.get(x, 'Outras Fontes')}" if x else "")
-            
             df_aggrid['NATUREZA'] = df_aggrid['Natureza_ID']
-            df_aggrid['NATUREZA_DESC'] = df_aggrid['Natureza_ID'].apply(lambda x: f"{x} - {dict_naturezas.get(x, 'N/I')}" if x else "")
-                        
-            # Organizando as colunas da tela
+            
+            # Tooltips (Hover)
+            df_aggrid['AÇÃO_DESC'] = df_aggrid['Ação'].apply(lambda x: f"{x} - {dict_acoes.get(x, 'N/I')}")
+            df_aggrid['FONTE_DESC'] = df_aggrid['Fonte_3'].apply(lambda x: f"{x} - {dict_fontes_global.get(x, 'N/I')}")
+            df_aggrid['NATUREZA_DESC'] = df_aggrid['Natureza_ID'].apply(lambda x: f"{x} - {dict_naturezas.get(x, 'N/I')}")
+            
+            # Ordenando colunas
             df_aggrid = df_aggrid[['AÇÃO', 'AÇÃO_DESC', 'FONTE', 'FONTE_DESC', 'NATUREZA', 'NATUREZA_DESC'] + colunas_financeiras]
             
-            # Adicionando a linha de TOTAL GERAL no final
+            # Linha de Total
             linha_soma = df_aggrid[colunas_financeiras].sum()
             df_total = pd.DataFrame(linha_soma).T
-            df_total['AÇÃO'] = "TOTAL"
-            for col in ['AÇÃO_DESC', 'FONTE', 'FONTE_DESC', 'NATUREZA', 'NATUREZA_DESC']: 
-                df_total[col] = ""
-            df_aggrid = pd.concat([df_aggrid, df_total], ignore_index=True)
-            
-            # --- 2. CONFIGURAÇÃO DA PLANILHA AGGRID ---
+            df_total['AÇÃO'] = "TOTAL GERAL"
+            df_aggrid = pd.concat([df_aggrid, df_total], ignore_index=True).fillna("")
+
+            # 2. Configuração da Grelha
             gb = GridOptionsBuilder.from_dataframe(df_aggrid)
             
-            # 💡 CONFIGURAÇÃO GLOBAL (Sem filtros, com quebra de linha e sem erro de atributo)
-            # Usamos o 'configure_grid_options' que é mais compatível
-            gb.configure_grid_options(
-                defaultColDef={
-                    "resizable": True,
-                    "filter": False,      # <--- AQUI OS FILTROS SOMEM DE VEZ
-                    "sortable": True,
-                    "wrapHeaderText": True,
-                    "autoHeaderHeight": True,
-                    "wrapText": True,
-                    "autoHeight": True,
-                }
+            # Configuração Padrão (RESOLVE O PROBLEMA DO ERRO E DOS FILTROS)
+            gb.configure_default_column(
+                filter=False,          # <--- MATA O FILTRO DE VEZ
+                sortable=True,
+                resizable=True,
+                wrapHeaderText=True,   # Quebra linha no título
+                autoHeaderHeight=True,
+                wrapText=True,         # Quebra linha na célula
+                autoHeight=True
             )
-            
-            # Escondendo colunas de descrição técnica
+
+            # TRAVANDO AS LARGURAS (Para você não ter que arrastar com o mouse)
+            gb.configure_column("AÇÃO", pinned='left', width=90, tooltipField="AÇÃO_DESC")
+            gb.configure_column("FONTE", pinned='left', width=70, tooltipField="FONTE_DESC")
+            gb.configure_column("NATUREZA", pinned='left', width=100, tooltipField="NATUREZA_DESC")
             gb.configure_column("AÇÃO_DESC", hide=True)
             gb.configure_column("FONTE_DESC", hide=True)
             gb.configure_column("NATUREZA_DESC", hide=True)
-            
-            # CONGELANDO AS COLUNAS PRINCIPAIS
-            gb.configure_column("AÇÃO", pinned='left', width=100, tooltipField="AÇÃO_DESC")
-            gb.configure_column("FONTE", pinned='left', width=80, tooltipField="FONTE_DESC") 
-            gb.configure_column("NATUREZA", pinned='left', width=110, tooltipField="NATUREZA_DESC")
-            
-            # Formatação de Moeda (R$)
-            js_moeda = JsCode('''
-            function(params) { 
-                if(params.value == null) return ''; 
-                return params.value.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2}); 
-            }
-            ''')
 
-            # 💡 FORMATAÇÃO CONDICIONAL (AMARELO NAS VARIAÇÕES)
-            js_condicional_amarelo = JsCode('''
-            function(params) {
-                if (params.value && Math.abs(params.value) > 0.01) {
-                    return {
-                        'backgroundColor': '#FFFF00', // Amarelo Vivo
-                        'color': 'black',
-                        'fontWeight': 'bold'
-                    };
-                }
-                return null;
-            }
-            ''')
-            
-            # Aplicando as regras nas colunas financeiras
+            # Formatação de Moeda e Cor Amarela
+            js_moeda = JsCode("function(p){return p.value==null?'':p.value.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});}")
+            js_amarelo = JsCode("function(p){if(p.value&&Math.abs(p.value)>0.01)return{'backgroundColor':'#FFFF00','color':'black','fontWeight':'bold'};}")
+
             for col in colunas_financeiras:
-                novo_nome = col.replace('_Ant.', ' Ant.').replace('_', ' ')
-                
-                # Se for uma coluna de variação, aplica o amarelo
-                if 'var' in col.lower() or 'variação' in col.lower():
-                    gb.configure_column(col, header_name=novo_nome, valueFormatter=js_moeda, cellStyle=js_condicional_amarelo)
+                nome_limpo = col.replace('_', ' ').replace('Ant.', 'Ant')
+                if 'var' in col.lower():
+                    gb.configure_column(col, header_name=nome_limpo, width=130, valueFormatter=js_moeda, cellStyle=js_amarelo)
                 else:
-                    gb.configure_column(col, header_name=novo_nome, valueFormatter=js_moeda)
-            
+                    gb.configure_column(col, header_name=nome_limpo, width=130, valueFormatter=js_moeda)
+
             gridOptions = gb.build()
-            
-            # --- 3. EXIBIÇÃO DA PLANILHA ---
-            AgGrid(
-                df_aggrid,
-                gridOptions=gridOptions,
-                height=500,
-                theme='balham',
-                fit_columns_on_grid_load=False,
-                allow_unsafe_jscode=True,  # OBRIGATÓRIO para o amarelo e a moeda funcionarem
-                enable_enterprise_modules=False # Tenta remover a mensagem de licença
-            )
-            
+
+            # 3. Exibição (Sem Enterprise para evitar mensagens de erro)
+            try:
+                AgGrid(
+                    df_aggrid,
+                    gridOptions=gridOptions,
+                    height=450,
+                    theme='balham',
+                    allow_unsafe_jscode=True,
+                    enable_enterprise_modules=False,
+                    fit_columns_on_grid_load=False
+                )
+            except Exception as e:
+                st.error(f"Erro ao carregar a tabela interativa: {e}")
+                st.table(df_aggrid.head(20)) # Plano B caso o AgGrid falhe
+
             st.markdown("<br>", unsafe_allow_html=True)
+            
+            # --- SEU BOTÃO DE EXCEL (Mantenha como está abaixo) ---
+            # ... (código do buffer e st.download_button que você já tem)
             
             # (AQUI CONTINUA O SEU CÓDIGO DO df_excel E DO st.download_button...)
             
