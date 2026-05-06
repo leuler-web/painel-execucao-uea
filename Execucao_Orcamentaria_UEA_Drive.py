@@ -23,27 +23,28 @@ if 'pagina_ativa' not in st.session_state:
     st.session_state.pagina_ativa = 'capa' 
 
 # ==========================================
-# 2. BLOCO ÚNICO DE ESTILOS CSS (VERSÃO BLINDADA)
+# 2. BLOCO ÚNICO DE ESTILOS CSS (VERSÃO REVISADA E SEGURA)
 # ==========================================
 st.markdown("""
     <style>
-    /* 1. ESCONDER TOTALMENTE ACESSO AO GITHUB E MENUS */
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
-    .stDeployButton {display: none !important;}
-    [data-testid="stStatusWidget"] {visibility: hidden;}
-    header[data-testid="stHeader"] { background: transparent !important; }
-    header[data-testid="stHeader"] > div:first-child { display: none !important; }
-    
-    /* 2. AJUSTE PARA O IFRAME (TÍTULO) */
-    .block-container { padding-top: 100px !important; max-width: 100% !important; }
+    /* 1. ESCONDER APENAS O GITHUB E O MENU DEPLOY (SEM QUEBRAR A SIDEBAR) */
+    .stAppDeployButton { display: none !important; }
+    [data-testid="stStatusWidget"] { visibility: hidden !important; }
+    footer { visibility: hidden !important; }
 
+    /* 2. AJUSTE PARA O IFRAME (TÍTULO NÃO CORTAR) */
+    .block-container { 
+        padding-top: 100px !important; 
+        max-width: 100% !important; 
+    }
+
+    /* Cabeçalho da página (Título e KPIs) fixo no topo */
     [data-testid="stVerticalBlock"] > div:has(div.unificar-header) {
-        position: sticky; top: 0px; background-color: white; z-index: 1000;
+        position: sticky; top: 0px; background-color: white; z-index: 999;
         padding-top: 10px !important; border-bottom: 2px solid #e5e7eb;
     }
 
-    /* 3. TABELA PADRONIZADA (FONTE IGUAL E COLUNAS FIXAS) */
+    /* 3. TABELA COM COLUNAS FIXAS E LARGURA DE FONTE AJUSTADA */
     .tabela-container { 
         max-height: 500px; 
         overflow: auto; 
@@ -53,59 +54,46 @@ st.markdown("""
     
     table { border-collapse: separate; border-spacing: 0; width: 100%; }
 
-    /* PADRONIZAÇÃO DE TODAS AS FONTES DA TABELA */
+    /* Estilo Geral de Fontes */
     th, td { 
-        padding: 10px !important; 
-        font-size: 12px !important; /* Tamanho igual para todas as colunas */
+        padding: 8px !important; 
+        font-size: 12px !important; 
         font-family: sans-serif !important;
         white-space: nowrap; 
         border-bottom: 1px solid #e5e7eb;
         border-right: 1px solid #f0f0f0;
-        color: #333 !important;
     }
 
-    /* CABEÇALHO AZUL UEA */
-    th { 
-        background-color: #004587 !important; 
-        color: white !important; 
-        position: sticky; 
-        top: 0; 
-        z-index: 400; /* Acima de tudo */
-        font-weight: bold !important;
-    }
+    th { background-color: #004587 !important; color: white !important; position: sticky; top: 0; z-index: 500; }
 
-    /* --- PAREDE PARA AS 3 COLUNAS FIXAS (SEM VAZAMENTO) --- */
+    /* FIXANDO AS COLUNAS E AJUSTANDO LARGURAS */
     
-    /* Coluna 1 (PT) - Largura 70px */
+    /* Coluna 1 (PT) - 80px */
     th:nth-child(1), td:nth-child(1) { 
-        position: sticky; left: 0; min-width: 70px; max-width: 70px; 
-        z-index: 300; background-color: white !important; 
+        position: sticky; left: 0; min-width: 80px; max-width: 80px; 
+        z-index: 400; background-color: white !important; 
     }
 
-    /* Coluna 2 (Ação) - Largura 250px */
+    /* Coluna 2 (Ação) - 300px */
     th:nth-child(2), td:nth-child(2) { 
-        position: sticky; left: 70px; min-width: 250px; max-width: 250px; 
-        z-index: 300; background-color: white !important; 
+        position: sticky; left: 80px; min-width: 300px; max-width: 300px; 
+        z-index: 400; background-color: white !important; 
     }
 
-    /* Coluna 3 (Natureza) - Largura 80px */
+    /* Coluna 3 (Natureza/Fonte) - LARGURA REDUZIDA PARA 80px */
     th:nth-child(3), td:nth-child(3) { 
-        position: sticky; left: 320px; min-width: 80px; max-width: 80px; 
-        z-index: 300; background-color: white !important; 
-        border-right: 2px solid #d1d5db !important; /* Linha divisória */
+        position: sticky; left: 380px; min-width: 80px; max-width: 80px; 
+        z-index: 400; background-color: white !important; 
+        border-right: 2px solid #d1d5db !important;
     }
 
-    /* Cabeçalhos das fixas em azul */
-    th:nth-child(1), th:nth-child(2), th:nth-child(3) { 
-        z-index: 500 !important; 
-        background-color: #004587 !important; 
-    }
+    /* Garantir que o cabeçalho das fixas seja azul */
+    th:nth-child(1), th:nth-child(2), th:nth-child(3) { z-index: 600 !important; background-color: #004587 !important; }
 
     /* Cores das Variações */
-    .pos { color: #059669 !important; font-weight: bold !important; }
-    .neg { color: #DC2626 !important; font-weight: bold !important; }
+    .pos { color: #059669 !important; font-weight: bold; }
+    .neg { color: #DC2626 !important; font-weight: bold; }
 
-    /* Hover */
     tr:hover td { background-color: #f9fafb !important; }
     </style>
 """, unsafe_allow_html=True)
