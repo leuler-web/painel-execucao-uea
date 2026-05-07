@@ -748,13 +748,17 @@ try:
             )
             
             colunas_identificacao = ['AÇÃO', 'FONTE', 'NATUREZA']
-            categorias_alvo = ['Dotação Suplementar', 'Reduções', 'Autorizado', 'Empenhado', 'Disponível', 'Bloqueado']
             
-            colunas_financeiras_originais = []
-            for col in df_var_visual.columns:
-                if any(cat.lower() in col.lower() for cat in categorias_alvo) and col not in colunas_identificacao:
-                    if not any(x in col for x in ['Data_', 'Mês', 'Tipo', 'Programa']):
-                        colunas_financeiras_originais.append(col)
+            colunas_financeiras_originais = [
+                'Autorizado_Ant', 'Autorizado_Atual', 'Variação_Autorizado',
+                'Empenhado_Ant', 'Empenhado_Atual', 'Variação_Empenhado',
+                'Liquidado_Ant', 'Liquidado_Atual', 'Variação_Liquidado',
+                'Pago_Ant', 'Pago_Atual', 'Variação_Pago',
+                'Bloqueado_Ant', 'Bloqueado_Atual', 'Variação_Bloqueado',
+                'Disponível_Ant', 'Disponível_Atual', 'Variação_Disponível'
+            ]
+            # Mantém apenas as que existem no DataFrame
+            colunas_financeiras_originais = [c for c in colunas_financeiras_originais if c in df_var_visual.columns]
                         
             df_var_visual_tela = df_var_visual_tela[colunas_identificacao + colunas_financeiras_originais]
             
