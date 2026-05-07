@@ -74,7 +74,7 @@ st.markdown("""
     /* --- 1. CONGELAMENTO DO TOPO DO PAINEL (TÍTULO + KPIs) --- */
     .topo-congelado {
         position: sticky;
-        top: 0px;
+        top: 1px;
         background-color: white;
         z-index: 1000;
         padding-top: 10px;
