@@ -22,7 +22,6 @@ st.set_page_config(
 )
 
 # ==========================================
-<<<<<<< HEAD
 # 2. BLOCO ÚNICO DE ESTILOS CSS (VERSÃO CORRIGIDA)
 # ==========================================
 st.markdown("""
@@ -66,7 +65,7 @@ st.markdown("""
     .tabela-customizada tbody td { padding: 8px 8px; border-bottom: 1px solid #E5E7EB; font-size: 13px; white-space: nowrap; }
     /* --- FIM DO BLOCO DA TABELA --- */
     
-=======
+============================================
 # 2. BLOCO ÚNICO DE ESTILOS CSS (TABELA ÚNICA COM STICKY - FUNCIONA NO STREAMLIT)
 # ==========================================
 st.markdown("""
