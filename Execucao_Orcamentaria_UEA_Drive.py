@@ -529,18 +529,14 @@ try:
             
             colunas_identificacao = ['AÇÃO', 'FONTE', 'NATUREZA']
             
-            # Ordem desejada das categorias
-            ordem_categorias = ['Autorizado', 'Empenhado', 'Liquidado', 'Pago', 'Bloqueado', 'Disponível']
-            
-            colunas_identificacao = ['AÇÃO', 'FONTE', 'NATUREZA']
-            
+            # Nomes REAIS das colunas (com espaço e ponto, como aparecem no DataFrame)
             colunas_financeiras_originais = [
-                'Autorizado_Ant', 'Autorizado_Atual', 'Variação_Autorizado',
-                'Empenhado_Ant', 'Empenhado_Atual', 'Variação_Empenhado',
-                'Liquidado_Ant', 'Liquidado_Atual', 'Variação_Liquidado',
-                'Pago_Ant', 'Pago_Atual', 'Variação_Pago',
-                'Bloqueado_Ant', 'Bloqueado_Atual', 'Variação_Bloqueado',
-                'Disponível_Ant', 'Disponível_Atual', 'Variação_Disponível'
+                'Autorizado Ant.', 'Autorizado Atual.', 'Variação_Autorizado',
+                'Empenhado Ant.', 'Empenhado Atual.', 'Variação_Empenhado',
+                'Liquidado Ant.', 'Liquidado Atual.', 'Variação_Liquidado',
+                'Pago Ant.', 'Pago Atual.', 'Variação_Pago',
+                'Bloqueado Ant.', 'Bloqueado Atual.', 'Variação_Bloqueado',
+                'Disponível Ant.', 'Disponível Atual.', 'Variação_Disponível'
             ]
             # Mantém apenas as que existem no DataFrame
             colunas_financeiras_originais = [c for c in colunas_financeiras_originais if c in df_var_visual.columns]
