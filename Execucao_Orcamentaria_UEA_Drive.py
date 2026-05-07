@@ -74,7 +74,7 @@ st.markdown("""
     /* --- 1. CONGELAMENTO DO TOPO DO PAINEL (TÍTULO + KPIs) --- */
     .topo-congelado {
         position: sticky;
-        top: 0px;
+        top: 0;
         background-color: white;
         z-index: 1000;
         padding-top: 10px;
@@ -136,7 +136,6 @@ st.markdown("""
        5. COLUNAS FIXAS À ESQUERDA (AÇÃO, FONTE, NATUREZA)
     ============================================ */
     
-    /* Camada 1 (AÇÃO): left: 0 */
     thead th:nth-child(1) {
         position: sticky;
         left: 0;
@@ -216,14 +215,14 @@ st.markdown("""
     .neg { color: #DC2626; font-weight: bold; }
     .zero { color: #6B7280; }
 
-        /* ============================================
+    /* ============================================
        8. LIMPEZA VISUAL (CSS PURO - SELETORES ESPECÍFICOS)
     ============================================ */
     #MainMenu { visibility: hidden !important; }
     footer { visibility: hidden !important; }
     
     /* Esconde o header com "Gerenciar aplicativo" */
-    header[data-testid="stHeader"] { display: none !important; }
+     header[data-testid="stHeader"] { display: none !important; }
     
     /* Esconde a toolbar inferior (botão do GitHub / Gerenciar aplicativo) */
     div[data-testid="stToolbar"] { display: none !important; }
@@ -244,7 +243,6 @@ st.markdown("""
     [data-testid="baseButton-header"] { display: none !important; }
     
     [data-testid="stMetricValue"] { color: #2E7D32 !important; font-size: 1.2rem !important; }
->>>>>>> e4fba49b37b781d61105a1e89f4877a65e1699a3
     </style>
 """, unsafe_allow_html=True)
 
@@ -388,7 +386,7 @@ def carregar_dados_v181(path):
     df_var = limpar_nomes_colunas(df_var)
     
     def remover_fantasmas(df):
-<<<<<<< HEAD
+
         # 1. Transforma em texto, remove 'nan' e limpa espaços invisíveis corretamente
         df['Programa de Trabalho'] = df['Programa de Trabalho'].astype(str).str.replace('nan', '', regex=False).str.strip()
         
@@ -396,10 +394,10 @@ def carregar_dados_v181(path):
         mascara_fantasma = (df['Programa de Trabalho'] == '') | (df['Programa de Trabalho'] == '0')
         
         # 3. Filtra e devolve apenas as linhas com dados reais
-=======
+
         df['Programa de Trabalho'] = df['Programa de Trabalho'].astype(str).str.replace('nan', '', regex=False).str.strip()
         mascara_fantasma = (df['Programa de Trabalho'] == '') | (df['Programa de Trabalho'] == '0')
->>>>>>> e4fba49b37b781d61105a1e89f4877a65e1699a3
+
         return df[~mascara_fantasma].copy()
         
     df_base = remover_fantasmas(df_base)
@@ -912,7 +910,6 @@ except Exception as e:
             for key in list(st.session_state.keys()):
                 del st.session_state[key]
             st.rerun()
-<<<<<<< HEAD
+
 # Forçando reinicialização do sistema
-=======
->>>>>>> e4fba49b37b781d61105a1e89f4877a65e1699a3
+
