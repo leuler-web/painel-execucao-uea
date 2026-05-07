@@ -513,8 +513,6 @@ try:
             st.subheader("Tabela de Variações")
             
             df_var_visual = df_var_filtrada.copy()
-            # DEBUG: Mostra os nomes reais das colunas no Streamlit
-            st.write("Nomes reais das colunas:", list(df_var_visual.columns))
             df_var_visual_tela = df_var_visual.copy()
             
             df_var_visual_tela['AÇÃO'] = df_var_visual['Ação'].apply(
