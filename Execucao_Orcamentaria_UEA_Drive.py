@@ -113,7 +113,6 @@ def criar_grafico_tendencia_global(caminho_planilha_proj):
         row_prj = df_proj_raw[mask_prj].iloc[0]
         
         def converter_br_para_float(valor):
-            """Converte string brasileira (1.234,56) para float"""
             if pd.isna(valor) or valor == '-':
                 return 0.0
             if isinstance(valor, (int, float)):
@@ -121,7 +120,6 @@ def criar_grafico_tendencia_global(caminho_planilha_proj):
             v_str = str(valor).strip()
             if v_str == '' or v_str == '-':
                 return 0.0
-            # Remove pontos de milhar e troca vírgula por ponto
             v_str = v_str.replace('.', '').replace(',', '.')
             try:
                 return float(v_str)
@@ -489,17 +487,16 @@ try:
         if var_natureza_codigo != "Todas": tags.append(f"<b>🏷️ Natureza da Despesa:</b> {var_natureza_str}")
         if tags: st.markdown(f"<div class='caixa-destaque'>{' &nbsp;&nbsp;|&nbsp;&nbsp; '.join(tags)}</div>", unsafe_allow_html=True)
 
-        tab_visao, tab_evolucao, tab_tabela, tab_var_natureza = st.tabs([
+        tab_visao, tab_evolucao, tab_projecao, tab_tabela, tab_var_natureza = st.tabs([
             "🎯 Visão Estratégica", 
-            "📈 Evolução Mensal", 
+            "📈 Evolução Mensal",
+            "📉 Projeção vs. Realizado",
             "🔍 Tabela de Variações",
             "📊 Variação do Empenhado por Natureza"
         ])
 
         with tab_visao:
-            # --- INÍCIO DO BLOCO CONGELADO ---
             st.markdown('<div class="topo-congelado">', unsafe_allow_html=True)
-
             st.markdown(f"<div class='destaque-ano'>Exercício Orçamentário: {ano_dinamico} <span style='font-size: 16px; font-weight: bold; color: #6B7280;'>(última atualização: {dt_atual})</span></div>", unsafe_allow_html=True)
 
             c1, c2, c3, c4, c5 = st.columns(5)
@@ -514,9 +511,7 @@ try:
             c3.metric("LIQUIDADO", formata_moeda_sem_decimal(v_liq), delta=f"{(v_liq/v_aut)*100 if v_aut>0 else 0:.1f}% do total")
             c4.metric("PAGO", formata_moeda_sem_decimal(v_pago), delta=f"{(v_pago/v_aut)*100 if v_aut>0 else 0:.1f}% do total")
             c5.metric("DISPONÍVEL", formata_moeda_sem_decimal(v_disp))
-
             st.markdown('</div>', unsafe_allow_html=True)
-            # --- FIM DO BLOCO CONGELADO ---
             
             st.divider()
             
@@ -544,10 +539,8 @@ try:
                     st.plotly_chart(fig_bar, use_container_width=True)
                 else:
                     st.info("Não há valores empenhados para os filtros selecionados.")
-                    
             else:
                 st.subheader(f"Detalhamento da Ação {var_acao_codigo} por Natureza da Despesa")
-                
                 df_tree = df_latest.groupby('Natureza_ID')['Empenhado'].sum().reset_index()
                 df_tree = df_tree[df_tree['Empenhado'] > 0]
                 
@@ -556,20 +549,8 @@ try:
                     df_tree['Rotulo_Display'] = df_tree['Natureza_ID'] + " - " + df_tree['Nome_Natureza']
                     df_tree['Valor_Abreviado'] = df_tree['Empenhado'].apply(formata_abreviado)
                     
-                    fig_tree = px.treemap(
-                        df_tree, 
-                        path=[px.Constant(f"Ação {var_acao_codigo}"), 'Rotulo_Display'], 
-                        values='Empenhado',
-                        color='Empenhado',
-                        color_continuous_scale='Greens',
-                        custom_data=['Valor_Abreviado']
-                    )
-                    
-                    fig_tree.update_traces(
-                        texttemplate="<b>%{label}</b><br>%{customdata[0]}",
-                        textfont=dict(size=18), 
-                        hovertemplate="<b>%{label}</b><br>Empenhado: %{customdata[0]}<extra></extra>"
-                    )
+                    fig_tree = px.treemap(df_tree, path=[px.Constant(f"Ação {var_acao_codigo}"), 'Rotulo_Display'], values='Empenhado', color='Empenhado', color_continuous_scale='Greens', custom_data=['Valor_Abreviado'])
+                    fig_tree.update_traces(texttemplate="<b>%{label}</b><br>%{customdata[0]}", textfont=dict(size=18), hovertemplate="<b>%{label}</b><br>Empenhado: %{customdata[0]}<extra></extra>")
                     fig_tree.update_layout(margin=dict(t=20, l=10, r=10, b=10), height=450)
                     st.plotly_chart(fig_tree, use_container_width=True)
                 else:
@@ -578,25 +559,9 @@ try:
         with tab_evolucao:
             st.markdown(f"<div class='destaque-ano'>Evolução Mensal da Execução - Ano {ano_dinamico} <span style='font-size: 16px; font-weight: normal; color: #6B7280;'>(última atualização: {dt_atual})</span></div>", unsafe_allow_html=True)
             
-            # --- NOVO: GRÁFICO DE TENDÊNCIA GLOBAL (EMPENHADO VS PROJEÇÃO VS LOA) ---
-            caminho_projecao = r"Projecao_2026.xlsx"
-            
-            if os.path.exists(caminho_projecao):
-                fig_tendencia = criar_grafico_tendencia_global(caminho_projecao)
-                if fig_tendencia is not None:
-                    st.subheader("📈 Empenhado vs. Projeção vs. LOA")
-                    st.pyplot(fig_tendencia)
-                else:
-                    st.info("Planilha de projeção não encontrada ou com formato inválido.")
-            else:
-                st.info("Arquivo de projeção não encontrado no servidor.")
-            
-            st.divider()
-            
-            # --- GRÁFICO DE EVOLUÇÃO MENSAL (EXISTENTE) ---
             colunas_ex = [col for col in ['Autorizado', 'Empenhado', 'Liquidado', 'Pago', 'Disponível'] if col in df_base.columns]
-            
             df_m = df_base[mask_evo].groupby('Mês Referência')[colunas_ex].sum().reset_index()
+            
             if not df_m.empty:
                 df_m['Nome_Mes'] = df_m['Mês Referência'].apply(identificar_mes_streamlit)
                 df_m['mes_num'] = df_m['Nome_Mes'].map(ordem_meses)
@@ -612,12 +577,37 @@ try:
                     trace.textfont.weight = "bold"
                     trace.marker.size = 12
                     trace.line.width = 3
-                    trace.textposition = "top center" 
+                    trace.textposition = "top center"
                 
                 fig_line.update_layout(font=dict(size=18, color="black"), margin=dict(l=40, r=60, t=20, b=20), yaxis_range=[0, df_melt['Valor'].max() * 1.30], yaxis=dict(showticklabels=False), xaxis=dict(tickfont=dict(size=20, weight="bold")), legend=dict(orientation="h", y=1.05))
                 st.plotly_chart(fig_line, use_container_width=True)
             else:
                 st.info("Não há dados de evolução mensal para os filtros selecionados.")
+
+        with tab_projecao:
+            st.markdown(f"<div class='destaque-ano'>Projeção Orçamentária - Ano {ano_dinamico} <span style='font-size: 16px; font-weight: normal; color: #6B7280;'>(última atualização: {dt_atual})</span></div>", unsafe_allow_html=True)
+            
+            caminho_projecao = r"Projecao_2026.xlsx"
+            
+            if os.path.exists(caminho_projecao):
+                fig_tendencia = criar_grafico_tendencia_global(caminho_projecao)
+                if fig_tendencia is not None:
+                    st.subheader("📉 Empenhado vs. Projeção vs. LOA")
+                    st.pyplot(fig_tendencia)
+                    
+                    with st.expander("ℹ️ Sobre este gráfico"):
+                        st.markdown("""
+                        - **LOA (roxo tracejado):** Valor da Lei Orçamentária Anual aprovado para cada mês
+                        - **Empenhado - AFI (azul):** Valor efetivamente empenhado conforme dados do SIAFI/AFI
+                        - **Projetado - Meta (laranja):** Cronograma planejado de execução para os próximos meses
+                        
+                        A linha azul mostra os dados reais até o último mês com execução. 
+                        A linha laranja tracejada representa a projeção de gastos para os meses seguintes.
+                        """)
+                else:
+                    st.warning("⚠️ Planilha de projeção não encontrada ou com formato inválido.")
+            else:
+                st.warning("⚠️ Arquivo de projeção não encontrado.")
 
         with tab_tabela:
             st.markdown(f"<div class='periodo-destaque'>📅 {texto_periodo}</div>", unsafe_allow_html=True)
@@ -626,19 +616,11 @@ try:
             df_var_visual = df_var_filtrada.copy()
             df_var_visual_tela = df_var_visual.copy()
             
-            df_var_visual_tela['AÇÃO'] = df_var_visual['Ação'].apply(
-                lambda x: f'<div title="{x} - {dict_acoes.get(x, "N/I")}">{x}</div>' if x else ""
-            )
-            df_var_visual_tela['FONTE'] = df_var_visual['Fonte_3'].apply(
-                lambda x: f'<div title="{x} - {dict_fontes_global.get(x, "Outras Fontes")}">{x}</div>' if x else ""
-            )
-            df_var_visual_tela['NATUREZA'] = df_var_visual['Natureza_ID'].apply(
-                lambda x: f'<div title="{x} - {dict_naturezas.get(x, "N/I")}">{x}</div>' if x else ""
-            )
+            df_var_visual_tela['AÇÃO'] = df_var_visual['Ação'].apply(lambda x: f'<div title="{x} - {dict_acoes.get(x, "N/I")}">{x}</div>' if x else "")
+            df_var_visual_tela['FONTE'] = df_var_visual['Fonte_3'].apply(lambda x: f'<div title="{x} - {dict_fontes_global.get(x, "Outras Fontes")}">{x}</div>' if x else "")
+            df_var_visual_tela['NATUREZA'] = df_var_visual['Natureza_ID'].apply(lambda x: f'<div title="{x} - {dict_naturezas.get(x, "N/I")}">{x}</div>' if x else "")
             
             colunas_identificacao = ['AÇÃO', 'FONTE', 'NATUREZA']
-            
-            # Nomes REAIS das colunas (com espaço e ponto, como aparecem no DataFrame)
             colunas_financeiras_originais = [
                 'Autorizado Ant.', 'Autorizado Atual.', 'Variação_Autorizado',
                 'Empenhado Ant.', 'Empenhado Atual.', 'Variação_Empenhado',
@@ -647,26 +629,22 @@ try:
                 'Bloqueado Ant.', 'Bloqueado Atual.', 'Variação_Bloqueado',
                 'Disponível Ant.', 'Disponível Atual.', 'Variação_Disponível'
             ]
-            # Mantém apenas as que existem no DataFrame
             colunas_financeiras_originais = [c for c in colunas_financeiras_originais if c in df_var_visual.columns]
-                        
             df_var_visual_tela = df_var_visual_tela[colunas_identificacao + colunas_financeiras_originais]
             
             linha_soma = df_var_visual_tela[colunas_financeiras_originais].sum()
             df_total = pd.DataFrame(linha_soma).T
             for col in colunas_identificacao:
-                df_total[col] = "" 
-            df_total['AÇÃO'] = "<b>TOTAL GERAL</b>" 
-            
+                df_total[col] = ""
+            df_total['AÇÃO'] = "<b>TOTAL GERAL</b>"
             df_var_visual_tela = pd.concat([df_var_visual_tela, df_total], ignore_index=True)
             
             mapeamento_colunas = {}
             for col in colunas_financeiras_originais:
-                nome_seguro = col.replace('Ant.', 'A\u200Bnt.') 
+                nome_seguro = col.replace('Ant.', 'A\u200Bnt.')
                 novo_nome = nome_seguro.replace('_', '<br>').replace(' ', '<br>')
                 novo_nome = novo_nome.replace('<br><br>', '<br>')
                 mapeamento_colunas[col] = f'<span translate="no" class="notranslate">{novo_nome}</span>'
-                
             df_var_visual_tela = df_var_visual_tela.rename(columns=mapeamento_colunas)
             colunas_financeiras_tela = list(mapeamento_colunas.values())
             
@@ -675,17 +653,14 @@ try:
                 .format({col: formata_numero_duas_casas for col in colunas_financeiras_tela})
                 .set_properties(**{'text-align': 'right'}, subset=colunas_financeiras_tela)
                 .set_properties(**{'text-align': 'center'}, subset=colunas_identificacao)
-                .set_properties(subset=pd.IndexSlice[df_var_visual_tela.index[-1], :], **{'font-weight': 'bold', 'background-color': '#E5E7EB', 'color': '#0F172A'}) 
+                .set_properties(subset=pd.IndexSlice[df_var_visual_tela.index[-1], :], **{'font-weight': 'bold', 'background-color': '#E5E7EB', 'color': '#0F172A'})
             )
             
             try:
                 html_tabela = tabela_estilizada.hide(axis="index").to_html(escape=False)
             except AttributeError:
                 html_tabela = tabela_estilizada.hide_index().render()
-                
-            # ==========================================
-            # RENDERIZAÇÃO DA TABELA (ÚNICA, COM STICKY CSS)
-            # ==========================================
+            
             st.markdown(f'<div class="tabela-container">{html_tabela}</div>', unsafe_allow_html=True)
             
             df_excel = df_var_visual.copy()
@@ -698,7 +673,6 @@ try:
             for col in colunas_identificacao: df_total_excel[col] = ""
             df_total_excel['AÇÃO'] = "TOTAL GERAL"
             df_excel = pd.concat([df_excel, df_total_excel], ignore_index=True)
-            
             df_excel.columns = [c.replace('_Ant.', '_Anterior').replace('_Ant', '_Anterior').replace(' Ant.', ' Anterior').replace(' Ant', ' Anterior') for c in df_excel.columns]
             
             buffer = BytesIO()
@@ -717,7 +691,6 @@ try:
                 titulo_dinamico = f"Detalhamento da variação do Empenhado<br><span style='font-size: 20px; color: #4B5563;'>da Ação: {var_acao_str}</span>"
             else:
                 titulo_dinamico = "Detalhamento da variação do Empenhado<br><span style='font-size: 20px; color: #4B5563;'>(Panorama de Todas as Ações)</span>"
-                
             st.markdown(f"<div class='destaque-ano'>{titulo_dinamico}</div>", unsafe_allow_html=True)
             
             col_var_emp = None
@@ -725,13 +698,11 @@ try:
                 if 'Empenhado' in col and ('Varia' in col or 'Diferença' in col):
                     col_var_emp = col
                     break
-            
             if not col_var_emp:
                 for col in df_var_filtrada.columns:
                     if 'Empenhado' in col and 'Ant' not in col and 'Atual' not in col:
                         col_var_emp = col
                         break
-                        
             if not col_var_emp:
                 col_var_emp = [c for c in df_var_filtrada.columns if 'Empenhado' in c][0] if [c for c in df_var_filtrada.columns if 'Empenhado' in c] else None
 
@@ -746,33 +717,11 @@ try:
                     df_chart_var['Cor'] = df_chart_var[col_var_emp].apply(lambda x: '#10B981' if x > 0 else '#EF4444')
                     df_chart_var = df_chart_var.sort_values(by=col_var_emp, ascending=True)
                     
-                    fig_var = px.bar(
-                        df_chart_var, 
-                        x=col_var_emp, 
-                        y='Rotulo_Eixo', 
-                        orientation='h', 
-                        text='Texto_Valor',
-                        custom_data=['Natureza_ID', 'Nome_Natureza']
-                    )
-                    
-                    fig_var.update_traces(
-                        marker_color=df_chart_var['Cor'], 
-                        textposition="outside", 
-                        textfont=dict(size=14, color="black", weight="bold"),
-                        hovertemplate="<b>Natureza: %{customdata[0]} - %{customdata[1]}</b><br>Variação no Período: %{text}<extra></extra>"
-                    )
-                    
+                    fig_var = px.bar(df_chart_var, x=col_var_emp, y='Rotulo_Eixo', orientation='h', text='Texto_Valor', custom_data=['Natureza_ID', 'Nome_Natureza'])
+                    fig_var.update_traces(marker_color=df_chart_var['Cor'], textposition="outside", textfont=dict(size=14, color="black", weight="bold"), hovertemplate="<b>Natureza: %{customdata[0]} - %{customdata[1]}</b><br>Variação no Período: %{text}<extra></extra>")
                     fig_var.add_vline(x=0, line_width=2, line_color="black")
                     max_abs = abs(df_chart_var[col_var_emp]).max()
-                    fig_var.update_layout(
-                        font=dict(size=14, color="black"), 
-                        yaxis=dict(tickfont=dict(size=15, color="#111827")), 
-                        xaxis=dict(showticklabels=False, title="", range=[-max_abs * 1.35, max_abs * 1.35]), 
-                        yaxis_title="", 
-                        margin=dict(l=10, r=40, t=20, b=10),
-                        height=max(400, len(df_chart_var) * 45) 
-                    )
-                    
+                    fig_var.update_layout(font=dict(size=14, color="black"), yaxis=dict(tickfont=dict(size=15, color="#111827")), xaxis=dict(showticklabels=False, title="", range=[-max_abs * 1.35, max_abs * 1.35]), yaxis_title="", margin=dict(l=10, r=40, t=20, b=10), height=max(400, len(df_chart_var) * 45))
                     st.plotly_chart(fig_var, use_container_width=True)
                 else:
                     st.info("Não houve variação de Empenho para as naturezas neste período ou filtro selecionado.")
