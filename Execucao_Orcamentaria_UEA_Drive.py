@@ -96,103 +96,42 @@ def destacar_celulas_com_variacao(df):
 
 def criar_grafico_tendencia_global(caminho_planilha_proj):
     """Cria o gráfico Empenhado vs. Projeção vs. LOA com tabela integrada"""
+    import traceback
     try:
+        st.write(f"📂 Tentando ler: {caminho_planilha_proj}")
+        st.write(f"📂 Existe? {os.path.exists(caminho_planilha_proj)}")
+        
         df_proj_raw = pd.read_excel(caminho_planilha_proj)
+        st.write(f"📂 Colunas: {df_proj_raw.columns.tolist()}")
+        st.write(f"📂 Primeiras linhas: {df_proj_raw.head(3).to_dict()}")
+        
         meses_eixo = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ']
         
         primeira_coluna = df_proj_raw.iloc[:,0].astype(str).str.upper()
+        st.write(f"📂 Primeira coluna: {primeira_coluna.tolist()}")
+        
         mask_loa = primeira_coluna.str.contains("LOA", na=False)
         mask_emp = primeira_coluna.str.contains("EMPENHO", na=False)
         mask_prj = primeira_coluna.str.contains("PROJE", na=False)
         
+        st.write(f"📂 LOA: {mask_loa.any()} | EMPENHO: {mask_emp.any()} | PROJE: {mask_prj.any()}")
+        
         if not (mask_loa.any() and mask_emp.any() and mask_prj.any()):
+            st.error(f"Linhas não encontradas. Conteúdo: {primeira_coluna.tolist()}")
             return None
         
         row_loa = df_proj_raw[mask_loa].iloc[0]
         row_emp = df_proj_raw[mask_emp].iloc[0]
         row_prj = df_proj_raw[mask_prj].iloc[0]
         
-        def limpar_numero_graf(v):
-            if pd.isna(v): return 0.0
-            if isinstance(v, (int, float)): return float(v)
-            v_str = str(v)
-            v_clean = re.sub(r'[^0-9,\.-]', '', v_str)
-            if not v_clean or v_clean == '-': return 0.0
-            if ',' in v_clean:
-                v_clean = v_clean.replace('.', '').replace(',', '.')
-            else:
-                if v_clean.count('.') > 1: v_clean = v_clean.replace('.', '')
-            try: return float(v_clean)
-            except: return 0.0
+        st.write(f"📂 LOA row: {row_loa.to_dict()}")
+        st.write(f"📂 EMP row: {row_emp.to_dict()}")
         
-        loa = [limpar_numero_graf(row_loa[m]) for m in meses_eixo]
-        executado = [limpar_numero_graf(row_emp[m]) for m in meses_eixo]
-        projetado = [limpar_numero_graf(row_prj[m]) for m in meses_eixo]
+        # ... resto do código da função continua igual ...
         
-        final_exec = 0
-        for i, v in enumerate(executado):
-            if v > 0:
-                final_exec = i
-        
-        projetado_display = [None]*12
-        projetado_display[final_exec] = executado[final_exec]
-        for i in range(final_exec + 1, 12):
-            projetado_display[i] = projetado[i]
-        
-        executado_display = [v if v > 0 else None for v in executado[:final_exec+1]] + [None]*(12 - final_exec - 1)
-        
-        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(20, 8),
-                                         gridspec_kw={'height_ratios': [3, 1]})
-        
-        ax1.plot(meses_eixo, loa, marker='^', label='LOA', color='#8B5CF6', linewidth=2, linestyle=':')
-        ax1.plot(meses_eixo, executado_display, marker='o', label='Empenhado (AFI)', color='#0D47A1', linewidth=4)
-        ax1.plot(meses_eixo, projetado_display, marker='s', label='Projetado (Meta)', color='#FF8F00', linewidth=3, linestyle='--')
-        ax1.legend(loc='upper left', fontsize=10)
-        ax1.grid(True, alpha=0.2)
-        ax1.set_title('Empenhado vs. Projeção vs. LOA', fontweight='bold', fontsize=14)
-        ax1.ticklabel_format(style='plain', axis='y')
-        ax1.set_xlim(-0.5, 11.5)
-        ax1.margins(x=0.04)
-        
-        def formatar_moeda_curta(valor):
-            if abs(valor) >= 1_000_000:
-                return f"R$ {valor/1_000_000:,.1f} Mi".replace(",", "X").replace(".", ",").replace("X", ".")
-            else:
-                return f"R$ {valor:,.0f}".replace(",", ".")
-        
-        ax2.axis('off')
-        meses_disp = [m for m in meses_eixo if m in df_proj_raw.columns]
-        
-        dados_loa = [formatar_moeda_curta(row_loa[m]) for m in meses_disp]
-        dados_emp = [formatar_moeda_curta(row_emp[m]) if limpar_numero_graf(row_emp[m]) > 0 else '-' for m in meses_disp]
-        dados_prj = [formatar_moeda_curta(row_prj[m]) if limpar_numero_graf(row_prj[m]) > 0 else '-' for m in meses_disp]
-        
-        cell_text = [
-            ['LOA (A)'] + dados_loa,
-            ['Empenho (B)'] + dados_emp,
-            ['Projeção (C)'] + dados_prj
-        ]
-        col_labels = [''] + meses_disp
-        
-        tabela = ax2.table(cellText=cell_text,
-                            colLabels=col_labels,
-                            cellLoc='center',
-                            loc='center')
-        
-        tabela.auto_set_font_size(False)
-        tabela.set_fontsize(9)
-        tabela.scale(1, 1.5)
-        
-        for j in range(len(col_labels)):
-            tabela[0, j].set_facecolor('#1E3A8A')
-            tabela[0, j].set_text_props(color='white', fontweight='bold')
-        for i in range(1, 4):
-            tabela[i, 0].set_facecolor('#E8EAF6')
-            tabela[i, 0].set_text_props(fontweight='bold')
-        
-        plt.tight_layout(pad=2)
-        return fig
-    except Exception:
+    except Exception as e:
+        st.error(f"❌ Erro no gráfico: {e}")
+        st.code(traceback.format_exc())
         return None
 
 # ==========================================
