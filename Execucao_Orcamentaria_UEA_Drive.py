@@ -502,11 +502,11 @@ try:
             .kpi-card {
                 background: linear-gradient(135deg, #1E3A8A 0%, #3B82F6 100%);
                 border-radius: 12px;
-                padding: 20px 15px;
+                padding: 25px 20px;
                 text-align: center;
                 color: white;
                 box-shadow: 0 4px 15px rgba(30, 58, 138, 0.3);
-                min-height: 120px;
+                min-height: 140px;
                 display: flex;
                 flex-direction: column;
                 justify-content: center;
