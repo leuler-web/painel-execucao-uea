@@ -496,6 +496,46 @@ try:
         ])
 
         with tab_visao:
+                        # --- INÍCIO DO BLOCO CONGELADO COM CARDS DESTACADOS ---
+            st.markdown("""
+            <style>
+            .kpi-card {
+                background: linear-gradient(135deg, #1E3A8A 0%, #3B82F6 100%);
+                border-radius: 12px;
+                padding: 20px 15px;
+                text-align: center;
+                color: white;
+                box-shadow: 0 4px 15px rgba(30, 58, 138, 0.3);
+                min-height: 120px;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+            }
+            .kpi-card-aut { background: linear-gradient(135deg, #64748B 0%, #94A3B8 100%); }
+            .kpi-card-emp { background: linear-gradient(135deg, #1E3A8A 0%, #3B82F6 100%); }
+            .kpi-card-liq { background: linear-gradient(135deg, #0369A1 0%, #38BDF8 100%); }
+            .kpi-card-pago { background: linear-gradient(135deg, #047857 0%, #34D399 100%); }
+            .kpi-card-disp { background: linear-gradient(135deg, #B45309 0%, #FBBF24 100%); }
+            .kpi-label {
+                font-size: 13px;
+                font-weight: 600;
+                letter-spacing: 1px;
+                opacity: 0.9;
+                margin-bottom: 8px;
+            }
+            .kpi-value {
+                font-size: 22px;
+                font-weight: 800;
+                line-height: 1.2;
+            }
+            .kpi-delta {
+                font-size: 12px;
+                opacity: 0.85;
+                margin-top: 5px;
+            }
+            </style>
+            """, unsafe_allow_html=True)
+            
             st.markdown('<div class="topo-congelado">', unsafe_allow_html=True)
             st.markdown(f"<div class='destaque-ano'>Exercício Orçamentário: {ano_dinamico} <span style='font-size: 16px; font-weight: bold; color: #6B7280;'>(última atualização: {dt_atual})</span></div>", unsafe_allow_html=True)
 
@@ -506,12 +546,51 @@ try:
             v_pago = df_latest['Pago'].sum() if 'Pago' in df_latest.columns else 0
             v_disp = df_latest['Disponível'].sum() if 'Disponível' in df_latest.columns else 0
 
-            c1.metric("AUTORIZADO", formata_moeda_sem_decimal(v_aut))
-            c2.metric("EMPENHADO", formata_moeda_sem_decimal(v_emp), delta=f"{(v_emp/v_aut)*100 if v_aut>0 else 0:.1f}% do total")
-            c3.metric("LIQUIDADO", formata_moeda_sem_decimal(v_liq), delta=f"{(v_liq/v_aut)*100 if v_aut>0 else 0:.1f}% do total")
-            c4.metric("PAGO", formata_moeda_sem_decimal(v_pago), delta=f"{(v_pago/v_aut)*100 if v_aut>0 else 0:.1f}% do total")
-            c5.metric("DISPONÍVEL", formata_moeda_sem_decimal(v_disp))
+            with c1:
+                st.markdown(f"""
+                <div class="kpi-card kpi-card-aut">
+                    <div class="kpi-label">📋 AUTORIZADO</div>
+                    <div class="kpi-value">{formata_moeda_sem_decimal(v_aut)}</div>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            with c2:
+                st.markdown(f"""
+                <div class="kpi-card kpi-card-emp">
+                    <div class="kpi-label">💰 EMPENHADO</div>
+                    <div class="kpi-value">{formata_moeda_sem_decimal(v_emp)}</div>
+                    <div class="kpi-delta">{(v_emp/v_aut)*100 if v_aut>0 else 0:.1f}% do total</div>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            with c3:
+                st.markdown(f"""
+                <div class="kpi-card kpi-card-liq">
+                    <div class="kpi-label">✅ LIQUIDADO</div>
+                    <div class="kpi-value">{formata_moeda_sem_decimal(v_liq)}</div>
+                    <div class="kpi-delta">{(v_liq/v_aut)*100 if v_aut>0 else 0:.1f}% do total</div>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            with c4:
+                st.markdown(f"""
+                <div class="kpi-card kpi-card-pago">
+                    <div class="kpi-label">💳 PAGO</div>
+                    <div class="kpi-value">{formata_moeda_sem_decimal(v_pago)}</div>
+                    <div class="kpi-delta">{(v_pago/v_aut)*100 if v_aut>0 else 0:.1f}% do total</div>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            with c5:
+                st.markdown(f"""
+                <div class="kpi-card kpi-card-disp">
+                    <div class="kpi-label">📊 DISPONÍVEL</div>
+                    <div class="kpi-value">{formata_moeda_sem_decimal(v_disp)}</div>
+                </div>
+                """, unsafe_allow_html=True)
+
             st.markdown('</div>', unsafe_allow_html=True)
+            # --- FIM DO BLOCO CONGELADO ---
             
             st.divider()
             
