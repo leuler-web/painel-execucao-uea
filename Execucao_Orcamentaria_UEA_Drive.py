@@ -5,6 +5,7 @@ import plotly.express as px
 import os
 import re   
 from io import BytesIO
+import matplotlib.pyplot as plt
 
 # ==========================================
 # 1. CONFIGURAÇÃO DA PÁGINA
@@ -22,231 +23,9 @@ st.set_page_config(
 )
 
 # ==========================================
-<<<<<<< HEAD
 # 2. BLOCO ÚNICO DE ESTILOS CSS (VERSÃO CORRIGIDA)
 # ==========================================
-st.markdown("""
-    <style>
-    /* Cor da Métrica e Configurações Gerais */
-    [data-testid="stMetricValue"] { color: #2E7D32 !important; }
-    #MainMenu {visibility: visible;}
-    footer {visibility: hidden;}
-    .stDeployButton {display: none !important;} 
-    .block-container { padding-top: 0rem !important; max-width: 100% !important; }
-
-    /* --- INÍCIO DO BLOCO DA TABELA --- */
-    .tabela-container { max-height: 480px; overflow-y: auto; overflow-x: auto; border: 1px solid #D1D5DB; border-radius: 8px; background-color: white; margin-bottom: 20px; }
-    
-    .tabela-customizada table { width: 100%; border-collapse: separate !important; border-spacing: 0; }
-
-    /* CABEÇALHO GERAL (Fundo Azul e Letra Branca) */
-    .tabela-customizada thead th { 
-        background-color: #1E3A8A !important; 
-        color: #FFFFFF !important; 
-        font-weight: 900 !important; 
-        font-size: 14px !important; 
-        text-align: center !important; 
-        position: sticky; 
-        top: 0; 
-        z-index: 100; 
-        padding: 10px 8px; 
-        border: 1px solid #0F172A !important;
-    }
-
-    /* CORPO DA TABELA - COLUNAS FIXAS LATERAIS */
-    .tabela-customizada tbody td:nth-child(1) { position: sticky !important; left: 0; z-index: 10; background-color: #F9FAFB !important; border-right: 2px solid #D1D5DB !important; }
-    .tabela-customizada tbody td:nth-child(2) { position: sticky !important; left: 65px; z-index: 10; background-color: #F9FAFB !important; border-right: 2px solid #D1D5DB !important; }
-    .tabela-customizada tbody td:nth-child(3) { position: sticky !important; left: 135px; z-index: 10; background-color: #F9FAFB !important; border-right: 2px solid #D1D5DB !important; }
-
-    /* CABEÇALHO - GARANTE AZUL SOBRE AS COLUNAS FIXAS */
-    .tabela-customizada thead th:nth-child(1) { position: sticky !important; left: 0; z-index: 110 !important; background-color: #1E3A8A !important; }
-    .tabela-customizada thead th:nth-child(2) { position: sticky !important; left: 65px; z-index: 110 !important; background-color: #1E3A8A !important; }
-    .tabela-customizada thead th:nth-child(3) { position: sticky !important; left: 135px; z-index: 110 !important; background-color: #1E3A8A !important; }
-
-    .tabela-customizada tbody td { padding: 8px 8px; border-bottom: 1px solid #E5E7EB; font-size: 13px; white-space: nowrap; }
-    /* --- FIM DO BLOCO DA TABELA --- */
-    
-=======
-# 2. BLOCO ÚNICO DE ESTILOS CSS (TABELA ÚNICA COM STICKY - FUNCIONA NO STREAMLIT)
-# ==========================================
-st.markdown("""
-    <style>
-    /* --- 1. CONGELAMENTO DO TOPO DO PAINEL (TÍTULO + KPIs) --- */
-    .topo-congelado {
-        position: sticky;
-        top: 0px;
-        background-color: white;
-        z-index: 1000;
-        padding-top: 10px;
-        padding-bottom: 5px;
-        border-bottom: 2px solid #e5e7eb;
-        margin-bottom: 15px;
-    }
-
-    h1 { 
-        font-size: 1.6rem !important;
-        margin-top: 0px !important;
-        line-height: 1.2 !important;
-        color: #111827 !important;
-    }
-
-    .stTabs { margin-top: -20px !important; }
-
-    /* ============================================
-       2. CONTAINER ÚNICO DA TABELA COM SCROLL
-    ============================================ */
-    .tabela-container {
-        max-height: 480px;
-        overflow: auto;
-        border: 1px solid #e5e7eb;
-        border-radius: 8px;
-        position: relative;
-    }
-
-    /* ============================================
-       3. TABELA
-    ============================================ */
-    table {
-        width: 100%;
-        min-width: 800px;
-        border-collapse: separate;
-        border-spacing: 0;
-        font-family: sans-serif;
-        table-layout: auto;
-    }
-
-    /* ============================================
-       4. CABEÇALHO AZUL FIXO NO TOPO (TODAS AS COLUNAS)
-    ============================================ */
-    thead th {
-        position: sticky;
-        top: 0;
-        background-color: #1E3A8A !important;
-        color: white !important;
-        padding: 12px 8px;
-        text-align: center;
-        font-size: 13px;
-        font-weight: bold;
-        border-bottom: 2px solid #D1D5DB;
-        white-space: nowrap;
-        z-index: 20;
-    }
-
-    /* ============================================
-       5. COLUNAS FIXAS À ESQUERDA (AÇÃO, FONTE, NATUREZA)
-    ============================================ */
-    
-    /* Camada 1 (AÇÃO): left: 0 */
-    thead th:nth-child(1) {
-        position: sticky;
-        left: 0;
-        z-index: 25;
-        background-color: #1E3A8A !important;
-    }
-    tbody td:nth-child(1) {
-        position: sticky;
-        left: 0;
-        z-index: 15;
-        background-color: white;
-    }
-    
-    /* Camada 2 (FONTE): left: 60px (ajustável) */
-    thead th:nth-child(2) {
-        position: sticky;
-        left: 60px;
-        z-index: 25;
-        background-color: #1E3A8A !important;
-    }
-    tbody td:nth-child(2) {
-        position: sticky;
-        left: 60px;
-        z-index: 15;
-        background-color: white;
-    }
-    
-    /* Camada 3 (NATUREZA): left: 120px (ajustável) + sombra */
-    thead th:nth-child(3) {
-        position: sticky;
-        left: 120px;
-        z-index: 25;
-        background-color: #1E3A8A !important;
-        box-shadow: 2px 0 5px -2px rgba(0,0,0,0.15);
-    }
-    tbody td:nth-child(3) {
-        position: sticky;
-        left: 120px;
-        z-index: 15;
-        background-color: white;
-        box-shadow: 2px 0 5px -2px rgba(0,0,0,0.15);
-    }
-
-    /* ============================================
-       6. CORPO DA TABELA
-    ============================================ */
-    tbody td {
-        padding: 10px 8px;
-        border-bottom: 1px solid #F3F4F6;
-        font-size: 13px;
-        color: #4B5563;
-        white-space: nowrap;
-        background-color: white;
-        text-align: right;
-    }
-    
-    /* As 3 primeiras colunas centralizadas */
-    tbody td:nth-child(1),
-    tbody td:nth-child(2),
-    tbody td:nth-child(3) {
-        text-align: center;
-    }
-
-    tr:hover td {
-        background-color: #F9FAFB !important;
-    }
-    tr:hover td:nth-child(1),
-    tr:hover td:nth-child(2),
-    tr:hover td:nth-child(3) {
-        background-color: #F9FAFB !important;
-    }
-
-    /* ============================================
-       7. CORES DAS VARIAÇÕES
-    ============================================ */
-    .pos { color: #059669; font-weight: bold; }
-    .neg { color: #DC2626; font-weight: bold; }
-    .zero { color: #6B7280; }
-
-        /* ============================================
-       8. LIMPEZA VISUAL (CSS PURO - SELETORES ESPECÍFICOS)
-    ============================================ */
-    #MainMenu { visibility: hidden !important; }
-    footer { visibility: hidden !important; }
-    
-    /* Esconde o header com "Gerenciar aplicativo" */
-    header[data-testid="stHeader"] { display: none !important; }
-    
-    /* Esconde a toolbar inferior (botão do GitHub / Gerenciar aplicativo) */
-    div[data-testid="stToolbar"] { display: none !important; }
-    
-    /* Esconde o link "Made with Streamlit" */
-    div[data-testid="stDecoration"] { display: none !important; }
-    
-    /* Esconde QUALQUER elemento com a classe do toolbar */
-    .st-emotion-cache-1f3f2m8 { display: none !important; }
-    
-    /* Ajusta o espaçamento que sobra */
-    .stApp { margin-top: 0px !important; }
-    .stMain { padding-top: 0px !important; }
-
-    /* Tenta remover o botão "Gerenciar aplicativo" */
-    button[kind="header"] { display: none !important; }
-    .st-emotion-cache-1q3nhyv { display: none !important; }
-    [data-testid="baseButton-header"] { display: none !important; }
-    
-    [data-testid="stMetricValue"] { color: #2E7D32 !important; font-size: 1.2rem !important; }
->>>>>>> e4fba49b37b781d61105a1e89f4877a65e1699a3
-    </style>
-""", unsafe_allow_html=True)
+st.markdown("<style>.topo-congelado{position:sticky;top:0;background-color:white;z-index:1000;padding-top:10px;padding-bottom:5px;border-bottom:2px solid #e5e7eb;margin-bottom:15px;}h1{font-size:1.6rem !important;margin-top:0 !important;line-height:1.2 !important;color:#111827 !important;}.stTabs{margin-top:-20px !important;}.tabela-container{max-height:480px;overflow:auto;border:1px solid #e5e7eb;border-radius:8px;position:relative;}table{width:100%;min-width:800px;border-collapse:separate;border-spacing:0;font-family:sans-serif;table-layout:auto;}thead th{position:sticky;top:0;background-color:#1E3A8A !important;color:white !important;padding:12px 8px;text-align:center;font-size:13px;font-weight:bold;border-bottom:2px solid #D1D5DB;white-space:nowrap;z-index:20;}thead th:nth-child(1){position:sticky;left:0;z-index:25;background-color:#1E3A8A !important;}tbody td:nth-child(1){position:sticky;left:0;z-index:15;background-color:white;}thead th:nth-child(2){position:sticky;left:60px;z-index:25;background-color:#1E3A8A !important;}tbody td:nth-child(2){position:sticky;left:60px;z-index:15;background-color:white;}thead th:nth-child(3){position:sticky;left:120px;z-index:25;background-color:#1E3A8A !important;box-shadow:2px 0 5px -2px rgba(0,0,0,0.15);}tbody td:nth-child(3){position:sticky;left:120px;z-index:15;background-color:white;box-shadow:2px 0 5px -2px rgba(0,0,0,0.15);}tbody td{padding:10px 8px;border-bottom:1px solid #F3F4F6;font-size:13px;color:#4B5563;white-space:nowrap;background-color:white;text-align:right;}tbody td:nth-child(1),tbody td:nth-child(2),tbody td:nth-child(3){text-align:center;}tr:hover td{background-color:#F9FAFB !important;}tr:hover td:nth-child(1),tr:hover td:nth-child(2),tr:hover td:nth-child(3){background-color:#F9FAFB !important;}.pos{color:#059669;font-weight:bold;}.neg{color:#DC2626;font-weight:bold;}.zero{color:#6B7280;}#MainMenu{visibility:hidden !important;}footer{visibility:hidden !important;}header[data-testid=stHeader]{display:none !important;}div[data-testid=stToolbar]{display:none !important;}div[data-testid=stDecoration]{display:none !important;}.st-emotion-cache-1f3f2m8{display:none !important;}.stApp{margin-top:0 !important;}.stMain{padding-top:0 !important;}button[kind=header]{display:none !important;}.st-emotion-cache-1q3nhyv{display:none !important;}[data-testid=baseButton-header]{display:none !important;}[data-testid=stMetricValue]{color:#2E7D32 !important;font-size:1.2rem !important;}</style>", unsafe_allow_html=True)
 
 # ==========================================
 # 3. GESTÃO DE ESTADO
@@ -314,6 +93,107 @@ def destacar_celulas_com_variacao(df):
             mask = df[col].apply(extrair_numero).abs() > 0.001
             estilos.loc[mask, col] = 'background-color: #FFFF00; color: #000000; font-weight: bold;'
     return estilos
+
+def criar_grafico_tendencia_global(caminho_planilha_proj):
+    """Cria o gráfico Empenhado vs. Projeção vs. LOA com tabela integrada"""
+    try:
+        df_proj_raw = pd.read_excel(caminho_planilha_proj)
+        meses_eixo = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ']
+        
+        primeira_coluna = df_proj_raw.iloc[:,0].astype(str).str.upper()
+        mask_loa = primeira_coluna.str.contains("LOA", na=False)
+        mask_emp = primeira_coluna.str.contains("EMPENHO", na=False)
+        mask_prj = primeira_coluna.str.contains("PROJE", na=False)
+        
+        if not (mask_loa.any() and mask_emp.any() and mask_prj.any()):
+            return None
+        
+        row_loa = df_proj_raw[mask_loa].iloc[0]
+        row_emp = df_proj_raw[mask_emp].iloc[0]
+        row_prj = df_proj_raw[mask_prj].iloc[0]
+        
+        def limpar_numero_graf(v):
+            if pd.isna(v): return 0.0
+            if isinstance(v, (int, float)): return float(v)
+            v_str = str(v)
+            v_clean = re.sub(r'[^0-9,\.-]', '', v_str)
+            if not v_clean or v_clean == '-': return 0.0
+            if ',' in v_clean:
+                v_clean = v_clean.replace('.', '').replace(',', '.')
+            else:
+                if v_clean.count('.') > 1: v_clean = v_clean.replace('.', '')
+            try: return float(v_clean)
+            except: return 0.0
+        
+        loa = [limpar_numero_graf(row_loa[m]) for m in meses_eixo]
+        executado = [limpar_numero_graf(row_emp[m]) for m in meses_eixo]
+        projetado = [limpar_numero_graf(row_prj[m]) for m in meses_eixo]
+        
+        final_exec = 0
+        for i, v in enumerate(executado):
+            if v > 0:
+                final_exec = i
+        
+        projetado_display = [None]*12
+        projetado_display[final_exec] = executado[final_exec]
+        for i in range(final_exec + 1, 12):
+            projetado_display[i] = projetado[i]
+        
+        executado_display = [v if v > 0 else None for v in executado[:final_exec+1]] + [None]*(12 - final_exec - 1)
+        
+        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(20, 8),
+                                         gridspec_kw={'height_ratios': [3, 1]})
+        
+        ax1.plot(meses_eixo, loa, marker='^', label='LOA', color='#8B5CF6', linewidth=2, linestyle=':')
+        ax1.plot(meses_eixo, executado_display, marker='o', label='Empenhado (AFI)', color='#0D47A1', linewidth=4)
+        ax1.plot(meses_eixo, projetado_display, marker='s', label='Projetado (Meta)', color='#FF8F00', linewidth=3, linestyle='--')
+        ax1.legend(loc='upper left', fontsize=10)
+        ax1.grid(True, alpha=0.2)
+        ax1.set_title('Empenhado vs. Projeção vs. LOA', fontweight='bold', fontsize=14)
+        ax1.ticklabel_format(style='plain', axis='y')
+        ax1.set_xlim(-0.5, 11.5)
+        ax1.margins(x=0.04)
+        
+        def formatar_moeda_curta(valor):
+            if abs(valor) >= 1_000_000:
+                return f"R$ {valor/1_000_000:,.1f} Mi".replace(",", "X").replace(".", ",").replace("X", ".")
+            else:
+                return f"R$ {valor:,.0f}".replace(",", ".")
+        
+        ax2.axis('off')
+        meses_disp = [m for m in meses_eixo if m in df_proj_raw.columns]
+        
+        dados_loa = [formatar_moeda_curta(row_loa[m]) for m in meses_disp]
+        dados_emp = [formatar_moeda_curta(row_emp[m]) if limpar_numero_graf(row_emp[m]) > 0 else '-' for m in meses_disp]
+        dados_prj = [formatar_moeda_curta(row_prj[m]) if limpar_numero_graf(row_prj[m]) > 0 else '-' for m in meses_disp]
+        
+        cell_text = [
+            ['LOA (A)'] + dados_loa,
+            ['Empenho (B)'] + dados_emp,
+            ['Projeção (C)'] + dados_prj
+        ]
+        col_labels = [''] + meses_disp
+        
+        tabela = ax2.table(cellText=cell_text,
+                            colLabels=col_labels,
+                            cellLoc='center',
+                            loc='center')
+        
+        tabela.auto_set_font_size(False)
+        tabela.set_fontsize(9)
+        tabela.scale(1, 1.5)
+        
+        for j in range(len(col_labels)):
+            tabela[0, j].set_facecolor('#1E3A8A')
+            tabela[0, j].set_text_props(color='white', fontweight='bold')
+        for i in range(1, 4):
+            tabela[i, 0].set_facecolor('#E8EAF6')
+            tabela[i, 0].set_text_props(fontweight='bold')
+        
+        plt.tight_layout(pad=2)
+        return fig
+    except Exception:
+        return None
 
 # ==========================================
 # 5. CARREGAMENTO DOS DADOS E DICIONÁRIOS
@@ -388,18 +268,8 @@ def carregar_dados_v181(path):
     df_var = limpar_nomes_colunas(df_var)
     
     def remover_fantasmas(df):
-<<<<<<< HEAD
-        # 1. Transforma em texto, remove 'nan' e limpa espaços invisíveis corretamente
-        df['Programa de Trabalho'] = df['Programa de Trabalho'].astype(str).str.replace('nan', '', regex=False).str.strip()
-        
-        # 2. Identifica o que é vazio ou apenas o zero 'solto'
-        mascara_fantasma = (df['Programa de Trabalho'] == '') | (df['Programa de Trabalho'] == '0')
-        
-        # 3. Filtra e devolve apenas as linhas com dados reais
-=======
         df['Programa de Trabalho'] = df['Programa de Trabalho'].astype(str).str.replace('nan', '', regex=False).str.strip()
         mascara_fantasma = (df['Programa de Trabalho'] == '') | (df['Programa de Trabalho'] == '0')
->>>>>>> e4fba49b37b781d61105a1e89f4877a65e1699a3
         return df[~mascara_fantasma].copy()
         
     df_base = remover_fantasmas(df_base)
@@ -705,6 +575,22 @@ try:
         with tab_evolucao:
             st.markdown(f"<div class='destaque-ano'>Evolução Mensal da Execução - Ano {ano_dinamico} <span style='font-size: 16px; font-weight: normal; color: #6B7280;'>(última atualização: {dt_atual})</span></div>", unsafe_allow_html=True)
             
+            # --- NOVO: GRÁFICO DE TENDÊNCIA GLOBAL (EMPENHADO VS PROJEÇÃO VS LOA) ---
+            caminho_projecao = r"\\Rei-1cpd003\coord_plan_institucional\DADOS CPI\Orçamento\2026\EXECUÇÃO ORÇAMENTÁRIA\RELEXORC_CSV\Saida_PowerBI\Projecao_2026.xlsx"
+            
+            if os.path.exists(caminho_projecao):
+                fig_tendencia = criar_grafico_tendencia_global(caminho_projecao)
+                if fig_tendencia is not None:
+                    st.subheader("📈 Empenhado vs. Projeção vs. LOA")
+                    st.pyplot(fig_tendencia)
+                else:
+                    st.info("Planilha de projeção não encontrada ou com formato inválido.")
+            else:
+                st.info("Arquivo de projeção não encontrado no servidor.")
+            
+            st.divider()
+            
+            # --- GRÁFICO DE EVOLUÇÃO MENSAL (EXISTENTE) ---
             colunas_ex = [col for col in ['Autorizado', 'Empenhado', 'Liquidado', 'Pago', 'Disponível'] if col in df_base.columns]
             
             df_m = df_base[mask_evo].groupby('Mês Referência')[colunas_ex].sum().reset_index()
@@ -749,17 +635,17 @@ try:
             
             colunas_identificacao = ['AÇÃO', 'FONTE', 'NATUREZA']
             
-            # Ordem desejada das categorias
-            ordem_categorias = ['Autorizado', 'Empenhado', 'Liquidado', 'Pago', 'Bloqueado', 'Disponível']
-            
-            colunas_financeiras_originais = []
-            for cat in ordem_categorias:
-                for sufixo in ['_Ant', '_Atual', f'Variação_{cat}']:
-                    # Procura a coluna que contém a categoria e o sufixo
-                    for col in df_var_visual.columns:
-                        if cat in col and sufixo in col and col not in colunas_identificacao:
-                            if col not in colunas_financeiras_originais:
-                                colunas_financeiras_originais.append(col)
+            # Nomes REAIS das colunas (com espaço e ponto, como aparecem no DataFrame)
+            colunas_financeiras_originais = [
+                'Autorizado Ant.', 'Autorizado Atual.', 'Variação_Autorizado',
+                'Empenhado Ant.', 'Empenhado Atual.', 'Variação_Empenhado',
+                'Liquidado Ant.', 'Liquidado Atual.', 'Variação_Liquidado',
+                'Pago Ant.', 'Pago Atual.', 'Variação_Pago',
+                'Bloqueado Ant.', 'Bloqueado Atual.', 'Variação_Bloqueado',
+                'Disponível Ant.', 'Disponível Atual.', 'Variação_Disponível'
+            ]
+            # Mantém apenas as que existem no DataFrame
+            colunas_financeiras_originais = [c for c in colunas_financeiras_originais if c in df_var_visual.columns]
                         
             df_var_visual_tela = df_var_visual_tela[colunas_identificacao + colunas_financeiras_originais]
             
@@ -912,7 +798,3 @@ except Exception as e:
             for key in list(st.session_state.keys()):
                 del st.session_state[key]
             st.rerun()
-<<<<<<< HEAD
-# Forçando reinicialização do sistema
-=======
->>>>>>> e4fba49b37b781d61105a1e89f4877a65e1699a3
