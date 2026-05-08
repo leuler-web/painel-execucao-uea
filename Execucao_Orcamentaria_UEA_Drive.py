@@ -517,19 +517,19 @@ try:
             .kpi-card-pago { background: linear-gradient(135deg, #047857 0%, #34D399 100%); }
             .kpi-card-disp { background: linear-gradient(135deg, #B45309 0%, #FBBF24 100%); }
             .kpi-label {
-                font-size: 13px;
+                font-size: 16px;
                 font-weight: 600;
                 letter-spacing: 1px;
                 opacity: 0.9;
                 margin-bottom: 8px;
             }
             .kpi-value {
-                font-size: 22px;
+                font-size: 28px;
                 font-weight: 800;
                 line-height: 1.2;
             }
             .kpi-delta {
-                font-size: 12px;
+                font-size: 14px;
                 opacity: 0.85;
                 margin-top: 5px;
             }
