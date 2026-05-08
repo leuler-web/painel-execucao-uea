@@ -576,7 +576,7 @@ try:
             st.markdown(f"<div class='destaque-ano'>Evolução Mensal da Execução - Ano {ano_dinamico} <span style='font-size: 16px; font-weight: normal; color: #6B7280;'>(última atualização: {dt_atual})</span></div>", unsafe_allow_html=True)
             
             # --- NOVO: GRÁFICO DE TENDÊNCIA GLOBAL (EMPENHADO VS PROJEÇÃO VS LOA) ---
-            caminho_projecao = r"\\Rei-1cpd003\coord_plan_institucional\DADOS CPI\Orçamento\2026\EXECUÇÃO ORÇAMENTÁRIA\RELEXORC_CSV\Saida_PowerBI\Projecao_2026.xlsx"
+            caminho_projecao = r"Projecao_2026.xlsx"
             
             if os.path.exists(caminho_projecao):
                 fig_tendencia = criar_grafico_tendencia_global(caminho_projecao)
