@@ -5,6 +5,7 @@ import plotly.express as px
 import os
 import re   
 from io import BytesIO
+import matplotlib.pyplot as plt
 
 # ==========================================
 # 1. CONFIGURAÇÃO DA PÁGINA
@@ -93,6 +94,107 @@ def destacar_celulas_com_variacao(df):
             estilos.loc[mask, col] = 'background-color: #FFFF00; color: #000000; font-weight: bold;'
     return estilos
 
+def criar_grafico_tendencia_global(caminho_planilha_proj):
+    """Cria o gráfico Empenhado vs. Projeção vs. LOA com tabela integrada"""
+    try:
+        df_proj_raw = pd.read_excel(caminho_planilha_proj)
+        meses_eixo = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ']
+        
+        primeira_coluna = df_proj_raw.iloc[:,0].astype(str).str.upper()
+        mask_loa = primeira_coluna.str.contains("LOA", na=False)
+        mask_emp = primeira_coluna.str.contains("EMPENHO", na=False)
+        mask_prj = primeira_coluna.str.contains("PROJE", na=False)
+        
+        if not (mask_loa.any() and mask_emp.any() and mask_prj.any()):
+            return None
+        
+        row_loa = df_proj_raw[mask_loa].iloc[0]
+        row_emp = df_proj_raw[mask_emp].iloc[0]
+        row_prj = df_proj_raw[mask_prj].iloc[0]
+        
+        def limpar_numero_graf(v):
+            if pd.isna(v): return 0.0
+            if isinstance(v, (int, float)): return float(v)
+            v_str = str(v)
+            v_clean = re.sub(r'[^0-9,\.-]', '', v_str)
+            if not v_clean or v_clean == '-': return 0.0
+            if ',' in v_clean:
+                v_clean = v_clean.replace('.', '').replace(',', '.')
+            else:
+                if v_clean.count('.') > 1: v_clean = v_clean.replace('.', '')
+            try: return float(v_clean)
+            except: return 0.0
+        
+        loa = [limpar_numero_graf(row_loa[m]) for m in meses_eixo]
+        executado = [limpar_numero_graf(row_emp[m]) for m in meses_eixo]
+        projetado = [limpar_numero_graf(row_prj[m]) for m in meses_eixo]
+        
+        final_exec = 0
+        for i, v in enumerate(executado):
+            if v > 0:
+                final_exec = i
+        
+        projetado_display = [None]*12
+        projetado_display[final_exec] = executado[final_exec]
+        for i in range(final_exec + 1, 12):
+            projetado_display[i] = projetado[i]
+        
+        executado_display = [v if v > 0 else None for v in executado[:final_exec+1]] + [None]*(12 - final_exec - 1)
+        
+        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(20, 8),
+                                         gridspec_kw={'height_ratios': [3, 1]})
+        
+        ax1.plot(meses_eixo, loa, marker='^', label='LOA', color='#8B5CF6', linewidth=2, linestyle=':')
+        ax1.plot(meses_eixo, executado_display, marker='o', label='Empenhado (AFI)', color='#0D47A1', linewidth=4)
+        ax1.plot(meses_eixo, projetado_display, marker='s', label='Projetado (Meta)', color='#FF8F00', linewidth=3, linestyle='--')
+        ax1.legend(loc='upper left', fontsize=10)
+        ax1.grid(True, alpha=0.2)
+        ax1.set_title('Empenhado vs. Projeção vs. LOA', fontweight='bold', fontsize=14)
+        ax1.ticklabel_format(style='plain', axis='y')
+        ax1.set_xlim(-0.5, 11.5)
+        ax1.margins(x=0.04)
+        
+        def formatar_moeda_curta(valor):
+            if abs(valor) >= 1_000_000:
+                return f"R$ {valor/1_000_000:,.1f} Mi".replace(",", "X").replace(".", ",").replace("X", ".")
+            else:
+                return f"R$ {valor:,.0f}".replace(",", ".")
+        
+        ax2.axis('off')
+        meses_disp = [m for m in meses_eixo if m in df_proj_raw.columns]
+        
+        dados_loa = [formatar_moeda_curta(row_loa[m]) for m in meses_disp]
+        dados_emp = [formatar_moeda_curta(row_emp[m]) if limpar_numero_graf(row_emp[m]) > 0 else '-' for m in meses_disp]
+        dados_prj = [formatar_moeda_curta(row_prj[m]) if limpar_numero_graf(row_prj[m]) > 0 else '-' for m in meses_disp]
+        
+        cell_text = [
+            ['LOA (A)'] + dados_loa,
+            ['Empenho (B)'] + dados_emp,
+            ['Projeção (C)'] + dados_prj
+        ]
+        col_labels = [''] + meses_disp
+        
+        tabela = ax2.table(cellText=cell_text,
+                            colLabels=col_labels,
+                            cellLoc='center',
+                            loc='center')
+        
+        tabela.auto_set_font_size(False)
+        tabela.set_fontsize(9)
+        tabela.scale(1, 1.5)
+        
+        for j in range(len(col_labels)):
+            tabela[0, j].set_facecolor('#1E3A8A')
+            tabela[0, j].set_text_props(color='white', fontweight='bold')
+        for i in range(1, 4):
+            tabela[i, 0].set_facecolor('#E8EAF6')
+            tabela[i, 0].set_text_props(fontweight='bold')
+        
+        plt.tight_layout(pad=2)
+        return fig
+    except Exception:
+        return None
+
 # ==========================================
 # 5. CARREGAMENTO DOS DADOS E DICIONÁRIOS
 # ==========================================
@@ -166,18 +268,8 @@ def carregar_dados_v181(path):
     df_var = limpar_nomes_colunas(df_var)
     
     def remover_fantasmas(df):
-
-        # 1. Transforma em texto, remove 'nan' e limpa espaços invisíveis corretamente
-        df['Programa de Trabalho'] = df['Programa de Trabalho'].astype(str).str.replace('nan', '', regex=False).str.strip()
-        
-        # 2. Identifica o que é vazio ou apenas o zero 'solto'
-        mascara_fantasma = (df['Programa de Trabalho'] == '') | (df['Programa de Trabalho'] == '0')
-        
-        # 3. Filtra e devolve apenas as linhas com dados reais
-
         df['Programa de Trabalho'] = df['Programa de Trabalho'].astype(str).str.replace('nan', '', regex=False).str.strip()
         mascara_fantasma = (df['Programa de Trabalho'] == '') | (df['Programa de Trabalho'] == '0')
-
         return df[~mascara_fantasma].copy()
         
     df_base = remover_fantasmas(df_base)
@@ -483,6 +575,22 @@ try:
         with tab_evolucao:
             st.markdown(f"<div class='destaque-ano'>Evolução Mensal da Execução - Ano {ano_dinamico} <span style='font-size: 16px; font-weight: normal; color: #6B7280;'>(última atualização: {dt_atual})</span></div>", unsafe_allow_html=True)
             
+            # --- NOVO: GRÁFICO DE TENDÊNCIA GLOBAL (EMPENHADO VS PROJEÇÃO VS LOA) ---
+            caminho_projecao = r"\\Rei-1cpd003\coord_plan_institucional\DADOS CPI\Orçamento\2026\EXECUÇÃO ORÇAMENTÁRIA\RELEXORC_CSV\Saida_PowerBI\Projecao_2026.xlsx"
+            
+            if os.path.exists(caminho_projecao):
+                fig_tendencia = criar_grafico_tendencia_global(caminho_projecao)
+                if fig_tendencia is not None:
+                    st.subheader("📈 Empenhado vs. Projeção vs. LOA")
+                    st.pyplot(fig_tendencia)
+                else:
+                    st.info("Planilha de projeção não encontrada ou com formato inválido.")
+            else:
+                st.info("Arquivo de projeção não encontrado no servidor.")
+            
+            st.divider()
+            
+            # --- GRÁFICO DE EVOLUÇÃO MENSAL (EXISTENTE) ---
             colunas_ex = [col for col in ['Autorizado', 'Empenhado', 'Liquidado', 'Pago', 'Disponível'] if col in df_base.columns]
             
             df_m = df_base[mask_evo].groupby('Mês Referência')[colunas_ex].sum().reset_index()
@@ -690,6 +798,3 @@ except Exception as e:
             for key in list(st.session_state.keys()):
                 del st.session_state[key]
             st.rerun()
-
-# Forçando reinicialização do sistema
-
