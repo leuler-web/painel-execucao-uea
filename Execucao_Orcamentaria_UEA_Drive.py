@@ -23,43 +23,41 @@ st.set_page_config(
 )
 
 # ==========================================
-# 2. BLOCO ÚNICO DE ESTILOS CSS (VERSÃO ANTI-SUMIÇO)
+# 2. BLOCO ÚNICO DE ESTILOS CSS (RESGATE DA SIDEBAR)
 # ==========================================
 st.markdown("""
     <style>
     /* =========================================================
-       1. CONTROLE CIRÚRGICO DO TOPO (SIDEBAR, GITHUB E DEPLOY)
+       1. FORÇA A BARRA LATERAL E O BOTÃO DE ABRIR A APARECEREM
        ========================================================= */
-    /* Esconde o botão de Deploy (Canto Superior Direito) */
-    .stAppDeployButton { display: none !important; }
-    
-    /* Esconde o bloco do GitHub e Menu de 3 pontinhos (Canto Superior Direito) */
-    [data-testid="stToolbar"] { display: none !important; }
-    
-    /* Esconde o rodapé padrão */
-    footer { display: none !important; }
-    #MainMenu { visibility: hidden !important; }
-    
-    /* Deixa o fundo do cabeçalho invisível, para não ocupar espaço em branco */
-    header[data-testid="stHeader"] { 
-        background-color: transparent !important; 
+    section[data-testid="stSidebar"] {
+        display: flex !important;
+        visibility: visible !important;
     }
-
-    /* MÁGICA: Protege e estiliza o botão de reabrir a barra lateral (>>) */
-    /* Quando você clicar em "<<", este botão azul vai aparecer flutuando para trazer os filtros de volta */
+    
     [data-testid="collapsedControl"] {
         display: flex !important;
         visibility: visible !important;
-        background-color: #1E3A8A !important; /* Pinta o botão de reabrir com o Azul UEA */
-        color: white !important; /* Seta branca */
-        border-radius: 0 8px 8px 0 !important; /* Borda arredondada charmosa */
-        box-shadow: 2px 2px 6px rgba(0,0,0,0.3) !important; /* Sombra para destacar */
         z-index: 999999 !important;
+        background-color: #1E3A8A !important; 
+        color: white !important; 
+        border-radius: 0 8px 8px 0 !important; 
     }
 
+    /* =========================================================
+       2. ESCONDE O GITHUB, DEPLOY E RODAPÉ (Canto Direito)
+       ========================================================= */
+    .stAppDeployButton { display: none !important; }
+    [data-testid="stToolbar"] { display: none !important; }
+    #MainMenu { display: none !important; }
+    footer { display: none !important; }
+    
+    header[data-testid="stHeader"] { 
+        background: transparent !important; 
+    }
 
     /* =========================================================
-       2. SEU CÓDIGO ORIGINAL DA TABELA (MANTIDO INTACTO)
+       3. SEU CÓDIGO DA TABELA (INTACTO)
        ========================================================= */
     .topo-congelado{position:sticky;top:0;background-color:white;z-index:1000;padding-top:5px;padding-bottom:5px;border-bottom:2px solid #e5e7eb;margin-bottom:10px;}
     h1{font-size:1.3rem !important;margin-top:0 !important;margin-bottom:3px !important;padding-top:0 !important;padding-bottom:0 !important;line-height:1.1 !important;color:#111827 !important;}
