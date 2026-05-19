@@ -14,50 +14,41 @@ st.set_page_config(
     page_title="PAINEL ORÇAMENTÁRIO - UEA", 
     layout="wide", 
     page_icon="📈",
-    initial_sidebar_state="expanded",
-    menu_items={
-        'Get Help': 'https://www.uea.edu.br',
-        'Report a bug': None, 
-        'About': "Painel de Execução Orçamentária UEA. Versão 2.0 (Blindada)"
-    }
+    initial_sidebar_state="expanded" # O Streamlit já abre ela por padrão de forma segura
 )
 
 # ==========================================
-# 2. BLOCO ÚNICO DE ESTILOS CSS (RESGATE DA SIDEBAR)
+# 2. BLOCO ÚNICO DE ESTILOS CSS (VERSÃO NUVEM BLINDADA)
 # ==========================================
 st.markdown("""
     <style>
     /* =========================================================
-       1. FORÇA A BARRA LATERAL E O BOTÃO DE ABRIR A APARECEREM
+       1. BLINDAGEM DO TOPO (FUNCIONA LOCAL E NO STREAMLIT CLOUD)
        ========================================================= */
-    section[data-testid="stSidebar"] {
-        display: flex !important;
-        visibility: visible !important;
-    }
-    
-    [data-testid="collapsedControl"] {
-        display: flex !important;
-        visibility: visible !important;
-        z-index: 999999 !important;
-        background-color: #1E3A8A !important; 
-        color: white !important; 
-        border-radius: 0 8px 8px 0 !important; 
-    }
-
-    /* =========================================================
-       2. ESCONDE O GITHUB, DEPLOY E RODAPÉ (Canto Direito)
-       ========================================================= */
+    /* Esconde o botão de Deploy */
     .stAppDeployButton { display: none !important; }
-    [data-testid="stToolbar"] { display: none !important; }
+    
+    /* Esconde o rodapé e o menu nativo de 3 pontinhos */
     #MainMenu { display: none !important; }
     footer { display: none !important; }
     
-    header[data-testid="stHeader"] { 
-        background: transparent !important; 
+    /* Remove o ícone/link do GitHub e outros botões do topo direito */
+    header[data-testid="stHeader"] a { display: none !important; }
+    header[data-testid="stHeader"] button:not([data-testid="collapsedControl"]) { display: none !important; }
+    
+    /* PROTEÇÃO DA SETINHA (>>): Se fechar a barra lateral, este botão azul UEA aparece para reabrir */
+    [data-testid="collapsedControl"] {
+        display: flex !important;
+        visibility: visible !important;
+        background-color: #1E3A8A !important; /* Fundo Azul UEA */
+        color: white !important; /* Seta branca */
+        border-radius: 0 8px 8px 0 !important;
+        box-shadow: 2px 2px 6px rgba(0,0,0,0.3) !important;
+        z-index: 999999 !important;
     }
 
     /* =========================================================
-       3. SEU CÓDIGO DA TABELA (INTACTO)
+       2. SEU CÓDIGO ORIGINAL DA TABELA (INTACTO E SEGURO)
        ========================================================= */
     .topo-congelado{position:sticky;top:0;background-color:white;z-index:1000;padding-top:5px;padding-bottom:5px;border-bottom:2px solid #e5e7eb;margin-bottom:10px;}
     h1{font-size:1.3rem !important;margin-top:0 !important;margin-bottom:3px !important;padding-top:0 !important;padding-bottom:0 !important;line-height:1.1 !important;color:#111827 !important;}
@@ -87,17 +78,6 @@ st.markdown("""
     .zero{color:#6B7280;}
     </style>
 """, unsafe_allow_html=True)
-# ==========================================
-# 3. GESTÃO DE ESTADO
-# ==========================================
-if 'pagina_ativa' not in st.session_state:
-    st.session_state.pagina_ativa = 'capa'
-
-if 'botao_reset' not in st.session_state:
-    st.session_state.botao_reset = 0
-
-def forcar_limpeza_total():
-    st.session_state.botao_reset += 1
 
 # ==========================================
 # 4. DICIONÁRIOS E FUNÇÕES DE FORMATAÇÃO
