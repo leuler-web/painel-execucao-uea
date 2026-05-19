@@ -23,57 +23,92 @@ st.set_page_config(
 )
 
 # ==========================================
-# 2. BLOCO ÚNICO DE ESTILOS CSS (CORRIGIDO E SEGURO)
+# 2. BLOCO ÚNICO DE ESTILOS CSS (VERSÃO CORRIGIDA E BLINDADA)
 # ==========================================
 st.markdown("""
-<style>
-/* --- TRUQUE DO CABEÇALHO TRANSPARENTE (Resolve o sumiço da barra lateral) --- */
-header[data-testid="stHeader"] {
-    background-color: rgba(0, 0, 0, 0) !important; /* Torna o fundo do topo invisível */
-    pointer-events: none; /* Faz com que cliques passem direto para os gráficos de trás */
-}
-header[data-testid="stHeader"] button, 
-header[data-testid="stHeader"] [data-testid="collapsedControl"] {
-    pointer-events: auto !important; /* Mantém apenas o botão de abrir a barra clicável! */
-    background-color: #1E3A8A !important; /* Pinta o botão de reabrir com o Azul UEA */
-    color: white !important;
-    border-radius: 0 8px 8px 0 !important;
-    box-shadow: 2px 2px 5px rgba(0,0,0,0.2) !important;
-}
-
-/* Segurança: Esconde Deploy, Rodapé e Barras desnecessárias de forma limpa */
-.stAppDeployButton { display: none !important; }
-footer { visibility: hidden !important; }
-div[data-testid="stToolbar"] { display: none !important; }
-div[data-testid="stDecoration"] { display: none !important; }
-#MainMenu { visibility: hidden !important; }
-
-/* Ajustes de Layout e Fontes Gerais */
-.topo-congelado { position: sticky; top: 0; background-color: white; z-index: 1000; padding-top: 5px; padding-bottom: 5px; border-bottom: 2px solid #e5e7eb; margin-bottom: 10px; }
-h1 { font-size: 1.3rem !important; margin-top: 0 !important; margin-bottom: 3px !important; padding-top: 0 !important; padding-bottom: 0 !important; line-height: 1.1 !important; color: #111827 !important; }
-.stTabs { margin-top: -20px !important; }
-.stApp { margin-top: 0 !important; }
-.stMain { padding-top: 0 !important; }
-[data-testid=stMetricValue] { color: #2E7D32 !important; font-size: 1.2rem !important; }
-
-/* Estilos Estáveis da Tabela customizada */
-.tabela-container { max-height: 480px; overflow: auto; border: 1px solid #e5e7eb; border-radius: 8px; position: relative; }
-table { width: 100%; min-width: 800px; border-collapse: separate; border-spacing: 0; font-family: sans-serif; table-layout: auto; }
-thead th { position: sticky; top: 0; background-color: #1E3A8A !important; color: white !important; padding: 12px 8px; text-align: center; font-size: 13px; font-weight: bold; border-bottom: 2px solid #D1D5DB; white-space: nowrap; z-index: 20; }
-thead th:nth-child(1) { position: sticky; left: 0; z-index: 25; background-color: #1E3A8A !important; }
-tbody td:nth-child(1) { position: sticky; left: 0; z-index: 15; background-color: white; }
-thead th:nth-child(2) { position: sticky; left: 60px; z-index: 25; background-color: #1E3A8A !important; }
-tbody td:nth-child(2) { position: sticky; left: 60px; z-index: 15; background-color: white; }
-thead th:nth-child(3) { position: sticky; left: 120px; z-index: 25; background-color: #1E3A8A !important; box-shadow: 2px 0 5px -2px rgba(0,0,0,0.15); }
-tbody td:nth-child(3) { position: sticky; left: 120px; z-index: 15; background-color: white; box-shadow: 2px 0 5px -2px rgba(0,0,0,0.15); }
-tbody td { padding: 10px 8px; border-bottom: 1px solid #F3F4F6; font-size: 13px; color:#4B5563; white-space: nowrap; background-color: white; text-align: right; }
-tbody td:nth-child(1), tbody td:nth-child(2), tbody td:nth-child(3) { text-align: center; }
-tr:hover td { background-color: #F9FAFB !important; }
-tr:hover td:nth-child(1), tr:hover td:nth-child(2), tr:hover td:nth-child(3) { background-color: #F9FAFB !important; }
-.pos { color: #059669; font-weight: bold; }
-.neg { color: #DC2626; font-weight: bold; }
-.zero { color: #6B7280; }
-</style>
+    <style>
+    /* 1. CORREÇÃO DA SIDEBAR: Remove o display:none que estava sumindo com os filtros */
+    [data-testid="stSidebar"] {
+        display: block !important;
+        background-color: #F8FAFC !important;
+    }
+    
+    /* Mantém o topo limpo, mas sem quebrar o botão de abrir/fechar os filtros */
+    .stAppDeployButton { display: none !important; }
+    footer { visibility: hidden !important; }
+    
+    /* 2. ESTILO DA TABELA PERSONALIZADA (Cabeçalho Azul e Fonte Branca) */
+    .tabela-container {
+        max-height: 480px;
+        overflow: auto;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        position: relative;
+    }
+    
+    table {
+        width: 100%;
+        min-width: 1000px; /* Garante que role para o lado sem espremer */
+        border-collapse: separate;
+        border-spacing: 0;
+        font-family: sans-serif;
+    }
+    
+    /* Fixando e pintando o Cabeçalho Geral de Azul */
+    thead th {
+        position: sticky;
+        top: 0;
+        background-color: #1E3A8A !important; /* Azul UEA */
+        color: white !important;
+        padding: 12px 8px;
+        text-align: center;
+        font-size: 13px;
+        font-weight: bold;
+        border-bottom: 2px solid #D1D5DB;
+        white-space: nowrap;
+        z-index: 20;
+    }
+    
+    /* 3. FIXANDO AS 3 PRIMEIRAS COLUNAS À ESQUERDA (Z-Index alto para não sumir ao rolar) */
+    /* Coluna 1: AÇÃO */
+    thead th:nth-child(1) { position: sticky; left: 0; z-index: 25; background-color: #1E3A8A !important; }
+    tbody td:nth-child(1) { position: sticky; left: 0; z-index: 15; background-color: white; font-weight: 500; text-align: left !important; }
+    
+    /* Coluna 2: FONTE */
+    thead th:nth-child(2) { position: sticky; left: 100px; z-index: 25; background-color: #1E3A8A !important; }
+    tbody td:nth-child(2) { position: sticky; left: 100px; z-index: 15; background-color: white; text-align: center !important; }
+    
+    /* Coluna 3: NATUREZA */
+    thead th:nth-child(3) { position: sticky; left: 180px; z-index: 25; background-color: #1E3A8A !important; box-shadow: 2px 0 5px -2px rgba(0,0,0,0.2); }
+    tbody td:nth-child(3) { position: sticky; left: 180px; z-index: 15; background-color: white; box-shadow: 2px 0 5px -2px rgba(0,0,0,0.2); text-align: left !important; }
+    
+    /* Estilo das Células Gerais de Dados */
+    tbody td {
+        padding: 10px 8px;
+        border-bottom: 1px solid #F3F4F6;
+        font-size: 13px;
+        color: #4B5563;
+        white-space: nowrap;
+        background-color: white;
+        text-align: right;
+    }
+    
+    /* Efeito Hover nas linhas */
+    tr:hover td { background-color: #F1F5F9 !important; }
+    tr:hover td:nth-child(1), tr:hover td:nth-child(2), tr:hover td:nth-child(3) { background-color: #F1F5F9 !important; }
+    
+    /* Cores das Variações */
+    .pos { color: #059669; font-weight: bold; }
+    .neg { color: #DC2626; font-weight: bold; }
+    .zero { color: #6B7280; }
+    
+    /* Ajustes Gerais de Layout */
+    .topo-congelado { position: sticky; top: 0; background-color: white; z-index: 1000; padding-top: 5px; padding-bottom: 5px; border-bottom: 2px solid #e5e7eb; margin-bottom: 10px; }
+    h1 { font-size: 1.3rem !important; margin-top: 0 !important; margin-bottom: 3px !important; padding-top: 0 !important; padding-bottom: 0 !important; line-height: 1.1 !important; color: #111827 !important; }
+    .stTabs { margin-top: -20px !important; }
+    .block-container { padding-top: 60px !important; max-width: 100% !important; }
+    [data-testid=stMetricValue] { color: #2E7D32 !important; font-size: 1.2rem !important; }
+    </style>
 """, unsafe_allow_html=True)
 
 # ==========================================
