@@ -402,107 +402,107 @@ try:
         </div>
     """, unsafe_allow_html=True)
 
-        # ==========================================
-        # INTERFACE: TELA 1 (CAPA)
-        # ==========================================
-        if st.session_state.pagina_ativa == 'capa':
+    # ==========================================
+    # INTERFACE: TELA 1 (CAPA)
+    # ==========================================
+    if st.session_state.pagina_ativa == 'capa':
+        st.write("")
+        st.write("")
+        col_esq, col_centro, col_dir = st.columns([1, 3, 1])
+        with col_centro:
+            try:
+                st.image("LogoPainelOrcamento.jpeg", use_container_width=True)
+            except:
+                st.warning("Imagem da capa não encontrada.")
             st.write("")
-            st.write("")
-            col_esq, col_centro, col_dir = st.columns([1, 3, 1])
-            with col_centro:
-                try:
-                    st.image("LogoPainelOrcamento.jpeg", use_container_width=True)
-                except:
-                    st.warning("Imagem da capa não encontrada.")
-                st.write("")
-                if st.button("🚀 ACESSAR PAINEL DE EXECUÇÃO ORÇAMENTÁRIA", use_container_width=True):
-                    st.session_state.pagina_ativa = 'dashboard'
-                    st.rerun()
-            st.stop()  # 🚨 ESSENCIAL: Impede o script de rodar o dashboard enquanto o usuário estiver na capa!
+            if st.button("🚀 ACESSAR PAINEL DE EXECUÇÃO ORÇAMENTÁRIA", use_container_width=True):
+                st.session_state.pagina_ativa = 'dashboard'
+                st.rerun()
+        st.stop()  # 🚨 ESSENCIAL: Impede o script de rodar o dashboard enquanto o usuário estiver na capa!
 
-        # ==========================================
-        # INTERFACE: TELA 2 (DASHBOARD)
-        # ==========================================
-        elif st.session_state.pagina_ativa == 'dashboard':
-            st.title("📊 PAINEL ORÇAMENTÁRIO - UEA")
+    # ==========================================
+    # INTERFACE: TELA 2 (DASHBOARD)
+    # ==========================================
+    elif st.session_state.pagina_ativa == 'dashboard':
+        st.title("📊 PAINEL ORÇAMENTÁRIO - UEA")
+        
+        # 🔍 SEÇÃO DE FILTROS RETRÁTIL (SANFONA) NO TOPO DO PAINEL
+        with st.expander("🔍 CLIQUE AQUI PARA ABRIR/FECHAR OS FILTROS DO PAINEL", expanded=True):
+            st.button("🧹 Limpar Todos os Filtros", on_click=forcar_limpeza_total, use_container_width=True)
             
-            # 🔍 SEÇÃO DE FILTROS RETRÁTIL (SANFONA) NO TOPO DO PAINEL
-            with st.expander("🔍 CLIQUE AQUI PARA ABRIR/FECHAR OS FILTROS DO PAINEL", expanded=True):
-                st.button("🧹 Limpar Todos os Filtros", on_click=forcar_limpeza_total, use_container_width=True)
+            # Criando 5 colunas para colocar todos os filtros horizontais lado a lado
+            c1, c2, c3, c4, c5 = st.columns(5)
+            
+            with c1:
+                lista_meses = df_base[['Mes_Nome', 'Mes_Num']].dropna().drop_duplicates().sort_values('Mes_Num')['Mes_Nome'].tolist()
+                var_mes_str = st.selectbox("Mês de Referência", ["Todos"] + lista_meses, key=f"filtro_mes_{st.session_state.botao_reset}")
                 
-                # Criando 5 colunas para colocar todos os filtros horizontais lado a lado
-                c1, c2, c3, c4, c5 = st.columns(5)
+            with c2:
+                if 'Tipo Movimento' in df_base.columns:
+                    tipos_mov = [t for t in df_base['Tipo Movimento'].dropna().unique() if t]
+                    idx_padrao = tipos_mov.index('Acumulado') if 'Acumulado' in tipos_mov else 0
+                    var_mov_str = st.selectbox("Tipo de Movimento", tipos_mov, index=idx_padrao, key=f"filtro_mov_{st.session_state.botao_reset}")
+                else: 
+                    var_mov_str = None
+                    st.write("Movimento N/D")
+                    
+            with c3:
+                acoes_validas = [str(a) for a in df_base['Ação'].unique() if str(a).strip() != '' and str(a).isdigit() and len(str(a)) == 4]
+                opcoes_acao = ["Todas"] + [f"{a} - {dict_acoes.get(a, 'NÃO IDENTIFICADA')}" for a in sorted(list(set(acoes_validas)))]
+                var_acao_str = st.selectbox("Ação", opcoes_acao, key=f"filtro_acao_{st.session_state.botao_reset}")
+                var_acao_codigo = var_acao_str.split(' - ')[0]
                 
-                with c1:
-                    lista_meses = df_base[['Mes_Nome', 'Mes_Num']].dropna().drop_duplicates().sort_values('Mes_Num')['Mes_Nome'].tolist()
-                    var_mes_str = st.selectbox("Mês de Referência", ["Todos"] + lista_meses, key=f"filtro_mes_{st.session_state.botao_reset}")
-                    
-                with c2:
-                    if 'Tipo Movimento' in df_base.columns:
-                        tipos_mov = [t for t in df_base['Tipo Movimento'].dropna().unique() if t]
-                        idx_padrao = tipos_mov.index('Acumulado') if 'Acumulado' in tipos_mov else 0
-                        var_mov_str = st.selectbox("Tipo de Movimento", tipos_mov, index=idx_padrao, key=f"filtro_mov_{st.session_state.botao_reset}")
-                    else: 
-                        var_mov_str = None
-                        st.write("Movimento N/D")
-                        
-                with c3:
-                    acoes_validas = [str(a) for a in df_base['Ação'].unique() if str(a).strip() != '' and str(a).isdigit() and len(str(a)) == 4]
-                    opcoes_acao = ["Todas"] + [f"{a} - {dict_acoes.get(a, 'NÃO IDENTIFICADA')}" for a in sorted(list(set(acoes_validas)))]
-                    var_acao_str = st.selectbox("Ação", opcoes_acao, key=f"filtro_acao_{st.session_state.botao_reset}")
-                    var_acao_codigo = var_acao_str.split(' - ')[0]
-                    
-                with c4:
-                    fontes_3_validas = sorted([f for f in df_base['Fonte_3'].unique() if f and f != ''])
-                    opcoes_fonte = ["Todas"] + [f"{f} - {dict_fontes_global.get(f, 'Outras Fontes')}" for f in fontes_3_validas]
-                    var_fonte_str = st.selectbox("Fonte de Recurso", opcoes_fonte, key=f"filtro_fonte_{st.session_state.botao_reset}")
-                    var_fonte_codigo = var_fonte_str.split(' - ')[0]
-                    
-                with c5:
-                    naturezas_validas = sorted([str(n) for n in df_base['Natureza_ID'].unique() if n and n != ''])
-                    opcoes_natureza = ["Todas"] + [f"{n} - {dict_naturezas.get(n, 'NÃO IDENTIFICADA')}" for n in naturezas_validas]
-                    var_natureza_str = st.selectbox("Natureza", opcoes_natureza, key=f"filtro_natureza_{st.session_state.botao_reset}")
-                    var_natureza_codigo = var_natureza_str.split(' - ')[0]
+            with c4:
+                fontes_3_validas = sorted([f for f in df_base['Fonte_3'].unique() if f and f != ''])
+                opcoes_fonte = ["Todas"] + [f"{f} - {dict_fontes_global.get(f, 'Outras Fontes')}" for f in fontes_3_validas]
+                var_fonte_str = st.selectbox("Fonte de Recurso", opcoes_fonte, key=f"filtro_fonte_{st.session_state.botao_reset}")
+                var_fonte_codigo = var_fonte_str.split(' - ')[0]
+                
+            with c5:
+                naturezas_validas = sorted([str(n) for n in df_base['Natureza_ID'].unique() if n and n != ''])
+                opcoes_natureza = ["Todas"] + [f"{n} - {dict_naturezas.get(n, 'NÃO IDENTIFICADA')}" for n in naturezas_validas]
+                var_natureza_str = st.selectbox("Natureza", opcoes_natureza, key=f"filtro_natureza_{st.session_state.botao_reset}")
+                var_natureza_codigo = var_natureza_str.split(' - ')[0]
 
-        # === LÓGICA DE FILTRAGEM DOS DADOS (PROCESSAMENTO) ===
-        mask_base = pd.Series(True, index=df_base.index)
-        if var_mes_str != "Todos":
-            mask_base &= (df_base['Mes_Nome'] == var_mes_str)
-        if var_mov_str:
-            mask_base &= (df_base['Tipo Movimento'] == var_mov_str)
-        if var_acao_codigo != "Todas":
-            mask_base &= (df_base['Ação'] == var_acao_codigo)
-        if var_natureza_codigo != "Todas":
-            mask_base &= (df_base['Natureza_ID'] == var_natureza_codigo)
-        if var_fonte_codigo != "Todas":
-            mask_base &= (df_base['Fonte_3'] == var_fonte_codigo)
-        df_base_filtrada = df_base[mask_base]
+    # === LÓGICA DE FILTRAGEM DOS DADOS (PROCESSAMENTO) ===
+    mask_base = pd.Series(True, index=df_base.index)
+    if var_mes_str != "Todos":
+        mask_base &= (df_base['Mes_Nome'] == var_mes_str)
+    if var_mov_str:
+        mask_base &= (df_base['Tipo Movimento'] == var_mov_str)
+    if var_acao_codigo != "Todas":
+        mask_base &= (df_base['Ação'] == var_acao_codigo)
+    if var_natureza_codigo != "Todas":
+        mask_base &= (df_base['Natureza_ID'] == var_natureza_codigo)
+    if var_fonte_codigo != "Todas":
+        mask_base &= (df_base['Fonte_3'] == var_fonte_codigo)
+    df_base_filtrada = df_base[mask_base]
+
+    df_latest = df_base_filtrada[df_base_filtrada['Mes_Num'] == df_base_filtrada['Mes_Num'].max()] if (var_mes_str == "Todos" and not df_base_filtrada['Mes_Num'].isna().all()) else df_base_filtrada
+
+    mask_evo = pd.Series(True, index=df_base.index)
+    if var_mov_str:
+        mask_evo &= (df_base['Tipo Movimento'] == var_mov_str)
+    if var_acao_codigo != "Todas":
+        mask_evo &= (df_base['Ação'] == var_acao_codigo)
+    if var_natureza_codigo != "Todas":
+        mask_evo &= (df_base['Natureza_ID'] == var_natureza_codigo)
+    if var_fonte_codigo != "Todas":
+        mask_evo &= (df_base['Fonte_3'] == var_fonte_codigo)
         
-        df_latest = df_base_filtrada[df_base_filtrada['Mes_Num'] == df_base_filtrada['Mes_Num'].max()] if (var_mes_str == "Todos" and not df_base_filtrada['Mes_Num'].isna().all()) else df_base_filtrada
+    mask_var = pd.Series(True, index=df_var.index)
+    if var_acao_codigo != "Todas":
+        mask_var &= (df_var['Ação'] == var_acao_codigo)
+    if var_natureza_codigo != "Todas":
+        mask_var &= (df_var['Natureza_ID'] == var_natureza_codigo)
+    if var_fonte_codigo != "Todas":
+        mask_var &= (df_var['Fonte_3'] == var_fonte_codigo)
+    df_var_filtrada = df_var[mask_var]
         
-        mask_evo = pd.Series(True, index=df_base.index)
-        if var_mov_str:
-            mask_evo &= (df_base['Tipo Movimento'] == var_mov_str)
-        if var_acao_codigo != "Todas":
-            mask_evo &= (df_base['Ação'] == var_acao_codigo)
-        if var_natureza_codigo != "Todas":
-            mask_evo &= (df_base['Natureza_ID'] == var_natureza_codigo)
-        if var_fonte_codigo != "Todas":
-            mask_evo &= (df_base['Fonte_3'] == var_fonte_codigo)
-            
-        mask_var = pd.Series(True, index=df_var.index)
-        if var_acao_codigo != "Todas":
-            mask_var &= (df_var['Ação'] == var_acao_codigo)
-        if var_natureza_codigo != "Todas":
-            mask_var &= (df_var['Natureza_ID'] == var_natureza_codigo)
-        if var_fonte_codigo != "Todas":
-            mask_var &= (df_var['Fonte_3'] == var_fonte_codigo)
-        df_var_filtrada = df_var[mask_var]
-        
-        # ==========================================
-        # CARDS KPIs FIXOS NO TOPO (VISÍVEIS EM TODAS AS ABAS)
-        # ==========================================
-        st.markdown("""
+    # ==========================================
+    # CARDS KPIs FIXOS NO TOPO (VISÍVEIS EM TODAS AS ABAS)
+    # ==========================================
+    st.markdown("""
         <style>
         .kpi-card {
             background: linear-gradient(135deg, #1E3A8A 0%, #3B82F6 100%);
@@ -552,117 +552,117 @@ try:
         </style>
         """, unsafe_allow_html=True)
         
-        st.markdown('<div class="kpi-container">', unsafe_allow_html=True)
-        st.markdown(f"<div class='destaque-ano'>Exercício Orçamentário: {ano_dinamico} <span style='font-size: 16px; font-weight: bold; color: #6B7280;'>(última atualização: {dt_atual})</span></div>", unsafe_allow_html=True)
-        
-        c1, c2, c3, c4, c5 = st.columns(5)
-        v_aut = df_latest['Autorizado'].sum() if 'Autorizado' in df_latest.columns else 0
-        v_emp = df_latest['Empenhado'].sum() if 'Empenhado' in df_latest.columns else 0
-        v_liq = df_latest['Liquidado'].sum() if 'Liquidado' in df_latest.columns else 0
-        v_pago = df_latest['Pago'].sum() if 'Pago' in df_latest.columns else 0
-        v_disp = df_latest['Disponível'].sum() if 'Disponível' in df_latest.columns else 0
+    st.markdown('<div class="kpi-container">', unsafe_allow_html=True)
+    st.markdown(f"<div class='destaque-ano'>Exercício Orçamentário: {ano_dinamico} <span style='font-size: 16px; font-weight: bold; color: #6B7280;'>(última atualização: {dt_atual})</span></div>", unsafe_allow_html=True)
+    
+    c1, c2, c3, c4, c5 = st.columns(5)
+    v_aut = df_latest['Autorizado'].sum() if 'Autorizado' in df_latest.columns else 0
+    v_emp = df_latest['Empenhado'].sum() if 'Empenhado' in df_latest.columns else 0
+    v_liq = df_latest['Liquidado'].sum() if 'Liquidado' in df_latest.columns else 0
+    v_pago = df_latest['Pago'].sum() if 'Pago' in df_latest.columns else 0
+    v_disp = df_latest['Disponível'].sum() if 'Disponível' in df_latest.columns else 0
 
-        with c1:
-            st.markdown(f"""
-            <div class="kpi-card kpi-card-aut">
-                <div class="kpi-label">📋 AUTORIZADO</div>
-                <div class="kpi-value">{formata_moeda_sem_decimal(v_aut)}</div>
-            </div>
-            """, unsafe_allow_html=True)
+    with c1:
+        st.markdown(f"""
+        <div class="kpi-card kpi-card-aut">
+            <div class="kpi-label">📋 AUTORIZADO</div>
+            <div class="kpi-value">{formata_moeda_sem_decimal(v_aut)}</div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with c2:
+        st.markdown(f"""
+        <div class="kpi-card kpi-card-emp">
+            <div class="kpi-label">💰 EMPENHADO</div>
+            <div class="kpi-value">{formata_moeda_sem_decimal(v_emp)}</div>
+            <div class="kpi-delta">{(v_emp/v_aut)*100 if v_aut>0 else 0:.1f}% do total</div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with c3:
+        st.markdown(f"""
+        <div class="kpi-card kpi-card-liq">
+            <div class="kpi-label">✅ LIQUIDADO</div>
+            <div class="kpi-value">{formata_moeda_sem_decimal(v_liq)}</div>
+            <div class="kpi-delta">{(v_liq/v_aut)*100 if v_aut>0 else 0:.1f}% do total</div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with c4:
+        st.markdown(f"""
+        <div class="kpi-card kpi-card-pago">
+            <div class="kpi-label">💳 PAGO</div>
+            <div class="kpi-value">{formata_moeda_sem_decimal(v_pago)}</div>
+            <div class="kpi-delta">{(v_pago/v_aut)*100 if v_aut>0 else 0:.1f}% do total</div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with c5:
+        st.markdown(f"""
+        <div class="kpi-card kpi-card-disp">
+            <div class="kpi-label">📊 DISPONÍVEL</div>
+            <div class="kpi-value">{formata_moeda_sem_decimal(v_disp)}</div>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    st.markdown('</div>', unsafe_allow_html=True)
+    # ==========================================
         
-        with c2:
-            st.markdown(f"""
-            <div class="kpi-card kpi-card-emp">
-                <div class="kpi-label">💰 EMPENHADO</div>
-                <div class="kpi-value">{formata_moeda_sem_decimal(v_emp)}</div>
-                <div class="kpi-delta">{(v_emp/v_aut)*100 if v_aut>0 else 0:.1f}% do total</div>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        with c3:
-            st.markdown(f"""
-            <div class="kpi-card kpi-card-liq">
-                <div class="kpi-label">✅ LIQUIDADO</div>
-                <div class="kpi-value">{formata_moeda_sem_decimal(v_liq)}</div>
-                <div class="kpi-delta">{(v_liq/v_aut)*100 if v_aut>0 else 0:.1f}% do total</div>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        with c4:
-            st.markdown(f"""
-            <div class="kpi-card kpi-card-pago">
-                <div class="kpi-label">💳 PAGO</div>
-                <div class="kpi-value">{formata_moeda_sem_decimal(v_pago)}</div>
-                <div class="kpi-delta">{(v_pago/v_aut)*100 if v_aut>0 else 0:.1f}% do total</div>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        with c5:
-            st.markdown(f"""
-            <div class="kpi-card kpi-card-disp">
-                <div class="kpi-label">📊 DISPONÍVEL</div>
-                <div class="kpi-value">{formata_moeda_sem_decimal(v_disp)}</div>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        st.markdown('</div>', unsafe_allow_html=True)
-        # ==========================================
-        
-        tags = []
-        if var_acao_codigo != "Todas": tags.append(f"<b>🎯 Ação:</b> {var_acao_str}")
-        if var_fonte_codigo != "Todas": tags.append(f"<b>🏦 Fonte de Recurso:</b> {var_fonte_str}")
-        if var_natureza_codigo != "Todas": tags.append(f"<b>🏷️ Natureza da Despesa:</b> {var_natureza_str}")
-        if tags: st.markdown(f"<div class='caixa-destaque'>{' &nbsp;&nbsp;|&nbsp;&nbsp; '.join(tags)}</div>", unsafe_allow_html=True)
+    tags = []
+    if var_acao_codigo != "Todas": tags.append(f"<b>🎯 Ação:</b> {var_acao_str}")
+    if var_fonte_codigo != "Todas": tags.append(f"<b>🏦 Fonte de Recurso:</b> {var_fonte_str}")
+    if var_natureza_codigo != "Todas": tags.append(f"<b>🏷️ Natureza da Despesa:</b> {var_natureza_str}")
+    if tags: st.markdown(f"<div class='caixa-destaque'>{' &nbsp;&nbsp;|&nbsp;&nbsp; '.join(tags)}</div>", unsafe_allow_html=True)
 
-        tab_visao, tab_evolucao, tab_projecao, tab_tabela, tab_var_natureza = st.tabs([
-            "🎯 Visão Estratégica", 
-            "📈 Evolução Mensal",
-            "📉 Projeção vs. Realizado",
-            "🔍 Tabela de Variações",
-            "📊 Variação do Empenhado por Natureza"
-        ])
+    tab_visao, tab_evolucao, tab_projecao, tab_tabela, tab_var_natureza = st.tabs([
+        "🎯 Visão Estratégica", 
+        "📈 Evolução Mensal",
+        "📉 Projeção vs. Realizado",
+        "🔍 Tabela de Variações",
+        "📊 Variação do Empenhado por Natureza"
+    ])
 
-        with tab_visao:
-            if var_acao_codigo == "Todas":
-                st.subheader("Top 10 Maiores Despesas por Ação (Empenhado)")
-                df_top = df_latest.groupby('Ação')['Empenhado'].sum().nlargest(10).reset_index()
-                df_top = df_top[df_top['Empenhado'] > 0]
+    with tab_visao:
+        if var_acao_codigo == "Todas":
+            st.subheader("Top 10 Maiores Despesas por Ação (Empenhado)")
+            df_top = df_latest.groupby('Ação')['Empenhado'].sum().nlargest(10).reset_index()
+            df_top = df_top[df_top['Empenhado'] > 0]
+            
+            if not df_top.empty:
+                df_top['Rotulo'] = df_top['Empenhado'].apply(formata_abreviado)
+                df_top['Nome_Acao'] = df_top['Ação'].map(dict_acoes).fillna('Não Identificada')
+                df_top['Eixo_Y_Negrito'] = '<b>' + df_top['Ação'] + '</b>'
                 
-                if not df_top.empty:
-                    df_top['Rotulo'] = df_top['Empenhado'].apply(formata_abreviado)
-                    df_top['Nome_Acao'] = df_top['Ação'].map(dict_acoes).fillna('Não Identificada')
-                    df_top['Eixo_Y_Negrito'] = '<b>' + df_top['Ação'] + '</b>'
-                    
-                    fig_bar = px.bar(df_top, x='Empenhado', y='Eixo_Y_Negrito', orientation='h', text='Rotulo', custom_data=['Ação', 'Nome_Acao'])
-                    max_valor_bar = df_top['Empenhado'].max()
-                    
-                    fig_bar.update_layout(
-                        yaxis=dict(categoryorder='total ascending', tickfont=dict(size=24, color="#111827"), automargin=True), 
-                        font=dict(size=18, color="black"), 
-                        xaxis=dict(showticklabels=False, title="", range=[0, max_valor_bar * 1.25]), 
-                        yaxis_title="", 
-                        margin=dict(l=20, r=100, t=10, b=10)
-                    )
-                    fig_bar.update_traces(marker_color='#4f8868', textposition="outside", textfont=dict(size=18, color="black"), hovertemplate="<b>Ação: %{customdata[0]} - %{customdata[1]}</b><br>Valor: %{text}<extra></extra>")
-                    st.plotly_chart(fig_bar, use_container_width=True)
-                else:
-                    st.info("Não há valores empenhados para os filtros selecionados.")
+                fig_bar = px.bar(df_top, x='Empenhado', y='Eixo_Y_Negrito', orientation='h', text='Rotulo', custom_data=['Ação', 'Nome_Acao'])
+                max_valor_bar = df_top['Empenhado'].max()
+                
+                fig_bar.update_layout(
+                    yaxis=dict(categoryorder='total ascending', tickfont=dict(size=24, color="#111827"), automargin=True), 
+                    font=dict(size=18, color="black"), 
+                    xaxis=dict(showticklabels=False, title="", range=[0, max_valor_bar * 1.25]), 
+                    yaxis_title="", 
+                    margin=dict(l=20, r=100, t=10, b=10)
+                )
+                fig_bar.update_traces(marker_color='#4f8868', textposition="outside", textfont=dict(size=18, color="black"), hovertemplate="<b>Ação: %{customdata[0]} - %{customdata[1]}</b><br>Valor: %{text}<extra></extra>")
+                st.plotly_chart(fig_bar, use_container_width=True)
             else:
-                st.subheader(f"Detalhamento da Ação {var_acao_codigo} por Natureza da Despesa")
-                df_tree = df_latest.groupby('Natureza_ID')['Empenhado'].sum().reset_index()
-                df_tree = df_tree[df_tree['Empenhado'] > 0]
+                st.info("Não há valores empenhados para os filtros selecionados.")
+        else:
+            st.subheader(f"Detalhamento da Ação {var_acao_codigo} por Natureza da Despesa")
+            df_tree = df_latest.groupby('Natureza_ID')['Empenhado'].sum().reset_index()
+            df_tree = df_tree[df_tree['Empenhado'] > 0]
+            
+            if not df_tree.empty:
+                df_tree['Nome_Natureza'] = df_tree['Natureza_ID'].map(dict_naturezas).fillna('Não Identificada')
+                df_tree['Rotulo_Display'] = df_tree['Natureza_ID'] + " - " + df_tree['Nome_Natureza']
+                df_tree['Valor_Abreviado'] = df_tree['Empenhado'].apply(formata_abreviado)
                 
-                if not df_tree.empty:
-                    df_tree['Nome_Natureza'] = df_tree['Natureza_ID'].map(dict_naturezas).fillna('Não Identificada')
-                    df_tree['Rotulo_Display'] = df_tree['Natureza_ID'] + " - " + df_tree['Nome_Natureza']
-                    df_tree['Valor_Abreviado'] = df_tree['Empenhado'].apply(formata_abreviado)
-                    
-                    fig_tree = px.treemap(df_tree, path=[px.Constant(f"Ação {var_acao_codigo}"), 'Rotulo_Display'], values='Empenhado', color='Empenhado', color_continuous_scale='Greens', custom_data=['Valor_Abreviado'])
-                    fig_tree.update_traces(texttemplate="<b>%{label}</b><br>%{customdata[0]}", textfont=dict(size=18), hovertemplate="<b>%{label}</b><br>Empenhado: %{customdata[0]}<extra></extra>")
-                    fig_tree.update_layout(margin=dict(t=20, l=10, r=10, b=10), height=450)
-                    st.plotly_chart(fig_tree, use_container_width=True)
-                else:
-                    st.info("Não há valores empenhados para detalhar nesta Ação.")
+                fig_tree = px.treemap(df_tree, path=[px.Constant(f"Ação {var_acao_codigo}"), 'Rotulo_Display'], values='Empenhado', color='Empenhado', color_continuous_scale='Greens', custom_data=['Valor_Abreviado'])
+                fig_tree.update_traces(texttemplate="<b>%{label}</b><br>%{customdata[0]}", textfont=dict(size=18), hovertemplate="<b>%{label}</b><br>Empenhado: %{customdata[0]}<extra></extra>")
+                fig_tree.update_layout(margin=dict(t=20, l=10, r=10, b=10), height=450)
+                st.plotly_chart(fig_tree, use_container_width=True)
+            else:
+                st.info("Não há valores empenhados para detalhar nesta Ação.")
 
         with tab_evolucao:
             st.markdown(f"<div class='destaque-ano'>Evolução Mensal da Execução - Ano {ano_dinamico} <span style='font-size: 16px; font-weight: normal; color: #6B7280;'>(última atualização: {dt_atual})</span></div>", unsafe_allow_html=True)
