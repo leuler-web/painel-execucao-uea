@@ -8,47 +8,51 @@ from io import BytesIO
 import matplotlib.pyplot as plt
 
 # ==========================================
-# 1. CONFIGURAÇÃO DA PÁGINA
+# 1. CONFIGURAÇÃO DA PÁGINA (FORÇA A EXPANSÃO)
 # ==========================================
 st.set_page_config(
     page_title="PAINEL ORÇAMENTÁRIO - UEA", 
     layout="wide", 
     page_icon="📈",
-    initial_sidebar_state="expanded" # O Streamlit já abre ela por padrão de forma segura
+    initial_sidebar_state="expanded"
 )
-
 # ==========================================
-# 2. BLOCO ÚNICO DE ESTILOS CSS (VERSÃO NUVEM BLINDADA)
+# 2. BLOCO ÚNICO DE ESTILOS CSS (VERSÃO ANTI-BLOQUEIO NUVEM)
 # ==========================================
 st.markdown("""
     <style>
-    /* =========================================================
-       1. BLINDAGEM DO TOPO (FUNCIONA LOCAL E NO STREAMLIT CLOUD)
-       ========================================================= */
-    /* Esconde o botão de Deploy */
-    .stAppDeployButton { display: none !important; }
-    
-    /* Esconde o rodapé e o menu nativo de 3 pontinhos */
-    #MainMenu { display: none !important; }
+    /* 1. MANTÉM O CABEÇALHO ATIVO MAS INVISÍVEL (Para não quebrar os botões do sistema) */
+    header[data-testid="stHeader"] {
+        display: block !important;
+        visibility: visible !important;
+        background: transparent !important;
+    }
+
+    /* 2. ESCONDE APENAS O LADO DIREITO (DEPLOY, GITHUB E TRÊS PONTINHOS) */
+    .stAppDeployButton, [data-testid="stAppDeployButton"] { display: none !important; }
+    #MainMenu, [data-testid="stMainMenu"] { display: none !important; }
     footer { display: none !important; }
     
-    /* Remove o ícone/link do GitHub e outros botões do topo direito */
+    /* Esconde barras de ferramentas extras da nuvem no canto direito */
+    header[data-testid="stHeader"] div[data-testid="stToolbar"] { display: none !important; }
     header[data-testid="stHeader"] a { display: none !important; }
-    header[data-testid="stHeader"] button:not([data-testid="collapsedControl"]) { display: none !important; }
-    
-    /* PROTEÇÃO DA SETINHA (>>): Se fechar a barra lateral, este botão azul UEA aparece para reabrir */
+
+    /* 3. RESSUSCITA E DESTACA A SETINHA DE REABRIR (>>) SE A BARRA ESTIVER FECHADA */
     [data-testid="collapsedControl"] {
         display: flex !important;
         visibility: visible !important;
         background-color: #1E3A8A !important; /* Fundo Azul UEA */
-        color: white !important; /* Seta branca */
         border-radius: 0 8px 8px 0 !important;
-        box-shadow: 2px 2px 6px rgba(0,0,0,0.3) !important;
+        box-shadow: 2px 2px 5px rgba(0,0,0,0.2) !important;
         z-index: 999999 !important;
+    }
+    [data-testid="collapsedControl"] svg {
+        fill: white !important; /* Seta branca para dar contraste */
+        color: white !important;
     }
 
     /* =========================================================
-       2. SEU CÓDIGO ORIGINAL DA TABELA (INTACTO E SEGURO)
+       4. SEU CÓDIGO ORIGINAL DA TABELA (MANTIDO INTACTO)
        ========================================================= */
     .topo-congelado{position:sticky;top:0;background-color:white;z-index:1000;padding-top:5px;padding-bottom:5px;border-bottom:2px solid #e5e7eb;margin-bottom:10px;}
     h1{font-size:1.3rem !important;margin-top:0 !important;margin-bottom:3px !important;padding-top:0 !important;padding-bottom:0 !important;line-height:1.1 !important;color:#111827 !important;}
