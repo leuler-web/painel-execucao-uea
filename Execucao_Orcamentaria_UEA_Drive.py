@@ -3,9 +3,7 @@ import pandas as pd
 import numpy as np
 import plotly.express as px
 import os
-import re   
 from io import BytesIO
-import matplotlib.pyplot as plt
 
 # ==========================================
 # 1. CONFIGURAÇÃO DA PÁGINA
@@ -23,9 +21,75 @@ st.set_page_config(
 )
 
 # ==========================================
-# 2. BLOCO ÚNICO DE ESTILOS CSS (VERSÃO CORRIGIDA)
+# 2. BLOCO ÚNICO DE ESTILOS CSS (VERSÃO HÍBRIDA: TABELA + IFRAME)
 # ==========================================
-st.markdown("<style>.topo-congelado{position:sticky;top:0;background-color:white;z-index:1000;padding-top:10px;padding-bottom:5px;border-bottom:2px solid #e5e7eb;margin-bottom:15px;}h1{font-size:1.6rem !important;margin-top:0 !important;line-height:1.2 !important;color:#111827 !important;}.stTabs{margin-top:-20px !important;}.tabela-container{max-height:480px;overflow:auto;border:1px solid #e5e7eb;border-radius:8px;position:relative;}table{width:100%;min-width:800px;border-collapse:separate;border-spacing:0;font-family:sans-serif;table-layout:auto;}thead th{position:sticky;top:0;background-color:#1E3A8A !important;color:white !important;padding:12px 8px;text-align:center;font-size:13px;font-weight:bold;border-bottom:2px solid #D1D5DB;white-space:nowrap;z-index:20;}thead th:nth-child(1){position:sticky;left:0;z-index:25;background-color:#1E3A8A !important;}tbody td:nth-child(1){position:sticky;left:0;z-index:15;background-color:white;}thead th:nth-child(2){position:sticky;left:60px;z-index:25;background-color:#1E3A8A !important;}tbody td:nth-child(2){position:sticky;left:60px;z-index:15;background-color:white;}thead th:nth-child(3){position:sticky;left:120px;z-index:25;background-color:#1E3A8A !important;box-shadow:2px 0 5px -2px rgba(0,0,0,0.15);}tbody td:nth-child(3){position:sticky;left:120px;z-index:15;background-color:white;box-shadow:2px 0 5px -2px rgba(0,0,0,0.15);}tbody td{padding:10px 8px;border-bottom:1px solid #F3F4F6;font-size:13px;color:#4B5563;white-space:nowrap;background-color:white;text-align:right;}tbody td:nth-child(1),tbody td:nth-child(2),tbody td:nth-child(3){text-align:center;}tr:hover td{background-color:#F9FAFB !important;}tr:hover td:nth-child(1),tr:hover td:nth-child(2),tr:hover td:nth-child(3){background-color:#F9FAFB !important;}.pos{color:#059669;font-weight:bold;}.neg{color:#DC2626;font-weight:bold;}.zero{color:#6B7280;}#MainMenu{visibility:hidden !important;}footer{visibility:hidden !important;}header[data-testid=stHeader]{display:none !important;}div[data-testid=stToolbar]{display:none !important;}div[data-testid=stDecoration]{display:none !important;}.st-emotion-cache-1f3f2m8{display:none !important;}.stApp{margin-top:0 !important;}.stMain{padding-top:0 !important;}button[kind=header]{display:none !important;}.st-emotion-cache-1q3nhyv{display:none !important;}[data-testid=baseButton-header]{display:none !important;}[data-testid=stMetricValue]{color:#2E7D32 !important;font-size:1.2rem !important;}</style>", unsafe_allow_html=True)
+st.markdown("""
+    <style>
+    /* --- 1. AJUSTES DO IFRAME (TÍTULO E TOPO) --- */
+    .block-container { 
+        padding-top: 100px !important; /* Espaço para o título não sumir no site da UEA */
+        max-width: 100% !important; 
+    }
+
+    /* Container Fixo do Topo (Título + KPIs) */
+    [data-testid="stVerticalBlock"] > div:has(div.unificar-header) {
+        position: sticky;
+        top: 0px;
+        background-color: white;
+        z-index: 1000;
+        padding-top: 10px !important;
+        border-bottom: 2px solid #e5e7eb;
+    }
+
+    h1 { 
+        font-size: 1.6rem !important;
+        margin-top: 0px !important;
+        line-height: 1.2 !important;
+        color: #111827 !important;
+    }
+
+    .stTabs { margin-top: -20px !important; }
+
+    /* --- 2. ESTILO DA TABELA DE VARIAÇÕES (RECUPERADO) --- */
+    .tabela-container { 
+        max-height: 450px; 
+        overflow-y: auto; 
+        border: 1px solid #e5e7eb; 
+        border-radius: 8px;
+    }
+    
+    table { width: 100%; border-collapse: collapse; font-family: sans-serif; }
+    
+    th { 
+        position: sticky; 
+        top: 0; 
+        background-color: #F3F4F6 !important; 
+        z-index: 10; 
+        padding: 12px; 
+        text-align: left; 
+        font-size: 13px; 
+        font-weight: bold; 
+        color: #374151;
+        border-bottom: 2px solid #D1D5DB;
+    }
+    
+    td { padding: 10px 12px; border-bottom: 1px solid #F3F4F6; font-size: 13px; color: #4B5563; }
+    
+    tr:hover { background-color: #F9FAFB; }
+    
+    /* Cores das Variações */
+    .pos { color: #059669; font-weight: bold; } /* Verde para positivo */
+    .neg { color: #DC2626; font-weight: bold; } /* Vermelho para negativo */
+    .zero { color: #6B7280; } /* Cinza para neutro */
+
+    /* --- 3. LIMPEZA VISUAL --- */
+    #MainMenu { visibility: hidden; }
+    .stDeployButton { display: none !important; }
+    footer { visibility: hidden; }
+    [data-testid="stMetricValue"] { color: #2E7D32 !important; font-size: 1.2rem !important; }
+    </style>
+""", unsafe_allow_html=True)
+
 # ==========================================
 # 3. GESTÃO DE ESTADO
 # ==========================================
@@ -92,108 +156,6 @@ def destacar_celulas_com_variacao(df):
             mask = df[col].apply(extrair_numero).abs() > 0.001
             estilos.loc[mask, col] = 'background-color: #FFFF00; color: #000000; font-weight: bold;'
     return estilos
-
-def criar_grafico_tendencia_global(caminho_planilha_proj):
-    """Cria o gráfico Empenhado vs. Projeção vs. LOA com tabela integrada"""
-    try:
-        df_proj_raw = pd.read_excel(caminho_planilha_proj)
-        meses_eixo = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ']
-        
-        primeira_coluna = df_proj_raw.iloc[:,0].astype(str).str.upper()
-        mask_loa = primeira_coluna.str.contains("LOA", na=False)
-        mask_emp = primeira_coluna.str.contains("EMPENHO", na=False)
-        mask_prj = primeira_coluna.str.contains("PROJE", na=False)
-        
-        if not (mask_loa.any() and mask_emp.any() and mask_prj.any()):
-            return None
-        
-        row_loa = df_proj_raw[mask_loa].iloc[0]
-        row_emp = df_proj_raw[mask_emp].iloc[0]
-        row_prj = df_proj_raw[mask_prj].iloc[0]
-        
-        def converter_br_para_float(valor):
-            if pd.isna(valor) or valor == '-':
-                return 0.0
-            if isinstance(valor, (int, float)):
-                return float(valor)
-            v_str = str(valor).strip()
-            if v_str == '' or v_str == '-':
-                return 0.0
-            v_str = v_str.replace('.', '').replace(',', '.')
-            try:
-                return float(v_str)
-            except:
-                return 0.0
-        
-        loa = [converter_br_para_float(row_loa[m]) for m in meses_eixo]
-        executado = [converter_br_para_float(row_emp[m]) for m in meses_eixo]
-        projetado = [converter_br_para_float(row_prj[m]) for m in meses_eixo]
-        
-        final_exec = 0
-        for i, v in enumerate(executado):
-            if v > 0:
-                final_exec = i
-        
-        projetado_display = [None]*12
-        projetado_display[final_exec] = executado[final_exec]
-        for i in range(final_exec + 1, 12):
-            projetado_display[i] = projetado[i]
-        
-        executado_display = [v if v > 0 else None for v in executado[:final_exec+1]] + [None]*(12 - final_exec - 1)
-        
-        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(18, 8),
-                                         gridspec_kw={'height_ratios': [3, 1]})
-        
-        ax1.plot(meses_eixo, loa, marker='^', label='LOA', color='#8B5CF6', linewidth=2, linestyle=':')
-        ax1.plot(meses_eixo, executado_display, marker='o', label='Empenhado (AFI)', color='#0D47A1', linewidth=4)
-        ax1.plot(meses_eixo, projetado_display, marker='s', label='Projetado (Meta)', color='#FF8F00', linewidth=3, linestyle='--')
-        ax1.legend(loc='upper left', fontsize=10)
-        ax1.grid(True, alpha=0.2)
-        ax1.set_title('Empenhado vs. Projeção vs. LOA', fontweight='bold', fontsize=14)
-        ax1.ticklabel_format(style='plain', axis='y')
-        ax1.set_xlim(-0.5, 11.5)
-        ax1.margins(x=0.04)
-        
-        def formatar_moeda_curta(valor):
-            if abs(valor) >= 1_000_000:
-                return f"R$ {valor/1_000_000:,.1f} Mi".replace(",", "X").replace(".", ",").replace("X", ".")
-            else:
-                return f"R$ {valor:,.0f}".replace(",", ".")
-        
-        ax2.axis('off')
-        meses_disp = [m for m in meses_eixo if m in df_proj_raw.columns]
-        
-        dados_loa = [formatar_moeda_curta(converter_br_para_float(row_loa[m])) for m in meses_disp]
-        dados_emp = [formatar_moeda_curta(converter_br_para_float(row_emp[m])) if converter_br_para_float(row_emp[m]) > 0 else '-' for m in meses_disp]
-        dados_prj = [formatar_moeda_curta(converter_br_para_float(row_prj[m])) if converter_br_para_float(row_prj[m]) > 0 else '-' for m in meses_disp]
-        
-        cell_text = [
-            ['LOA (A)'] + dados_loa,
-            ['Empenho (B)'] + dados_emp,
-            ['Projeção (C)'] + dados_prj
-        ]
-        col_labels = [''] + meses_disp
-        
-        tabela = ax2.table(cellText=cell_text,
-                            colLabels=col_labels,
-                            cellLoc='center',
-                            loc='center')
-        
-        tabela.auto_set_font_size(False)
-        tabela.set_fontsize(9)
-        tabela.scale(1, 1.5)
-        
-        for j in range(len(col_labels)):
-            tabela[0, j].set_facecolor('#1E3A8A')
-            tabela[0, j].set_text_props(color='white', fontweight='bold')
-        for i in range(1, 4):
-            tabela[i, 0].set_facecolor('#E8EAF6')
-            tabela[i, 0].set_text_props(fontweight='bold')
-        
-        plt.tight_layout(pad=2)
-        return fig
-    except Exception:
-        return None
 
 # ==========================================
 # 5. CARREGAMENTO DOS DADOS E DICIONÁRIOS
@@ -286,12 +248,17 @@ def carregar_dados_v181(path):
             if col in df.columns:
                 df[col] = df[col].astype(str).str.replace(r'\.0$', '', regex=True).str.strip().replace('nan', '')
         
+        # ========================================================================
+        # 💡 CORREÇÃO 1: BLINDAGEM DO TIPO DE MOVIMENTO (SEPARA ACUMULADO E MÊS)
+        # ========================================================================
         if 'Tipo Movimento' in df.columns:
             def classificar_movimento(x):
                 txt = str(x).upper().strip()
                 if txt in ['NAN', 'NONE', '', '0', '0.0']: return x
+                # Se o SIAFI chamou de 'Até o Mês' ou 'Acumulado', vai para a caixa certa
                 if 'ACUMULADO' in txt or 'ATÉ' in txt or 'ATE' in txt: 
                     return 'Acumulado'
+                # Todo o resto (como 'No Mês') vira 'Mês'
                 return 'Mês'
             
             df['Tipo Movimento'] = df['Tipo Movimento'].apply(classificar_movimento)
@@ -342,12 +309,15 @@ try:
         dt_atual = "N/D"
         texto_periodo = "Aguardando atualização da base de dados."
 
+    # ========================================================================
+    # 💡 CORREÇÃO 2: TRATAMENTO DE CHOQUE NO MÊS REFERÊNCIA (FUZZY MATCHING)
+    # ========================================================================
     if 'Mês Referência' in df_base.columns:
         def identificar_mes_streamlit(texto):
             t = str(texto).upper().strip()
             if 'JAN' in t: return 'Janeiro'
             if 'FEV' in t: return 'Fevereiro'
-            if 'MA' in t and 'R' in t: return 'Março'
+            if 'MA' in t and 'R' in t: return 'Março' # O Exterminador de erros (Maro, Marco, Março)
             if 'ABR' in t: return 'Abril'
             if 'MAI' in t: return 'Maio'
             if 'JUN' in t: return 'Junho'
@@ -393,6 +363,7 @@ try:
 
         lista_meses = df_base[['Mes_Nome', 'Mes_Num']].dropna().drop_duplicates().sort_values('Mes_Num')['Mes_Nome'].tolist()
         
+        # 💡 CORREÇÃO 3: REMOVIDA A LINHA QUE DELETAVA O ÚLTIMO MÊS DA LISTA!
         var_mes_str = st.sidebar.selectbox("Mês de Referência (Fechados)", ["Todos"] + lista_meses, key=f"filtro_mes_{st.session_state.botao_reset}")
 
         if 'Tipo Movimento' in df_base.columns:
@@ -480,130 +451,37 @@ try:
 
         st.title(f"📊 PAINEL ORÇAMENTÁRIO - UEA {f'- {var_mes_str}' if var_mes_str != 'Todos' else ''}")
         
-        # ==========================================
-        # CARDS KPIs FIXOS NO TOPO (VISÍVEIS EM TODAS AS ABAS)
-        # ==========================================
-        st.markdown("""
-        <style>
-        .kpi-card {
-            background: linear-gradient(135deg, #1E3A8A 0%, #3B82F6 100%);
-            border-radius: 12px;
-            padding: 25px 20px;
-            text-align: center;
-            color: white;
-            box-shadow: 0 4px 15px rgba(30, 58, 138, 0.3);
-            min-height: 140px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            transition: transform 0.2s;
-        }
-        .kpi-card:hover { transform: scale(1.03); }
-        .kpi-card-aut { background: linear-gradient(135deg, #64748B 0%, #94A3B8 100%); }
-        .kpi-card-emp { background: linear-gradient(135deg, #1E3A8A 0%, #3B82F6 100%); }
-        .kpi-card-liq { background: linear-gradient(135deg, #0369A1 0%, #38BDF8 100%); }
-        .kpi-card-pago { background: linear-gradient(135deg, #047857 0%, #34D399 100%); }
-        .kpi-card-disp { background: linear-gradient(135deg, #B45309 0%, #FBBF24 100%); }
-        .kpi-label {
-            font-size: 16px;
-            font-weight: 600;
-            letter-spacing: 1px;
-            opacity: 0.9;
-            margin-bottom: 8px;
-        }
-        .kpi-value {
-            font-size: 28px;
-            font-weight: 800;
-            line-height: 1.2;
-        }
-        .kpi-delta {
-            font-size: 14px;
-            opacity: 0.85;
-            margin-top: 5px;
-        }
-        .kpi-container {
-            position: sticky;
-            top: 0;
-            background: white;
-            z-index: 999;
-            padding: 10px 0 15px 0;
-            border-bottom: 2px solid #e5e7eb;
-            margin-bottom: 15px;
-        }
-        </style>
-        """, unsafe_allow_html=True)
-        
-        st.markdown('<div class="kpi-container">', unsafe_allow_html=True)
-        st.markdown(f"<div class='destaque-ano'>Exercício Orçamentário: {ano_dinamico} <span style='font-size: 16px; font-weight: bold; color: #6B7280;'>(última atualização: {dt_atual})</span></div>", unsafe_allow_html=True)
-        
-        c1, c2, c3, c4, c5 = st.columns(5)
-        v_aut = df_latest['Autorizado'].sum() if 'Autorizado' in df_latest.columns else 0
-        v_emp = df_latest['Empenhado'].sum() if 'Empenhado' in df_latest.columns else 0
-        v_liq = df_latest['Liquidado'].sum() if 'Liquidado' in df_latest.columns else 0
-        v_pago = df_latest['Pago'].sum() if 'Pago' in df_latest.columns else 0
-        v_disp = df_latest['Disponível'].sum() if 'Disponível' in df_latest.columns else 0
-
-        with c1:
-            st.markdown(f"""
-            <div class="kpi-card kpi-card-aut">
-                <div class="kpi-label">📋 AUTORIZADO</div>
-                <div class="kpi-value">{formata_moeda_sem_decimal(v_aut)}</div>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        with c2:
-            st.markdown(f"""
-            <div class="kpi-card kpi-card-emp">
-                <div class="kpi-label">💰 EMPENHADO</div>
-                <div class="kpi-value">{formata_moeda_sem_decimal(v_emp)}</div>
-                <div class="kpi-delta">{(v_emp/v_aut)*100 if v_aut>0 else 0:.1f}% do total</div>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        with c3:
-            st.markdown(f"""
-            <div class="kpi-card kpi-card-liq">
-                <div class="kpi-label">✅ LIQUIDADO</div>
-                <div class="kpi-value">{formata_moeda_sem_decimal(v_liq)}</div>
-                <div class="kpi-delta">{(v_liq/v_aut)*100 if v_aut>0 else 0:.1f}% do total</div>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        with c4:
-            st.markdown(f"""
-            <div class="kpi-card kpi-card-pago">
-                <div class="kpi-label">💳 PAGO</div>
-                <div class="kpi-value">{formata_moeda_sem_decimal(v_pago)}</div>
-                <div class="kpi-delta">{(v_pago/v_aut)*100 if v_aut>0 else 0:.1f}% do total</div>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        with c5:
-            st.markdown(f"""
-            <div class="kpi-card kpi-card-disp">
-                <div class="kpi-label">📊 DISPONÍVEL</div>
-                <div class="kpi-value">{formata_moeda_sem_decimal(v_disp)}</div>
-            </div>
-            """, unsafe_allow_html=True)
-        
-        st.markdown('</div>', unsafe_allow_html=True)
-        # ==========================================
-        
         tags = []
         if var_acao_codigo != "Todas": tags.append(f"<b>🎯 Ação:</b> {var_acao_str}")
         if var_fonte_codigo != "Todas": tags.append(f"<b>🏦 Fonte de Recurso:</b> {var_fonte_str}")
         if var_natureza_codigo != "Todas": tags.append(f"<b>🏷️ Natureza da Despesa:</b> {var_natureza_str}")
         if tags: st.markdown(f"<div class='caixa-destaque'>{' &nbsp;&nbsp;|&nbsp;&nbsp; '.join(tags)}</div>", unsafe_allow_html=True)
 
-        tab_visao, tab_evolucao, tab_projecao, tab_tabela, tab_var_natureza = st.tabs([
+        tab_visao, tab_evolucao, tab_tabela, tab_var_natureza = st.tabs([
             "🎯 Visão Estratégica", 
-            "📈 Evolução Mensal",
-            "📉 Projeção vs. Realizado",
+            "📈 Evolução Mensal", 
             "🔍 Tabela de Variações",
             "📊 Variação do Empenhado por Natureza"
         ])
 
         with tab_visao:
+            st.markdown(f"<div class='destaque-ano'>Exercício Orçamentário: {ano_dinamico} <span style='font-size: 16px; font-weight: bold; color: #6B7280;'>(última atualização: {dt_atual})</span></div>", unsafe_allow_html=True)
+            
+            c1, c2, c3, c4, c5 = st.columns(5)
+            v_aut = df_latest['Autorizado'].sum() if 'Autorizado' in df_latest.columns else 0
+            v_emp = df_latest['Empenhado'].sum() if 'Empenhado' in df_latest.columns else 0
+            v_liq = df_latest['Liquidado'].sum() if 'Liquidado' in df_latest.columns else 0
+            v_pago = df_latest['Pago'].sum() if 'Pago' in df_latest.columns else 0
+            v_disp = df_latest['Disponível'].sum() if 'Disponível' in df_latest.columns else 0
+            
+            c1.metric("AUTORIZADO", formata_moeda_sem_decimal(v_aut))
+            c2.metric("EMPENHADO", formata_moeda_sem_decimal(v_emp), delta=f"{(v_emp/v_aut)*100 if v_aut>0 else 0:.1f}% do total")
+            c3.metric("LIQUIDADO", formata_moeda_sem_decimal(v_liq), delta=f"{(v_liq/v_aut)*100 if v_aut>0 else 0:.1f}% do total")
+            c4.metric("PAGO", formata_moeda_sem_decimal(v_pago), delta=f"{(v_pago/v_aut)*100 if v_aut>0 else 0:.1f}% do total")
+            c5.metric("DISPONÍVEL", formata_moeda_sem_decimal(v_disp))
+            
+            st.divider()
+            
             if var_acao_codigo == "Todas":
                 st.subheader("Top 10 Maiores Despesas por Ação (Empenhado)")
                 df_top = df_latest.groupby('Ação')['Empenhado'].sum().nlargest(10).reset_index()
@@ -628,8 +506,10 @@ try:
                     st.plotly_chart(fig_bar, use_container_width=True)
                 else:
                     st.info("Não há valores empenhados para os filtros selecionados.")
+                    
             else:
                 st.subheader(f"Detalhamento da Ação {var_acao_codigo} por Natureza da Despesa")
+                
                 df_tree = df_latest.groupby('Natureza_ID')['Empenhado'].sum().reset_index()
                 df_tree = df_tree[df_tree['Empenhado'] > 0]
                 
@@ -638,8 +518,20 @@ try:
                     df_tree['Rotulo_Display'] = df_tree['Natureza_ID'] + " - " + df_tree['Nome_Natureza']
                     df_tree['Valor_Abreviado'] = df_tree['Empenhado'].apply(formata_abreviado)
                     
-                    fig_tree = px.treemap(df_tree, path=[px.Constant(f"Ação {var_acao_codigo}"), 'Rotulo_Display'], values='Empenhado', color='Empenhado', color_continuous_scale='Greens', custom_data=['Valor_Abreviado'])
-                    fig_tree.update_traces(texttemplate="<b>%{label}</b><br>%{customdata[0]}", textfont=dict(size=18), hovertemplate="<b>%{label}</b><br>Empenhado: %{customdata[0]}<extra></extra>")
+                    fig_tree = px.treemap(
+                        df_tree, 
+                        path=[px.Constant(f"Ação {var_acao_codigo}"), 'Rotulo_Display'], 
+                        values='Empenhado',
+                        color='Empenhado',
+                        color_continuous_scale='Greens',
+                        custom_data=['Valor_Abreviado']
+                    )
+                    
+                    fig_tree.update_traces(
+                        texttemplate="<b>%{label}</b><br>%{customdata[0]}",
+                        textfont=dict(size=18), 
+                        hovertemplate="<b>%{label}</b><br>Empenhado: %{customdata[0]}<extra></extra>"
+                    )
                     fig_tree.update_layout(margin=dict(t=20, l=10, r=10, b=10), height=450)
                     st.plotly_chart(fig_tree, use_container_width=True)
                 else:
@@ -649,8 +541,8 @@ try:
             st.markdown(f"<div class='destaque-ano'>Evolução Mensal da Execução - Ano {ano_dinamico} <span style='font-size: 16px; font-weight: normal; color: #6B7280;'>(última atualização: {dt_atual})</span></div>", unsafe_allow_html=True)
             
             colunas_ex = [col for col in ['Autorizado', 'Empenhado', 'Liquidado', 'Pago', 'Disponível'] if col in df_base.columns]
-            df_m = df_base[mask_evo].groupby('Mês Referência')[colunas_ex].sum().reset_index()
             
+            df_m = df_base[mask_evo].groupby('Mês Referência')[colunas_ex].sum().reset_index()
             if not df_m.empty:
                 df_m['Nome_Mes'] = df_m['Mês Referência'].apply(identificar_mes_streamlit)
                 df_m['mes_num'] = df_m['Nome_Mes'].map(ordem_meses)
@@ -666,37 +558,12 @@ try:
                     trace.textfont.weight = "bold"
                     trace.marker.size = 12
                     trace.line.width = 3
-                    trace.textposition = "top center"
+                    trace.textposition = "top center" 
                 
                 fig_line.update_layout(font=dict(size=18, color="black"), margin=dict(l=40, r=60, t=20, b=20), yaxis_range=[0, df_melt['Valor'].max() * 1.30], yaxis=dict(showticklabels=False), xaxis=dict(tickfont=dict(size=20, weight="bold")), legend=dict(orientation="h", y=1.05))
                 st.plotly_chart(fig_line, use_container_width=True)
             else:
                 st.info("Não há dados de evolução mensal para os filtros selecionados.")
-
-        with tab_projecao:
-            st.markdown(f"<div class='destaque-ano'>Projeção Orçamentária - Ano {ano_dinamico} <span style='font-size: 16px; font-weight: normal; color: #6B7280;'>(última atualização: {dt_atual})</span></div>", unsafe_allow_html=True)
-            
-            caminho_projecao = r"Projecao_2026.xlsx"
-            
-            if os.path.exists(caminho_projecao):
-                fig_tendencia = criar_grafico_tendencia_global(caminho_projecao)
-                if fig_tendencia is not None:
-                    st.subheader("📉 Empenhado vs. Projeção vs. LOA")
-                    st.pyplot(fig_tendencia)
-                    
-                    with st.expander("ℹ️ Sobre este gráfico"):
-                        st.markdown("""
-                        - **LOA (roxo tracejado):** Valor da Lei Orçamentária Anual aprovado para cada mês
-                        - **Empenhado - AFI (azul):** Valor efetivamente empenhado conforme dados do SIAFI/AFI
-                        - **Projetado - Meta (laranja):** Cronograma planejado de execução para os próximos meses
-                        
-                        A linha azul mostra os dados reais até o último mês com execução. 
-                        A linha laranja tracejada representa a projeção de gastos para os meses seguintes.
-                        """)
-                else:
-                    st.warning("⚠️ Planilha de projeção não encontrada ou com formato inválido.")
-            else:
-                st.warning("⚠️ Arquivo de projeção não encontrado.")
 
         with tab_tabela:
             st.markdown(f"<div class='periodo-destaque'>📅 {texto_periodo}</div>", unsafe_allow_html=True)
@@ -705,35 +572,42 @@ try:
             df_var_visual = df_var_filtrada.copy()
             df_var_visual_tela = df_var_visual.copy()
             
-            df_var_visual_tela['AÇÃO'] = df_var_visual['Ação'].apply(lambda x: f'<div title="{x} - {dict_acoes.get(x, "N/I")}">{x}</div>' if x else "")
-            df_var_visual_tela['FONTE'] = df_var_visual['Fonte_3'].apply(lambda x: f'<div title="{x} - {dict_fontes_global.get(x, "Outras Fontes")}">{x}</div>' if x else "")
-            df_var_visual_tela['NATUREZA'] = df_var_visual['Natureza_ID'].apply(lambda x: f'<div title="{x} - {dict_naturezas.get(x, "N/I")}">{x}</div>' if x else "")
+            df_var_visual_tela['AÇÃO'] = df_var_visual['Ação'].apply(
+                lambda x: f'<div title="{x} - {dict_acoes.get(x, "N/I")}">{x}</div>' if x else ""
+            )
+            df_var_visual_tela['FONTE'] = df_var_visual['Fonte_3'].apply(
+                lambda x: f'<div title="{x} - {dict_fontes_global.get(x, "Outras Fontes")}">{x}</div>' if x else ""
+            )
+            df_var_visual_tela['NATUREZA'] = df_var_visual['Natureza_ID'].apply(
+                lambda x: f'<div title="{x} - {dict_naturezas.get(x, "N/I")}">{x}</div>' if x else ""
+            )
             
             colunas_identificacao = ['AÇÃO', 'FONTE', 'NATUREZA']
-            colunas_financeiras_originais = [
-                'Autorizado Ant.', 'Autorizado Atual.', 'Variação_Autorizado',
-                'Empenhado Ant.', 'Empenhado Atual.', 'Variação_Empenhado',
-                'Liquidado Ant.', 'Liquidado Atual.', 'Variação_Liquidado',
-                'Pago Ant.', 'Pago Atual.', 'Variação_Pago',
-                'Bloqueado Ant.', 'Bloqueado Atual.', 'Variação_Bloqueado',
-                'Disponível Ant.', 'Disponível Atual.', 'Variação_Disponível'
-            ]
-            colunas_financeiras_originais = [c for c in colunas_financeiras_originais if c in df_var_visual.columns]
+            categorias_alvo = ['Dotação Suplementar', 'Reduções', 'Autorizado', 'Empenhado', 'Disponível', 'Bloqueado']
+            
+            colunas_financeiras_originais = []
+            for col in df_var_visual.columns:
+                if any(cat.lower() in col.lower() for cat in categorias_alvo) and col not in colunas_identificacao:
+                    if not any(x in col for x in ['Data_', 'Mês', 'Tipo', 'Programa']):
+                        colunas_financeiras_originais.append(col)
+                        
             df_var_visual_tela = df_var_visual_tela[colunas_identificacao + colunas_financeiras_originais]
             
             linha_soma = df_var_visual_tela[colunas_financeiras_originais].sum()
             df_total = pd.DataFrame(linha_soma).T
             for col in colunas_identificacao:
-                df_total[col] = ""
-            df_total['AÇÃO'] = "<b>TOTAL GERAL</b>"
+                df_total[col] = "" 
+            df_total['AÇÃO'] = "<b>TOTAL GERAL</b>" 
+            
             df_var_visual_tela = pd.concat([df_var_visual_tela, df_total], ignore_index=True)
             
             mapeamento_colunas = {}
             for col in colunas_financeiras_originais:
-                nome_seguro = col.replace('Ant.', 'A\u200Bnt.')
+                nome_seguro = col.replace('Ant.', 'A\u200Bnt.') 
                 novo_nome = nome_seguro.replace('_', '<br>').replace(' ', '<br>')
                 novo_nome = novo_nome.replace('<br><br>', '<br>')
                 mapeamento_colunas[col] = f'<span translate="no" class="notranslate">{novo_nome}</span>'
+                
             df_var_visual_tela = df_var_visual_tela.rename(columns=mapeamento_colunas)
             colunas_financeiras_tela = list(mapeamento_colunas.values())
             
@@ -742,15 +616,15 @@ try:
                 .format({col: formata_numero_duas_casas for col in colunas_financeiras_tela})
                 .set_properties(**{'text-align': 'right'}, subset=colunas_financeiras_tela)
                 .set_properties(**{'text-align': 'center'}, subset=colunas_identificacao)
-                .set_properties(subset=pd.IndexSlice[df_var_visual_tela.index[-1], :], **{'font-weight': 'bold', 'background-color': '#E5E7EB', 'color': '#0F172A'})
+                .set_properties(subset=pd.IndexSlice[df_var_visual_tela.index[-1], :], **{'font-weight': 'bold', 'background-color': '#E5E7EB', 'color': '#0F172A'}) 
             )
             
             try:
                 html_tabela = tabela_estilizada.hide(axis="index").to_html(escape=False)
             except AttributeError:
                 html_tabela = tabela_estilizada.hide_index().render()
-            
-            st.markdown(f'<div class="tabela-container">{html_tabela}</div>', unsafe_allow_html=True)
+                
+            st.markdown(f'<div class="tabela-container tabela-customizada">{html_tabela}</div>', unsafe_allow_html=True)
             
             df_excel = df_var_visual.copy()
             df_excel['AÇÃO'] = df_excel['Ação'].apply(lambda x: f"{x} - {dict_acoes.get(x, 'N/I')}" if x else "")
@@ -762,6 +636,7 @@ try:
             for col in colunas_identificacao: df_total_excel[col] = ""
             df_total_excel['AÇÃO'] = "TOTAL GERAL"
             df_excel = pd.concat([df_excel, df_total_excel], ignore_index=True)
+            
             df_excel.columns = [c.replace('_Ant.', '_Anterior').replace('_Ant', '_Anterior').replace(' Ant.', ' Anterior').replace(' Ant', ' Anterior') for c in df_excel.columns]
             
             buffer = BytesIO()
@@ -780,6 +655,7 @@ try:
                 titulo_dinamico = f"Detalhamento da variação do Empenhado<br><span style='font-size: 20px; color: #4B5563;'>da Ação: {var_acao_str}</span>"
             else:
                 titulo_dinamico = "Detalhamento da variação do Empenhado<br><span style='font-size: 20px; color: #4B5563;'>(Panorama de Todas as Ações)</span>"
+                
             st.markdown(f"<div class='destaque-ano'>{titulo_dinamico}</div>", unsafe_allow_html=True)
             
             col_var_emp = None
@@ -787,11 +663,13 @@ try:
                 if 'Empenhado' in col and ('Varia' in col or 'Diferença' in col):
                     col_var_emp = col
                     break
+            
             if not col_var_emp:
                 for col in df_var_filtrada.columns:
                     if 'Empenhado' in col and 'Ant' not in col and 'Atual' not in col:
                         col_var_emp = col
                         break
+                        
             if not col_var_emp:
                 col_var_emp = [c for c in df_var_filtrada.columns if 'Empenhado' in c][0] if [c for c in df_var_filtrada.columns if 'Empenhado' in c] else None
 
@@ -806,11 +684,33 @@ try:
                     df_chart_var['Cor'] = df_chart_var[col_var_emp].apply(lambda x: '#10B981' if x > 0 else '#EF4444')
                     df_chart_var = df_chart_var.sort_values(by=col_var_emp, ascending=True)
                     
-                    fig_var = px.bar(df_chart_var, x=col_var_emp, y='Rotulo_Eixo', orientation='h', text='Texto_Valor', custom_data=['Natureza_ID', 'Nome_Natureza'])
-                    fig_var.update_traces(marker_color=df_chart_var['Cor'], textposition="outside", textfont=dict(size=14, color="black", weight="bold"), hovertemplate="<b>Natureza: %{customdata[0]} - %{customdata[1]}</b><br>Variação no Período: %{text}<extra></extra>")
+                    fig_var = px.bar(
+                        df_chart_var, 
+                        x=col_var_emp, 
+                        y='Rotulo_Eixo', 
+                        orientation='h', 
+                        text='Texto_Valor',
+                        custom_data=['Natureza_ID', 'Nome_Natureza']
+                    )
+                    
+                    fig_var.update_traces(
+                        marker_color=df_chart_var['Cor'], 
+                        textposition="outside", 
+                        textfont=dict(size=14, color="black", weight="bold"),
+                        hovertemplate="<b>Natureza: %{customdata[0]} - %{customdata[1]}</b><br>Variação no Período: %{text}<extra></extra>"
+                    )
+                    
                     fig_var.add_vline(x=0, line_width=2, line_color="black")
                     max_abs = abs(df_chart_var[col_var_emp]).max()
-                    fig_var.update_layout(font=dict(size=14, color="black"), yaxis=dict(tickfont=dict(size=15, color="#111827")), xaxis=dict(showticklabels=False, title="", range=[-max_abs * 1.35, max_abs * 1.35]), yaxis_title="", margin=dict(l=10, r=40, t=20, b=10), height=max(400, len(df_chart_var) * 45))
+                    fig_var.update_layout(
+                        font=dict(size=14, color="black"), 
+                        yaxis=dict(tickfont=dict(size=15, color="#111827")), 
+                        xaxis=dict(showticklabels=False, title="", range=[-max_abs * 1.35, max_abs * 1.35]), 
+                        yaxis_title="", 
+                        margin=dict(l=10, r=40, t=20, b=10),
+                        height=max(400, len(df_chart_var) * 45) 
+                    )
+                    
                     st.plotly_chart(fig_var, use_container_width=True)
                 else:
                     st.info("Não houve variação de Empenho para as naturezas neste período ou filtro selecionado.")
