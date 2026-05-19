@@ -25,8 +25,85 @@ st.set_page_config(
 # ==========================================
 # 2. BLOCO ÚNICO DE ESTILOS CSS (VERSÃO CORRIGIDA)
 # ==========================================
-st.markdown("<style>.topo-congelado{position:sticky;top:0;background-color:white;z-index:1000;padding-top:5px;padding-bottom:5px;border-bottom:2px solid #e5e7eb;margin-bottom:10px;}h1{font-size:1.3rem !important;margin-top:0 !important;margin-bottom:3px !important;padding-top:0 !important;padding-bottom:0 !important;line-height:1.1 !important;color:#111827 !important;}.stTabs{margin-top:-20px !important;}.tabela-container{max-height:480px;overflow:auto;border:1px solid #e5e7eb;border-radius:8px;position:relative;}table{width:100%;min-width:800px;border-collapse:separate;border-spacing:0;font-family:sans-serif;table-layout:auto;}thead th{position:sticky;top:0;background-color:#1E3A8A !important;color:white !important;padding:12px 8px;text-align:center;font-size:13px;font-weight:bold;border-bottom:2px solid #D1D5DB;white-space:nowrap;z-index:20;}thead th:nth-child(1){position:sticky;left:0;z-index:25;background-color:#1E3A8A !important;}tbody td:nth-child(1){position:sticky;left:0;z-index:15;background-color:white;}thead th:nth-child(2){position:sticky;left:60px;z-index:25;background-color:#1E3A8A !important;}tbody td:nth-child(2){position:sticky;left:60px;z-index:15;background-color:white;}thead th:nth-child(3){position:sticky;left:120px;z-index:25;background-color:#1E3A8A !important;box-shadow:2px 0 5px -2px rgba(0,0,0,0.15);}tbody td:nth-child(3){position:sticky;left:120px;z-index:15;background-color:white;box-shadow:2px 0 5px -2px rgba(0,0,0,0.15);}tbody td{padding:10px 8px;border-bottom:1px solid #F3F4F6;font-size:13px;color:#4B5563;white-space:nowrap;background-color:white;text-align:right;}tbody td:nth-child(1),tbody td:nth-child(2),tbody td:nth-child(3){text-align:center;}tr:hover td{background-color:#F9FAFB !important;}tr:hover td:nth-child(1),tr:hover td:nth-child(2),tr:hover td:nth-child(3){background-color:#F9FAFB !important;}.pos{color:#059669;font-weight:bold;}.neg{color:#DC2626;font-weight:bold;}.zero{color:#6B7280;}#MainMenu{visibility:hidden !important;}footer{visibility:hidden !important;}header[data-testid=stHeader]{display:none !important;}div[data-testid=stToolbar]{display:none !important;}div[data-testid=stDecoration]{display:none !important;}.st-emotion-cache-1f3f2m8{display:none !important;}.stApp{margin-top:0 !important;}.stMain{padding-top:0 !important;}button[kind=header]{display:none !important;}.st-emotion-cache-1q3nhyv{display:none !important;}[data-testid=baseButton-header]{display:none !important;}[data-testid=stMetricValue]{color:#2E7D32 !important;font-size:1.2rem !important;}</style>", unsafe_allow_html=True)
+st.markdown("""
+    <style>
+    .topo-congelado{position:sticky;top:0;background-color:white;z-index:1000;padding-top:5px;padding-bottom:5px;border-bottom:2px solid #e5e7eb;margin-bottom:10px;}
+    h1{font-size:1.3rem !important;margin-top:0 !important;margin-bottom:3px !important;padding-top:0 !important;padding-bottom:0 !important;line-height:1.1 !important;color:#111827 !important;}
+    .stTabs{margin-top:-20px !important;}
+    .tabela-container{max-height:480px;overflow:auto;border:1px solid #e5e7eb;border-radius:8px;position:relative;}
+    table{width:100%;min-width:800px;border-collapse:separate;border-spacing:0;font-family:sans-serif;table-layout:auto;}
+    thead th{position:sticky;top:0;background-color:#1E3A8A !important;color:white !important;padding:12px 8px;text-align:center;font-size:13px;font-weight:bold;border-bottom:2px solid #D1D5DB;white-space:nowrap;z-index:20;}
+    thead th:nth-child(1){position:sticky;left:0;z-index:25;background-color:#1E3A8A !important;}
+    tbody td:nth-child(1){position:sticky;left:0;z-index:15;background-color:white;}
+    thead th:nth-child(2){position:sticky;left:60px;z-index:25;background-color:#1E3A8A !important;}
+    tbody td:nth-child(2){position:sticky;left:60px;z-index:15;background-color:white;}
+    thead th:nth-child(3){position:sticky;left:120px;z-index:25;background-color:#1E3A8A !important;box-shadow:2px 0 5px -2px rgba(0,0,0,0.15);}
+    tbody td:nth-child(3){position:sticky;left:120px;z-index:15;background-color:white;box-shadow:2px 0 5px -2px rgba(0,0,0,0.15);}
+    tbody td{padding:10px 8px;border-bottom:1px solid #F3F4F6;font-size:13px;color:#4B5563;white-space:nowrap;background-color:white;text-align:right;}
+    tbody td:nth-child(1),tbody td:nth-child(2),tbody td:nth-child(3){text-align:center;}
+    tr:hover td{background-color:#F9FAFB !important;}
+    tr:hover td:nth-child(1),tr:hover td:nth-child(2),tr:hover td:nth-child(3){background-color:#F9FAFB !important;}
+    .pos{color:#059669;font-weight:bold;}
+    .neg{color:#DC2626;font-weight:bold;}
+    .zero{color:#6B7280;}
+    #MainMenu{visibility:hidden !important;}
+    footer{visibility:hidden !important;}
+    header[data-testid=stHeader]{display:none !important;}
+    div[data-testid=stToolbar]{display:none !important;}
+    div[data-testid=stDecoration]{display:none !important;}
+    .st-emotion-cache-1f3f2m8{display:none !important;}
+    .stApp{margin-top:0 !important;}
+    .stMain{padding-top:0 !important;}
+    .st-emotion-cache-1q3nhyv{display:none !important;}
+    [data-testid=stMetricValue]{color:#2E7D32 !important;font-size:1.2rem !important;}
 
+    /* ========================================== */
+    /* CORREÇÃO DA SETA DA SIDEBAR - Torna visível e funcional */
+    /* ========================================== */
+    button[kind="header"] {
+        display: flex !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        position: fixed !important;
+        left: 0 !important;
+        top: 50% !important;
+        transform: translateY(-50%) !important;
+        z-index: 999999 !important;
+        background-color: #1E3A8A !important;
+        border-radius: 0 8px 8px 0 !important;
+        padding: 12px 4px !important;
+        cursor: pointer !important;
+        border: none !important;
+        box-shadow: 2px 2px 5px rgba(0,0,0,0.2) !important;
+    }
+
+    button[kind="header"] svg {
+        fill: white !important;
+        width: 20px !important;
+        height: 20px !important;
+    }
+
+    [data-testid="baseButton-header"] {
+        display: flex !important;
+    }
+
+    /* Remove apenas a ocultação do botão, mantendo o resto */
+    .st-emotion-cache-1f3f2m8 {
+        display: flex !important;
+    }
+
+    /* Ajuste da posição quando a sidebar está expandida */
+    section[data-testid="stSidebar"][aria-expanded="true"] + button[kind="header"] {
+        left: 260px !important;
+        transition: left 0.2s ease !important;
+    }
+
+    /* Ajuste da posição quando a sidebar está recolhida */
+    section[data-testid="stSidebar"][aria-expanded="false"] + button[kind="header"] {
+        left: 0 !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
 # ==========================================
 # 3. GESTÃO DE ESTADO
 # ==========================================
