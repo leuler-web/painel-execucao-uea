@@ -23,21 +23,56 @@ st.set_page_config(
 )
 
 # ==========================================
-# 2. BLOCO ÚNICO DE ESTILOS CSS (VERSÃO CORRIGIDA E BLINDADA)
+# 2. BLOCO ÚNICO DE ESTILOS CSS (VERSÃO FINAL BLINDADA)
 # ==========================================
 st.markdown("""
     <style>
-    /* 1. CORREÇÃO DA SIDEBAR: Remove o display:none que estava sumindo com os filtros */
-    [data-testid="stSidebar"] {
-        display: block !important;
-        background-color: #F8FAFC !important;
+    /* 1. ESCONDE O BOTÃO DE DEPLOY (Canto Superior Direito) */
+    .stAppDeployButton { 
+        display: none !important; 
     }
     
-    /* Mantém o topo limpo, mas sem quebrar o botão de abrir/fechar os filtros */
-    .stAppDeployButton { display: none !important; }
-    footer { visibility: hidden !important; }
+    /* 2. ESCONDE O BOTÃO DO GITHUB E MENU TRÊS PONTINHOS (Canto Superior Direito) */
+    /* Mirando especificamente na div da direita para não afetar o controle da sidebar na esquerda */
+    [data-testid="stHeader"] div[class^="st-emotion-cache"] {
+        justify-content: flex-end;
+    }
     
-    /* 2. ESTILO DA TABELA PERSONALIZADA (Cabeçalho Azul e Fonte Branca) */
+    #MainMenu, [data-testid="stMainMenu"] { 
+        visibility: hidden !important; 
+        display: none !important; 
+    }
+    
+    header[data-testid="stHeader"] iframe, 
+    header[data-testid="stHeader"] a,
+    header[data-testid="stHeader"] button:not([data-testid="collapsedControl"]) { 
+        display: none !important; 
+    }
+    
+    /* 3. CONSERVA E ESTILIZA O BOTÃO DE REABRIR A SIDEBAR (Se ela for minimizada) */
+    /* Garante que o botão de trazer os filtros de volta continue visível e funcional */
+    [data-testid="collapsedControl"] {
+        display: flex !important;
+        visibility: visible !important;
+        background-color: #1E3A8A !important; /* Azul UEA */
+        color: white !important;
+        border-radius: 0 8px 8px 0 !important;
+    }
+    
+    /* 4. ESCONDE O RODAPÉ PADRÃO DO STREAMLIT */
+    footer { 
+        visibility: hidden !important; 
+    }
+    div[data-testid="stToolbar"] { 
+        display: none !important; 
+    }
+    
+    /* 5. AJUSTE DE RESPIRADO E REGRAS DA TABELA PERSONALIZADA */
+    .block-container { 
+        padding-top: 60px !important; 
+        max-width: 100% !important; 
+    }
+    
     .tabela-container {
         max-height: 480px;
         overflow: auto;
@@ -48,17 +83,17 @@ st.markdown("""
     
     table {
         width: 100%;
-        min-width: 1000px; /* Garante que role para o lado sem espremer */
+        min-width: 1000px;
         border-collapse: separate;
         border-spacing: 0;
         font-family: sans-serif;
     }
     
-    /* Fixando e pintando o Cabeçalho Geral de Azul */
+    /* Estilo do Cabeçalho da Tabela - Fundo Azul e Letras Brancas */
     thead th {
         position: sticky;
         top: 0;
-        background-color: #1E3A8A !important; /* Azul UEA */
+        background-color: #1E3A8A !important;
         color: white !important;
         padding: 12px 8px;
         text-align: center;
@@ -69,20 +104,16 @@ st.markdown("""
         z-index: 20;
     }
     
-    /* 3. FIXANDO AS 3 PRIMEIRAS COLUNAS À ESQUERDA (Z-Index alto para não sumir ao rolar) */
-    /* Coluna 1: AÇÃO */
+    /* Fixando as 3 Primeiras Colunas (Ação, Fonte, Natureza) */
     thead th:nth-child(1) { position: sticky; left: 0; z-index: 25; background-color: #1E3A8A !important; }
     tbody td:nth-child(1) { position: sticky; left: 0; z-index: 15; background-color: white; font-weight: 500; text-align: left !important; }
     
-    /* Coluna 2: FONTE */
     thead th:nth-child(2) { position: sticky; left: 100px; z-index: 25; background-color: #1E3A8A !important; }
     tbody td:nth-child(2) { position: sticky; left: 100px; z-index: 15; background-color: white; text-align: center !important; }
     
-    /* Coluna 3: NATUREZA */
     thead th:nth-child(3) { position: sticky; left: 180px; z-index: 25; background-color: #1E3A8A !important; box-shadow: 2px 0 5px -2px rgba(0,0,0,0.2); }
     tbody td:nth-child(3) { position: sticky; left: 180px; z-index: 15; background-color: white; box-shadow: 2px 0 5px -2px rgba(0,0,0,0.2); text-align: left !important; }
     
-    /* Estilo das Células Gerais de Dados */
     tbody td {
         padding: 10px 8px;
         border-bottom: 1px solid #F3F4F6;
@@ -93,21 +124,12 @@ st.markdown("""
         text-align: right;
     }
     
-    /* Efeito Hover nas linhas */
     tr:hover td { background-color: #F1F5F9 !important; }
     tr:hover td:nth-child(1), tr:hover td:nth-child(2), tr:hover td:nth-child(3) { background-color: #F1F5F9 !important; }
     
-    /* Cores das Variações */
     .pos { color: #059669; font-weight: bold; }
     .neg { color: #DC2626; font-weight: bold; }
     .zero { color: #6B7280; }
-    
-    /* Ajustes Gerais de Layout */
-    .topo-congelado { position: sticky; top: 0; background-color: white; z-index: 1000; padding-top: 5px; padding-bottom: 5px; border-bottom: 2px solid #e5e7eb; margin-bottom: 10px; }
-    h1 { font-size: 1.3rem !important; margin-top: 0 !important; margin-bottom: 3px !important; padding-top: 0 !important; padding-bottom: 0 !important; line-height: 1.1 !important; color: #111827 !important; }
-    .stTabs { margin-top: -20px !important; }
-    .block-container { padding-top: 60px !important; max-width: 100% !important; }
-    [data-testid=stMetricValue] { color: #2E7D32 !important; font-size: 1.2rem !important; }
     </style>
 """, unsafe_allow_html=True)
 
