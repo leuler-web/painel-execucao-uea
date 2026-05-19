@@ -402,61 +402,102 @@ try:
         </div>
     """, unsafe_allow_html=True)
 
-    # ==========================================
-    # INTERFACE: TELA 1 (CAPA)
-    # ==========================================
-    if st.session_state.pagina_ativa == 'capa':
-        st.write("")
-        st.write("")
-        col_esq, col_centro, col_dir = st.columns([1, 3, 1])
-        with col_centro:
-            try:
-                st.image("LogoPainelOrcamento.jpeg", use_container_width=True)
-            except:
-                st.warning("Imagem da capa não encontrada.")
+        # ==========================================
+        # INTERFACE: TELA 1 (CAPA)
+        # ==========================================
+        if st.session_state.pagina_ativa == 'capa':
             st.write("")
-            if st.button("🚀 ACESSAR PAINEL DE EXECUÇÃO ORÇAMENTÁRIA", use_container_width=True):
-                st.session_state.pagina_ativa = 'dashboard'
-                st.rerun()
+            st.write("")
+            col_esq, col_centro, col_dir = st.columns([1, 3, 1])
+            with col_centro:
+                try:
+                    st.image("LogoPainelOrcamento.jpeg", use_container_width=True)
+                except:
+                    st.warning("Imagem da capa não encontrada.")
+                st.write("")
+                if st.button("🚀 ACESSAR PAINEL DE EXECUÇÃO ORÇAMENTÁRIA", use_container_width=True):
+                    st.session_state.pagina_ativa = 'dashboard'
+                    st.rerun()
+            st.stop()  # 🚨 ESSENCIAL: Impede o script de rodar o dashboard enquanto o usuário estiver na capa!
 
-    # ==========================================
-    # INTERFACE: TELA 2 (DASHBOARD)
-    # ==========================================
-    elif st.session_state.pagina_ativa == 'dashboard':
-        st.title("📊 PAINEL ORÇAMENTÁRIO - UEA")
-        
-        # 🔍 SEÇÃO DE FILTROS RETRÁTIL (SANFONA) NO TOPO DO PAINEL
-        with st.expander("🔍 CLIQUE AQUI PARA ABRIR/FECHAR OS FILTROS DO PAINEL", expanded=True):
-            st.button("🧹 Limpar Todos os Filtros", on_click=forcar_limpeza_total, use_container_width=True)
+        # ==========================================
+        # INTERFACE: TELA 2 (DASHBOARD)
+        # ==========================================
+        elif st.session_state.pagina_ativa == 'dashboard':
+            st.title("📊 PAINEL ORÇAMENTÁRIO - UEA")
             
-            # Criando 5 colunas para colocar todos os filtros horizontais lado a lado
-            c1, c2, c3, c4, c5 = st.columns(5)
-            with c1:
-                lista_meses = df_base[['Mes_Nome', 'Mes_Num']].dropna().drop_duplicates().sort_values('Mes_Num')['Mes_Nome'].tolist()
-                var_mes_str = st.selectbox("Mês de Referência", ["Todos"] + lista_meses, key=f"filtro_mes_{st.session_state.botao_reset}")
-            with c2:
-                if 'Tipo Movimento' in df_base.columns:
-                    tipos_mov = [t for t in df_base['Tipo Movimento'].dropna().unique() if t]
-                    idx_padrao = tipos_mov.index('Acumulado') if 'Acumulado' in tipos_mov else 0
-                    var_mov_str = st.selectbox("Tipo de Movimento", tipos_mov, index=idx_padrao, key=f"filtro_mov_{st.session_state.botao_reset}")
-                else:
-                    var_mov_str = None
-                    st.write("Movimento N/D")
-            with c3:
-                acoes_validas = [str(a) for a in df_base['Ação'].unique() if str(a).strip() != '' and str(a).isdigit() and len(str(a)) == 4]
-                opcoes_acao = ["Todas"] + [f"{a} - {dict_acoes.get(a, 'NÃO IDENTIFICADA')}" for a in sorted(list(set(acoes_validas)))]
-                var_acao_str = st.selectbox("Ação", opcoes_acao, key=f"filtro_acao_{st.session_state.botao_reset}")
-                var_acao_codigo = var_acao_str.split(' - ')[0]
-            with c4:
-                fontes_3_validas = sorted([f for f in df_base['Fonte_3'].unique() if f and f != ''])
-                opcoes_fonte = ["Todas"] + [f"{f} - {dict_fontes_global.get(f, 'Outras Fontes')}" for f in fontes_3_validas]
-                var_fonte_str = st.selectbox("Fonte de Recurso", opcoes_fonte, key=f"filtro_fonte_{st.session_state.botao_reset}")
-                var_fonte_codigo = var_fonte_str.split(' - ')[0]
-            with c5:
-                naturezas_validas = sorted([str(n) for n in df_base['Natureza_ID'].unique() if n and n != ''])
-                opcoes_natureza = ["Todas"] + [f"{n} - {dict_naturezas.get(n, 'NÃO IDENTIFICADA')}" for n in naturezas_validas]
-                var_natureza_str = st.selectbox("Natureza", opcoes_natureza, key=f"filtro_natureza_{st.session_state.botao_reset}")
-                var_natureza_codigo = var_natureza_str.split(' - ')[0]
+            # 🔍 SEÇÃO DE FILTROS RETRÁTIL (SANFONA) NO TOPO DO PAINEL
+            with st.expander("🔍 CLIQUE AQUI PARA ABRIR/FECHAR OS FILTROS DO PAINEL", expanded=True):
+                st.button("🧹 Limpar Todos os Filtros", on_click=forcar_limpeza_total, use_container_width=True)
+                
+                # Criando 5 colunas para colocar todos os filtros horizontais lado a lado
+                c1, c2, c3, c4, c5 = st.columns(5)
+                
+                with c1:
+                    lista_meses = df_base[['Mes_Nome', 'Mes_Num']].dropna().drop_duplicates().sort_values('Mes_Num')['Mes_Nome'].tolist()
+                    var_mes_str = st.selectbox("Mês de Referência", ["Todos"] + lista_meses, key=f"filtro_mes_{st.session_state.botao_reset}")
+                    
+                with c2:
+                    if 'Tipo Movimento' in df_base.columns:
+                        tipos_mov = [t for t in df_base['Tipo Movimento'].dropna().unique() if t]
+                        idx_padrao = tipos_mov.index('Acumulado') if 'Acumulado' in tipos_mov else 0
+                        var_mov_str = st.selectbox("Tipo de Movimento", tipos_mov, index=idx_padrao, key=f"filtro_mov_{st.session_state.botao_reset}")
+                    else: 
+                        var_mov_str = None
+                        st.write("Movimento N/D")
+                        
+                with c3:
+                    acoes_validas = [str(a) for a in df_base['Ação'].unique() if str(a).strip() != '' and str(a).isdigit() and len(str(a)) == 4]
+                    opcoes_acao = ["Todas"] + [f"{a} - {dict_acoes.get(a, 'NÃO IDENTIFICADA')}" for a in sorted(list(set(acoes_validas)))]
+                    var_acao_str = st.selectbox("Ação", opcoes_acao, key=f"filtro_acao_{st.session_state.botao_reset}")
+                    var_acao_codigo = var_acao_str.split(' - ')[0]
+                    
+                with c4:
+                    fontes_3_validas = sorted([f for f in df_base['Fonte_3'].unique() if f and f != ''])
+                    opcoes_fonte = ["Todas"] + [f"{f} - {dict_fontes_global.get(f, 'Outras Fontes')}" for f in fontes_3_validas]
+                    var_fonte_str = st.selectbox("Fonte de Recurso", opcoes_fonte, key=f"filtro_fonte_{st.session_state.botao_reset}")
+                    var_fonte_codigo = var_fonte_str.split(' - ')[0]
+                    
+                with c5:
+                    naturezas_validas = sorted([str(n) for n in df_base['Natureza_ID'].unique() if n and n != ''])
+                    opcoes_natureza = ["Todas"] + [f"{n} - {dict_naturezas.get(n, 'NÃO IDENTIFICADA')}" for n in naturezas_validas]
+                    var_natureza_str = st.selectbox("Natureza", opcoes_natureza, key=f"filtro_natureza_{st.session_state.botao_reset}")
+                    var_natureza_codigo = var_natureza_str.split(' - ')[0]
+
+        # === LÓGICA DE FILTRAGEM DOS DADOS (PROCESSAMENTO) ===
+        mask_base = pd.Series(True, index=df_base.index)
+        if var_mes_str != "Todos":
+            mask_base &= (df_base['Mes_Nome'] == var_mes_str)
+        if var_mov_str:
+            mask_base &= (df_base['Tipo Movimento'] == var_mov_str)
+        if var_acao_codigo != "Todas":
+            mask_base &= (df_base['Ação'] == var_acao_codigo)
+        if var_natureza_codigo != "Todas":
+            mask_base &= (df_base['Natureza_ID'] == var_natureza_codigo)
+        if var_fonte_codigo != "Todas":
+            mask_base &= (df_base['Fonte_3'] == var_fonte_codigo)
+        df_base_filtrada = df_base[mask_base]
+        
+        df_latest = df_base_filtrada[df_base_filtrada['Mes_Num'] == df_base_filtrada['Mes_Num'].max()] if (var_mes_str == "Todos" and not df_base_filtrada['Mes_Num'].isna().all()) else df_base_filtrada
+        
+        mask_evo = pd.Series(True, index=df_base.index)
+        if var_mov_str:
+            mask_evo &= (df_base['Tipo Movimento'] == var_mov_str)
+        if var_acao_codigo != "Todas":
+            mask_evo &= (df_base['Ação'] == var_acao_codigo)
+        if var_natureza_codigo != "Todas":
+            mask_evo &= (df_base['Natureza_ID'] == var_natureza_codigo)
+        if var_fonte_codigo != "Todas":
+            mask_evo &= (df_base['Fonte_3'] == var_fonte_codigo)
+            
+        mask_var = pd.Series(True, index=df_var.index)
+        if var_acao_codigo != "Todas":
+            mask_var &= (df_var['Ação'] == var_acao_codigo)
+        if var_natureza_codigo != "Todas":
+            mask_var &= (df_var['Natureza_ID'] == var_natureza_codigo)
+        if var_fonte_codigo != "Todas":
+            mask_var &= (df_var['Fonte_3'] == var_fonte_codigo)
+        df_var_filtrada = df_var[mask_var]
         
         # ==========================================
         # CARDS KPIs FIXOS NO TOPO (VISÍVEIS EM TODAS AS ABAS)
