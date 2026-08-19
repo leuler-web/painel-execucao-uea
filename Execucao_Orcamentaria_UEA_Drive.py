@@ -234,7 +234,7 @@ def criar_grafico_grupo_despesa(df_filtrado):
                 else: linha.append(0.0)
             valores_grafico[g] = linha
             
-        # Reduzido o tamanho da figura de (14,6) para (11,4.5) para evitar estouro na tela
+        # Reduzido o tamanho da figura
         fig, ax = plt.subplots(figsize=(8, 3.0))
         
         bar_width = 0.18
@@ -248,13 +248,10 @@ def criar_grafico_grupo_despesa(df_filtrado):
         ax.bar(r2, valores_grafico['Custeio'], color=cores['Custeio'], width=bar_width, label='Custeio', edgecolor='white')
         ax.bar(r3, valores_grafico['Investimento'], color=cores['Investimento'], width=bar_width, label='Investimento', edgecolor='white')
         
-        # Título removido conforme solicitado
-        # ax.set_title('Execução Orçamentária por Grupo de Despesa', fontweight='bold', fontsize=18, color='#4B5563', pad=20)
-        
         def formata_y(x, pos):
             return f"{x:,.0f}".replace(',', 'X').replace('.', ',').replace('X', '.')
         ax.yaxis.set_major_formatter(plt.FuncFormatter(formata_y))
-        ax.tick_params(axis='y', labelsize=6) # <-- LINHA NOVA AQUI
+        ax.tick_params(axis='y', labelsize=6)
         ax.grid(axis='y', linestyle='--', alpha=0.4)
         ax.set_xticks([]) 
         
@@ -274,8 +271,8 @@ def criar_grafico_grupo_despesa(df_filtrado):
                            rowColours=[cores['Pessoal'], cores['Custeio'], cores['Investimento']],
                            colLabels=fases_labels, loc='bottom', cellLoc='center')
                            
-        tabela.scale(1, 1.3) # Reduz um pouquinho a altura das células também
-        tabela.set_fontsize(6) # Reduz o tamanho da letra (pode testar 8 se achar melhor))
+        tabela.scale(1, 1.3) 
+        tabela.set_fontsize(6) 
         
         for key, cell in tabela.get_celld().items():
             cell.set_edgecolor('#D1D5DB')
@@ -287,6 +284,126 @@ def criar_grafico_grupo_despesa(df_filtrado):
         
         plt.subplots_adjust(bottom=0.25)
         return fig
+    except Exception as e:
+        return None
+
+def criar_grafico_receita_x_despesa(caminho_arquivo):
+    """Lê a aba 'Receita X Despesa' e gera o gráfico comparativo de linhas com tabela"""
+    try:
+        df = pd.read_excel(caminho_arquivo, sheet_name="Receita X Despesa")
+        df.columns = [str(c).strip() for c in df.columns]
+        df["Valor"] = df["Valor"].apply(extrair_numero)
+
+        meses_ordem = [
+            "Jan", "Fev", "Mar", "Abr", "Mai", "Jun", 
+            "Jul", "Ago", "Set", "Out", "Nov", "Dez",
+        ]
+
+        def padronizar_mes(val):
+            v = str(val).strip().capitalize()[:3]
+            for m in meses_ordem:
+                if m.lower() in v.lower():
+                    return m
+            return v
+
+        df["Mes_Padrao"] = df["Mês/Ano"].apply(padronizar_mes)
+
+        # Reorganiza os dados em matriz (Item Orçamentário x Mês)
+        df_pivot = df.pivot(
+            index="Item Orçamentário", columns="Mes_Padrao", values="Valor"
+        )
+
+        for m in meses_ordem:
+            if m not in df_pivot.columns:
+                df_pivot[m] = np.nan
+        df_pivot = df_pivot[meses_ordem]
+
+        categorias = [
+            "LOA (A)",
+            "Receita Arrecadada (B)",
+            "Despesa Realizada (C)",
+            "Saldo (B-C)",
+        ]
+
+        estilos = {
+            "LOA (A)": {"color": "#3B82F6", "marker": "o"},  # Azul
+            "Receita Arrecadada (B)": {"color": "#F97316", "marker": "o"},  # Laranja
+            "Despesa Realizada (C)": {"color": "#9CA3AF", "marker": "o"},  # Cinza
+            "Saldo (B-C)": {"color": "#EAB308", "marker": "x"},  # Amarelo com X
+        }
+
+        # Criação da figura com espaço dedicado para o gráfico e para a tabela
+        fig, (ax1, ax2) = plt.subplots(
+            2, 1, figsize=(14, 7), gridspec_kw={"height_ratios": [2.8, 1.2]}, sharex=False
+        )
+
+        # Plotagem das linhas
+        for cat in categorias:
+            if cat in df_pivot.index:
+                valores = df_pivot.loc[cat].values
+                estilo = estilos.get(cat, {"color": "#333333", "marker": "o"})
+                ax1.plot(
+                    meses_ordem, valores, label=cat, linewidth=1.8, markersize=5, **estilo
+                )
+
+        # Título do Gráfico
+        ax1.set_title(
+            "ANÁLISE DA RECEITA ARRECADADA X DESPESA REALIZADA\n(Fonte 1.599.116) - 2026",
+            fontsize=13, fontweight="bold", pad=15
+        )
+
+        ax1.grid(True, linestyle="-", alpha=0.3, color="#D1D5DB")
+        ax1.set_xlim(-0.5, 11.5)
+
+        # Formatação do Eixo Y no padrão brasileiro (100.000.000,00)
+        def formata_y_br(x, pos):
+            return f"{x:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+        ax1.yaxis.set_major_formatter(plt.FuncFormatter(formata_y_br))
+        ax1.tick_params(axis="y", labelsize=8.5)
+        ax1.tick_params(axis="x", labelbottom=False)
+
+        for spine in ["top", "right"]:
+            ax1.spines[spine].set_visible(False)
+
+        # Construção da Tabela Acoplada
+        ax2.axis("off")
+
+        cell_text = []
+        for cat in categorias:
+            linha = []
+            if cat in df_pivot.index:
+                for val in df_pivot.loc[cat].values:
+                    if pd.isna(val) or val == 0:
+                        linha.append("")
+                    else:
+                        linha.append(f"{val:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+            else:
+                linha = [""] * 12
+            cell_text.append(linha)
+
+        tabela = ax2.table(
+            cellText=cell_text, rowLabels=categorias, colLabels=meses_ordem, cellLoc="center", loc="center"
+        )
+
+        tabela.auto_set_font_size(False)
+        tabela.set_fontsize(8)
+        tabela.scale(1, 1.4)
+
+        # Estilização das células da tabela
+        for (row, col), cell in tabela.get_celld().items():
+            cell.set_edgecolor("#D1D5DB")
+            if row == 0:
+                cell.set_text_props(fontweight="bold")
+                cell.set_facecolor("#F3F4F6")
+            if col == -1:
+                cell.set_text_props(fontweight="bold", ha="right")
+                cell.set_facecolor("#F3F4F6")
+
+        plt.subplots_adjust(hspace=0.08)
+        plt.tight_layout()
+        return fig
+
     except Exception as e:
         return None
 
@@ -672,13 +789,14 @@ try:
     if tags: st.markdown(f"<div class='caixa-destaque'>{' &nbsp;&nbsp;|&nbsp;&nbsp; '.join(tags)}</div>", unsafe_allow_html=True)
 
     # ==========================================
-    # ABAS (TABS) - NOVA ORDEM
+    # ABAS (TABS) - INCLUSÃO DA NOVA ABA
     # ==========================================
-    tab_visao, tab_top10, tab_evolucao, tab_projecao, tab_tabela, tab_var_natureza = st.tabs([
+    tab_visao, tab_top10, tab_evolucao, tab_projecao, tab_receita_despesa, tab_tabela, tab_var_natureza = st.tabs([
         "🎯 Visão Estratégica", 
         "🏆 Top 10",
         "📈 Evolução Mensal",
         "📉 Projeção vs. Realizado",
+        "⚖️ Receita vs. Despesa",
         "🔍 Tabela de Variações",
         "📊 Variação por Natureza"
     ])
@@ -785,6 +903,21 @@ try:
                 st.warning("⚠️ Planilha de projeção não encontrada ou com formato inválido.")
         else:
             st.warning("⚠️ Arquivo de projeção não encontrado.")
+
+    # AQUI ESTÁ A NOVA ABA COM O GRÁFICO INSERIDO
+    with tab_receita_despesa:
+        st.markdown(f"<div class='destaque-ano'>Análise da Receita Arrecadada x Despesa Realizada <span style='font-size: 16px; font-weight: normal; color: #6B7280;'>(última atualização: {dt_atual})</span></div>", unsafe_allow_html=True)
+        
+        caminho_grupo_despesa = r"Gráfico_Grupo de Despesa.xlsx"
+        
+        if os.path.exists(caminho_grupo_despesa):
+            fig_rec_desp = criar_grafico_receita_x_despesa(caminho_grupo_despesa)
+            if fig_rec_desp is not None:
+                st.pyplot(fig_rec_desp)
+            else:
+                st.warning("⚠️ Não foi possível gerar o gráfico. Verifique se a aba 'Receita X Despesa' existe e está preenchida corretamente no arquivo.")
+        else:
+            st.warning(f"⚠️ Arquivo '{caminho_grupo_despesa}' não encontrado na pasta do projeto.")
 
     with tab_tabela:
         st.markdown(f"<div class='periodo-destaque'>📅 {texto_periodo}</div>", unsafe_allow_html=True)
