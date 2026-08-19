@@ -274,8 +274,8 @@ def criar_grafico_grupo_despesa(df_filtrado):
                            rowColours=[cores['Pessoal'], cores['Custeio'], cores['Investimento']],
                            colLabels=fases_labels, loc='bottom', cellLoc='center')
                            
-        tabela.scale(1, 1.6) # Reduz um pouquinho a altura das células também
-        tabela.set_fontsize(9) # Reduz o tamanho da letra (pode testar 8 se achar melhor))
+        tabela.scale(1, 1.3) # Reduz um pouquinho a altura das células também
+        tabela.set_fontsize(8) # Reduz o tamanho da letra (pode testar 8 se achar melhor))
         
         for key, cell in tabela.get_celld().items():
             cell.set_edgecolor('#D1D5DB')
