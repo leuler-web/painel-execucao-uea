@@ -235,7 +235,7 @@ def criar_grafico_grupo_despesa(df_filtrado):
             valores_grafico[g] = linha
             
         # Reduzido o tamanho da figura de (14,6) para (11,4.5) para evitar estouro na tela
-        fig, ax = plt.subplots(figsize=(9, 3.8))
+        fig, ax = plt.subplots(figsize=(8, 3.0))
         
         bar_width = 0.18
         r1 = np.arange(len(fases_labels))
