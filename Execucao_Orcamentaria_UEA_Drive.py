@@ -254,7 +254,7 @@ def criar_grafico_grupo_despesa(df_filtrado):
         def formata_y(x, pos):
             return f"{x:,.0f}".replace(',', 'X').replace('.', ',').replace('X', '.')
         ax.yaxis.set_major_formatter(plt.FuncFormatter(formata_y))
-        ax.tick_params(axis='y', labelsize=8) # <-- LINHA NOVA AQUI
+        ax.tick_params(axis='y', labelsize=6) # <-- LINHA NOVA AQUI
         ax.grid(axis='y', linestyle='--', alpha=0.4)
         ax.set_xticks([]) 
         
