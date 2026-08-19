@@ -235,7 +235,7 @@ def criar_grafico_grupo_despesa(df_filtrado):
             valores_grafico[g] = linha
             
         # Reduzido o tamanho da figura de (14,6) para (11,4.5) para evitar estouro na tela
-        fig, ax = plt.subplots(figsize=(11, 4.5))
+        fig, ax = plt.subplots(figsize=(9, 3.8))
         
         bar_width = 0.25
         r1 = np.arange(len(fases_labels))
@@ -254,6 +254,7 @@ def criar_grafico_grupo_despesa(df_filtrado):
         def formata_y(x, pos):
             return f"{x:,.0f}".replace(',', 'X').replace('.', ',').replace('X', '.')
         ax.yaxis.set_major_formatter(plt.FuncFormatter(formata_y))
+        ax.tick_params(axis='y', labelsize=9) # <-- LINHA NOVA AQUI
         ax.grid(axis='y', linestyle='--', alpha=0.4)
         ax.set_xticks([]) 
         
@@ -273,8 +274,8 @@ def criar_grafico_grupo_despesa(df_filtrado):
                            rowColours=[cores['Pessoal'], cores['Custeio'], cores['Investimento']],
                            colLabels=fases_labels, loc='bottom', cellLoc='center')
                            
-        tabela.scale(1, 1.8)
-        tabela.set_fontsize(11)
+        tabela.scale(1, 1.6) # Reduz um pouquinho a altura das células também
+        tabela.set_fontsize(9) # Reduz o tamanho da letra (pode testar 8 se achar melhor))
         
         for key, cell in tabela.get_celld().items():
             cell.set_edgecolor('#D1D5DB')
