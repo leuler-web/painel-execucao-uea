@@ -26,6 +26,7 @@ st.set_page_config(
 # 2. BLOCO ÚNICO DE ESTILOS CSS (VERSÃO CORRIGIDA)
 # ==========================================
 st.markdown("<style>.topo-congelado{position:sticky;top:0;background-color:white;z-index:1000;padding-top:10px;padding-bottom:5px;border-bottom:2px solid #e5e7eb;margin-bottom:15px;}h1{font-size:1.6rem !important;margin-top:0 !important;line-height:1.2 !important;color:#111827 !important;}.stTabs{margin-top:-20px !important;}.tabela-container{max-height:480px;overflow:auto;border:1px solid #e5e7eb;border-radius:8px;position:relative;}table{width:100%;min-width:800px;border-collapse:separate;border-spacing:0;font-family:sans-serif;table-layout:auto;}thead th{position:sticky;top:0;background-color:#1E3A8A !important;color:white !important;padding:12px 8px;text-align:center;font-size:13px;font-weight:bold;border-bottom:2px solid #D1D5DB;white-space:nowrap;z-index:20;}thead th:nth-child(1){position:sticky;left:0;z-index:25;background-color:#1E3A8A !important;}tbody td:nth-child(1){position:sticky;left:0;z-index:15;background-color:white;}thead th:nth-child(2){position:sticky;left:60px;z-index:25;background-color:#1E3A8A !important;}tbody td:nth-child(2){position:sticky;left:60px;z-index:15;background-color:white;}thead th:nth-child(3){position:sticky;left:120px;z-index:25;background-color:#1E3A8A !important;box-shadow:2px 0 5px -2px rgba(0,0,0,0.15);}tbody td:nth-child(3){position:sticky;left:120px;z-index:15;background-color:white;box-shadow:2px 0 5px -2px rgba(0,0,0,0.15);}tbody td{padding:10px 8px;border-bottom:1px solid #F3F4F6;font-size:13px;color:#4B5563;white-space:nowrap;background-color:white;text-align:right;}tbody td:nth-child(1),tbody td:nth-child(2),tbody td:nth-child(3){text-align:center;}tr:hover td{background-color:#F9FAFB !important;}tr:hover td:nth-child(1),tr:hover td:nth-child(2),tr:hover td:nth-child(3){background-color:#F9FAFB !important;}.pos{color:#059669;font-weight:bold;}.neg{color:#DC2626;font-weight:bold;}.zero{color:#6B7280;}#MainMenu{visibility:hidden !important;}footer{visibility:hidden !important;}header[data-testid=stHeader]{display:none !important;}div[data-testid=stToolbar]{display:none !important;}div[data-testid=stDecoration]{display:none !important;}.st-emotion-cache-1f3f2m8{display:none !important;}.stApp{margin-top:0 !important;}.stMain{padding-top:0 !important;}button[kind=header]{display:none !important;}.st-emotion-cache-1q3nhyv{display:none !important;}[data-testid=baseButton-header]{display:none !important;}[data-testid=stMetricValue]{color:#2E7D32 !important;font-size:1.2rem !important;}</style>", unsafe_allow_html=True)
+
 # ==========================================
 # 3. GESTÃO DE ESTADO
 # ==========================================
@@ -193,6 +194,105 @@ def criar_grafico_tendencia_global(caminho_planilha_proj):
         plt.tight_layout(pad=2)
         return fig
     except Exception:
+        return None
+
+def criar_grafico_grupo_despesa(df_filtrado):
+    """Cria o gráfico de barras agrupadas com tabela acoplada estilo Excel"""
+    try:
+        # 1. Identificar a nova coluna de Grupo de Despesas dinamicamente
+        col_grupo = next((c for c in df_filtrado.columns if 'GRUPO' in c.upper() and 'DESPESA' in c.upper()), None)
+        if not col_grupo:
+            if 'Grupo de Despesas' in df_filtrado.columns: col_grupo = 'Grupo de Despesas'
+            else: return None
+
+        # 2. Identificar colunas financeiras na base
+        col_loa = next((c for c in df_filtrado.columns if 'DOTAÇÃO' in c.upper() or 'LOA' in c.upper()), None)
+        col_aut = next((c for c in df_filtrado.columns if 'AUTORIZADO' in c.upper()), None)
+        col_emp = next((c for c in df_filtrado.columns if 'EMPENHADO' in c.upper()), None)
+        col_bloq = next((c for c in df_filtrado.columns if 'BLOQUEADO' in c.upper()), None)
+        col_disp = next((c for c in df_filtrado.columns if 'DISPONÍVEL' in c.upper()), None)
+
+        fases_labels = ['LOA', 'AUTORIZADO', 'EMPENHADO', 'BLOQUEADO', 'DISPONÍVEL']
+        cols_reais = [col_loa, col_aut, col_emp, col_bloq, col_disp]
+        
+        # 3. Mapear os grupos conforme a sua imagem
+        grupos_alvo = ['Pessoal', 'Custeio', 'Investimento']
+        
+        def padronizar_grupo(val):
+            v = str(val).upper()
+            if 'PESSOAL' in v: return 'Pessoal'
+            if 'CUSTEIO' in v or 'CORRENTE' in v or 'OUTRAS' in v: return 'Custeio'
+            if 'INVESTIMENTO' in v or 'CAPITAL' in v: return 'Investimento'
+            return 'Outros'
+            
+        df_temp = df_filtrado.copy()
+        df_temp['Grupo_Padrao'] = df_temp[col_grupo].apply(padronizar_grupo)
+        
+        valores_grafico = {g: [] for g in grupos_alvo}
+        for g in grupos_alvo:
+            df_g = df_temp[df_temp['Grupo_Padrao'] == g]
+            linha = []
+            for c in cols_reais:
+                if c and c in df_g.columns: linha.append(df_g[c].sum())
+                else: linha.append(0.0)
+            valores_grafico[g] = linha
+            
+        # 4. Criar a Figura Matplotlib
+        fig, ax = plt.subplots(figsize=(14, 6))
+        
+        bar_width = 0.25
+        r1 = np.arange(len(fases_labels))
+        r2 = [x + bar_width for x in r1]
+        r3 = [x + bar_width for x in r2]
+        
+        # Cores exatas da imagem do Excel
+        cores = {'Pessoal': '#4472C4', 'Custeio': '#ED7D31', 'Investimento': '#A5A5A5'}
+        
+        ax.bar(r1, valores_grafico['Pessoal'], color=cores['Pessoal'], width=bar_width, label='Pessoal', edgecolor='white')
+        ax.bar(r2, valores_grafico['Custeio'], color=cores['Custeio'], width=bar_width, label='Custeio', edgecolor='white')
+        ax.bar(r3, valores_grafico['Investimento'], color=cores['Investimento'], width=bar_width, label='Investimento', edgecolor='white')
+        
+        ax.set_title('Execução Orçamentária por Grupo de Despesa', fontweight='bold', fontsize=18, color='#4B5563', pad=20)
+        
+        # Formatação do eixo Y
+        def formata_y(x, pos):
+            return f"{x:,.0f}".replace(',', 'X').replace('.', ',').replace('X', '.')
+        ax.yaxis.set_major_formatter(plt.FuncFormatter(formata_y))
+        ax.grid(axis='y', linestyle='--', alpha=0.4)
+        ax.set_xticks([]) # Ocultar eixo X original para colocar a tabela
+        
+        # Remover bordas
+        for spine in ['top', 'right', 'bottom']:
+            ax.spines[spine].set_visible(False)
+        
+        # 5. Criar a Tabela (Data Table) estilo Excel
+        def formata_moeda(v):
+            return f"{v:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
+            
+        cell_text = [
+            [formata_moeda(v) for v in valores_grafico['Pessoal']],
+            [formata_moeda(v) for v in valores_grafico['Custeio']],
+            [formata_moeda(v) for v in valores_grafico['Investimento']]
+        ]
+        
+        tabela = plt.table(cellText=cell_text, rowLabels=grupos_alvo, 
+                           rowColours=[cores['Pessoal'], cores['Custeio'], cores['Investimento']],
+                           colLabels=fases_labels, loc='bottom', cellLoc='center')
+                           
+        tabela.scale(1, 1.8)
+        tabela.set_fontsize(11)
+        
+        for key, cell in tabela.get_celld().items():
+            cell.set_edgecolor('#D1D5DB')
+            if key[0] == 0: # Cabeçalho das colunas
+                cell.set_text_props(fontweight='bold', color='#4B5563')
+                cell.set_facecolor('#F3F4F6')
+            elif key[1] == -1: # Cabeçalho das linhas (Coloridas)
+                cell.set_text_props(color='white', fontweight='bold')
+        
+        plt.subplots_adjust(bottom=0.25)
+        return fig
+    except Exception as e:
         return None
 
 # ==========================================
@@ -623,6 +723,17 @@ try:
     ])
 
     with tab_visao:
+        # === NOVO GRÁFICO DE GRUPO DE DESPESA ===
+        st.subheader("📊 Panorama Geral por Grupo de Despesa")
+        fig_grupo = criar_grafico_grupo_despesa(df_latest)
+        if fig_grupo is not None:
+            st.pyplot(fig_grupo)
+        else:
+            st.info("A coluna 'Grupo de Despesas' não foi identificada ou está vazia na base de dados atual.")
+            
+        st.markdown("---")
+        # ========================================
+
         if var_acao_codigo == "Todas":
             st.subheader("Top 10 Maiores Despesas por Ação (Empenhado)")
             df_top = df_latest.groupby('Ação')['Empenhado'].sum().nlargest(10).reset_index()
