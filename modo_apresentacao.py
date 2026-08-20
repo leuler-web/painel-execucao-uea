@@ -1,61 +1,28 @@
-import streamlit.components.v1 as components
+import time
+import streamlit as st
 
-def ativar_modo_apresentacao(loop_segundos=5, idle_segundos=20):
-    """Injeta JavaScript para alternar abas automaticamente e detectar inatividade."""
-    loop_ms = loop_segundos * 1000
-    idle_ms = idle_segundos * 1000
-
-    js_code = f"""
-    <script>
-        const LOOP_INTERVAL = {loop_ms}; 
-        const IDLE_TIMEOUT = {idle_ms}; 
-
-        let idleTimer;
-        let loopTimer;
-        let isLooping = true;
-        let currentTabIndex = 0;
-
-        const parentDoc = window.parent.document;
-
-        function getTabs() {{
-            return parentDoc.querySelectorAll('button[data-baseweb="tab"]');
-        }}
-
-        function nextTab() {{
-            if (!isLooping) return;
-            const tabs = getTabs();
-            if (tabs.length === 0) return;
-
-            currentTabIndex = (currentTabIndex + 1) % tabs.length;
-            tabs[currentTabIndex].click();
-        }}
-
-        function startLoop() {{
-            if (!isLooping) {{
-                isLooping = true;
-                nextTab(); 
-                loopTimer = setInterval(nextTab, LOOP_INTERVAL);
-            }}
-        }}
-
-        function stopLoop() {{
-            isLooping = false;
-            clearInterval(loopTimer);
-        }}
-
-        function resetIdleTimer() {{
-            stopLoop();
-            clearTimeout(idleTimer);
-            idleTimer = setTimeout(startLoop, IDLE_TIMEOUT);
-        }}
-
-        const events = ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart'];
-        events.forEach(evt => {{
-            parentDoc.addEventListener(evt, resetIdleTimer, true);
-        }});
-
-        loopTimer = setInterval(nextTab, LOOP_INTERVAL);
-    </script>
+def iniciar_modo_apresentacao(lista_abas, tempo_segundos=5):
     """
-    
-    components.html(js_code, height=0, width=0)
+    Alterna automaticamente entre as abas na nuvem e no localhost sem usar JavaScript.
+    """
+    if "aba_ativa_idx" not in st.session_state:
+        st.session_state.aba_ativa_idx = 0
+
+    # Cria o seletor visual no topo em vez de st.tabs
+    aba_selecionada = st.segmented_control(
+        "Navegação do Painel",
+        options=lista_abas,
+        default=lista_abas[st.session_state.aba_ativa_idx],
+        key="navegacao_apresentacao"
+    )
+
+    # Atualiza o índice caso o usuário clique manualmente
+    if aba_selecionada in lista_abas:
+        st.session_state.aba_ativa_idx = lista_abas.index(aba_selecionada)
+
+    # Temporizador de rotação automática
+    time.sleep(tempo_segundos)
+    st.session_state.aba_ativa_idx = (st.session_state.aba_ativa_idx + 1) % len(lista_abas)
+    st.rerun()
+
+    return aba_selecionada
