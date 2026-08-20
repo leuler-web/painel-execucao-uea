@@ -6,6 +6,7 @@ import os
 import re   
 from io import BytesIO
 import matplotlib.pyplot as plt
+from modo_apresentacao import ativar_modo_apresentacao
 
 # ==========================================
 # 1. CONFIGURAÇÃO DA PÁGINA
@@ -1054,7 +1055,10 @@ try:
                 st.info("Não houve variação de Empenho para as naturezas neste período ou filtro selecionado.")
         else:
             st.warning("Coluna de variação de Empenhado não foi identificada na base de dados.")
+# ... aqui termina a renderização dos seus gráficos/tabelas ...
 
+    # 1. Chame a função no final do bloco de sucesso (com a mesma indentação do try)
+    ativar_modo_apresentacao(loop_segundos=15, idle_segundos=45)
 # ==========================================
 # 7. TRATAMENTO DE ERROS (PLANO B VISUAL)
 # ==========================================
@@ -1077,3 +1081,4 @@ except Exception as e:
             for key in list(st.session_state.keys()):
                 del st.session_state[key]
             st.rerun()
+            
