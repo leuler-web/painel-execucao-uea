@@ -608,17 +608,17 @@ try:
     # ==========================================
     img_logos = r"Logos_Execução.jpeg"
     if os.path.exists(img_logos):
-        st.sidebar.image(img_logos, use_container_width=True)
+        st.sidebar.image(img_logos, width="stretch")
         st.sidebar.markdown("---")
 
-    if st.sidebar.button("🔄 Atualizar Dados da Rede", use_container_width=True):
+    if st.sidebar.button("🔄 Atualizar Dados da Rede", width="stretch"):
         st.cache_data.clear()
         st.rerun()
 
     st.sidebar.markdown("---")
 
     if st.session_state.pagina_ativa == 'dashboard':
-        st.sidebar.button("⬅️ Voltar para a Capa", on_click=lambda: st.session_state.update(pagina_ativa='capa'), use_container_width=True)
+        st.sidebar.button("⬅️ Voltar para a Capa", on_click=lambda: st.session_state.update(pagina_ativa='capa'), width="stretch")
 
     st.sidebar.markdown("""
         <br><hr>
@@ -642,11 +642,11 @@ try:
         col_esq, col_centro, col_dir = st.columns([1, 3, 1])
         with col_centro:
             try:
-                st.image("LogoPainelOrcamento.jpeg", use_container_width=True)
+                st.image("LogoPainelOrcamento.jpeg", width="stretch")
             except:
                 st.warning("Imagem da capa não encontrada.")
             st.write("")
-            if st.button("🚀 ACESSAR PAINEL DE EXECUÇÃO ORÇAMENTÁRIA", use_container_width=True):
+            if st.button("🚀 ACESSAR PAINEL DE EXECUÇÃO ORÇAMENTÁRIA", width="stretch"):
                 st.session_state.pagina_ativa = 'dashboard'
                 st.rerun()
         st.stop()  
@@ -658,7 +658,7 @@ try:
         st.title("📊 PAINEL ORÇAMENTÁRIO - UEA")
         
         with st.expander("🔍 CLIQUE AQUI PARA ABRIR/FECHAR OS FILTROS DO PAINEL", expanded=True):
-            st.button("🧹 Limpar Todos os Filtros", on_click=forcar_limpeza_total, use_container_width=True)
+            st.button("🧹 Limpar Todos os Filtros", on_click=forcar_limpeza_total, width="stretch")
             
             c1, c2, c3, c4, c5 = st.columns(5)
             
@@ -851,7 +851,7 @@ try:
                     margin=dict(l=20, r=100, t=10, b=10)
                 )
                 fig_bar.update_traces(marker_color='#4f8868', textposition="outside", textfont=dict(size=18, color="black"), hovertemplate="<b>Ação: %{customdata[0]} - %{customdata[1]}</b><br>Valor: %{text}<extra></extra>")
-                st.plotly_chart(fig_bar, use_container_width=True)
+                st.plotly_chart(fig_bar, width="stretch")
             else:
                 st.info("Não há valores empenhados para os filtros selecionados.")
         else:
@@ -867,7 +867,7 @@ try:
                 fig_tree = px.treemap(df_tree, path=[px.Constant(f"Ação {var_acao_codigo}"), 'Rotulo_Display'], values='Empenhado', color='Empenhado', color_continuous_scale='Greens', custom_data=['Valor_Abreviado'])
                 fig_tree.update_traces(texttemplate="<b>%{label}</b><br>%{customdata[0]}", textfont=dict(size=18), hovertemplate="<b>%{label}</b><br>Empenhado: %{customdata[0]}<extra></extra>")
                 fig_tree.update_layout(margin=dict(t=20, l=10, r=10, b=10), height=450)
-                st.plotly_chart(fig_tree, use_container_width=True)
+                st.plotly_chart(fig_tree, width="stretch")
             else:
                 st.info("Não há valores empenhados para detalhar nesta Ação.")
 
@@ -895,7 +895,7 @@ try:
                 trace.textposition = "top center"
             
             fig_line.update_layout(font=dict(size=18, color="black"), margin=dict(l=40, r=60, t=20, b=20), yaxis_range=[0, df_melt['Valor'].max() * 1.30], yaxis=dict(showticklabels=False), xaxis=dict(tickfont=dict(size=20, weight="bold")), legend=dict(orientation="h", y=1.05))
-            st.plotly_chart(fig_line, use_container_width=True)
+            st.plotly_chart(fig_line, width="stretch")
         else:
             st.info("Não há dados de evolução mensal para os filtros selecionados.")
 
@@ -1052,7 +1052,7 @@ try:
                 fig_var.add_vline(x=0, line_width=2, line_color="black")
                 max_abs = abs(df_chart_var[col_var_emp]).max()
                 fig_var.update_layout(font=dict(size=14, color="black"), yaxis=dict(tickfont=dict(size=15, color="#111827")), xaxis=dict(showticklabels=False, title="", range=[-max_abs * 1.35, max_abs * 1.35]), yaxis_title="", margin=dict(l=10, r=40, t=20, b=10), height=max(400, len(df_chart_var) * 45))
-                st.plotly_chart(fig_var, use_container_width=True)
+                st.plotly_chart(fig_var, width="stretch")
             else:
                 st.info("Não houve variação de Empenho para as naturezas neste período ou filtro selecionado.")
         else:
@@ -1060,7 +1060,7 @@ try:
 # ... aqui termina a renderização dos seus gráficos/tabelas ...
 
     # 1. Chame a função no final do bloco de sucesso (com a mesma indentação do try)
-    ativar_modo_apresentacao(loop_segundos=15, idle_segundos=45)
+    ativar_modo_apresentacao(loop_segundos=5, idle_segundos=20)
 # ==========================================
 # 7. TRATAMENTO DE ERROS (PLANO B VISUAL)
 # ==========================================
@@ -1070,7 +1070,7 @@ except Exception as e:
         <div style="background-color: #FEF2F2; border-left: 6px solid #DC2626; padding: 20px; border-radius: 5px; margin-top: 50px;">
             <h2 style="color: #991B1B; margin-top: 0;">⚠️ Ocorreu uma instabilidade no painel.</h2>
             <p style="color: #7F1D1D; font-size: 16px;">
-                Não se preocupe! *Isto geralmente ocorre devido a uma atualização recente nos dados do SIAFI ou um conflito temporário na memória do seu navegador. O erro técnico foi recolhido em segurança.
+                Não se preocupe! Isto geralmente ocorre devido a uma atualização recente nos dados do SIAFI ou um conflito temporário na memória do seu navegador. O erro técnico foi recolhido em segurança.
             </p>
         </div>
     """, unsafe_allow_html=True)
@@ -1079,7 +1079,7 @@ except Exception as e:
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         st.info("💡 Por favor, clique no botão abaixo para restaurar o sistema à sua operação normal:")
-        if st.button("🔄 Reiniciar e Limpar Cache do Sistema", use_container_width=True):
+        if st.button("🔄 Reiniciar e Limpar Cache do Sistema", width="stretch"):
             st.cache_data.clear()
             for key in list(st.session_state.keys()):
                 del st.session_state[key]
