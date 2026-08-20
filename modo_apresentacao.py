@@ -1,6 +1,6 @@
 import streamlit.components.v1 as components
 
-def ativar_modo_apresentacao(loop_segundos=15, idle_segundos=45):
+def ativar_modo_apresentacao(loop_segundos=5, idle_segundos=20):
     """Injeta JavaScript para alternar abas automaticamente e detectar inatividade."""
     loop_ms = loop_segundos * 1000
     idle_ms = idle_segundos * 1000
