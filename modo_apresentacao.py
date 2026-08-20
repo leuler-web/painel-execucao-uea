@@ -3,14 +3,17 @@ import streamlit as st
 
 def iniciar_modo_apresentacao(lista_abas, tempo_segundos=5):
     """
-    Alterna automaticamente entre as abas atualizando diretamente a chave
-    de estado do widget no Streamlit.
+    Alterna automaticamente entre as abas do Streamlit aplicando a troca
+    de estado ANTES da instanciação do widget de navegação.
     """
-    # 1. Inicializa o estado do Auto Play
+    # 1. Aplica a transição pendente antes de desenhar o widget na tela
+    if "proxima_aba" in st.session_state:
+        st.session_state.navegacao_apresentacao = st.session_state.pop("proxima_aba")
+
+    # 2. Inicializa os estados padrões caso não existam
     if "modo_auto_play" not in st.session_state:
         st.session_state.modo_auto_play = False
 
-    # 2. Inicializa a aba ativa garantindo que seja um item válido da lista
     if "navegacao_apresentacao" not in st.session_state or st.session_state.navegacao_apresentacao not in lista_abas:
         st.session_state.navegacao_apresentacao = lista_abas[0]
 
@@ -25,24 +28,23 @@ def iniciar_modo_apresentacao(lista_abas, tempo_segundos=5):
         )
 
     with col1:
-        # Ao passar a key, o Streamlit sincroniza automaticamente com st.session_state.navegacao_apresentacao
         aba_selecionada = st.segmented_control(
             "Navegação do Painel",
             options=lista_abas,
             key="navegacao_apresentacao"
         )
 
-    # 3. Executa a transição apenas se o botão estiver ligado
+    # 3. Aguarda o tempo e agenda a próxima aba se o botão estiver ligado
     if st.session_state.modo_auto_play:
         time.sleep(tempo_segundos)
         
-        # Descobre qual é a aba atual e calcula o próximo índice
+        # Descobre a posição atual e define o próximo índice
         aba_atual = st.session_state.navegacao_apresentacao
         idx_atual = lista_abas.index(aba_atual) if aba_atual in lista_abas else 0
         proximo_idx = (idx_atual + 1) % len(lista_abas)
         
-        # Atualiza a chave diretamente no Session State e recarrega a tela
-        st.session_state.navegacao_apresentacao = lista_abas[proximo_idx]
+        # Guarda a próxima aba e aciona o recarregamento
+        st.session_state.proxima_aba = lista_abas[proximo_idx]
         st.rerun()
 
     return aba_selecionada
