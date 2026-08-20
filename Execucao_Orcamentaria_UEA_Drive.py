@@ -300,11 +300,28 @@ def criar_grafico_receita_x_despesa(caminho_arquivo):
         ]
 
         def padronizar_mes(val):
-            v = str(val).strip().capitalize()[:3]
+            # Se for um objeto de data (Timestamp do pandas)
+            if isinstance(val, pd.Timestamp) or hasattr(val, 'month'):
+                mes_numero = val.month - 1  # 0 para Jan, 1 para Fev...
+                return meses_ordem[mes_numero]
+            
+            # Se for string (como "Janeiro" ou "2026-01-01")
+            v = str(val).strip()
+            
+            # Tenta converter de string "2026-01-01" para data
+            if '-' in v and len(v) >= 10:
+                try:
+                    data = pd.to_datetime(v)
+                    return meses_ordem[data.month - 1]
+                except:
+                    pass
+            
+            # Comportamento original para texto (Jan, Fev, etc)
+            v_texto = v.capitalize()[:3]
             for m in meses_ordem:
-                if m.lower() in v.lower():
+                if m.lower() in v_texto.lower():
                     return m
-            return v
+            return v_texto
 
         df["Mes_Padrao"] = df["Mês/Ano"].apply(padronizar_mes)
 
