@@ -908,7 +908,7 @@ try:
     with tab_receita_despesa:
         st.markdown(f"<div class='destaque-ano'>Análise da Receita Arrecadada x Despesa Realizada <span style='font-size: 16px; font-weight: normal; color: #6B7280;'>(última atualização: {dt_atual})</span></div>", unsafe_allow_html=True)
         
-        caminho_grupo_despesa = r"Gráfico_Grupo de Despesa.xlsx"
+        caminho_grupo_despesa = r"Grafico_Grupo de Despesa.xlsx"
         
         if os.path.exists(caminho_grupo_despesa):
             fig_rec_desp = criar_grafico_receita_x_despesa(caminho_grupo_despesa)
