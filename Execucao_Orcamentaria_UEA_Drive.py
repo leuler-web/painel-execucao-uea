@@ -823,17 +823,17 @@ try:
     # ==========================================
     # ABAS (TABS) - INCLUSÃO DA NOVA ABA
     # ==========================================
-    tab_visao, tab_top10, tab_evolucao, tab_projecao, tab_receita_despesa, tab_tabela, tab_var_natureza = st.tabs([
-        "🎯 Visão Estratégica", 
-        "🏆 Top 10",
-        "📈 Evolução Mensal",
-        "📉 Projeção vs. Realizado",
-        "⚖️ Receita vs. Despesa",
-        "🔍 Tabela de Variações",
-        "📊 Variação por Natureza"
-    ])
+    aba_atual = iniciar_modo_apresentacao([
+    "🎯 Visão Estratégica",
+    "🏆 Top 10",
+    "📈 Evolução Mensal",
+    "📉 Projeção vs. Realizado",
+    "⚖️ Receita vs. Despesa",
+    "🔍 Tabela de Variações",
+    "📊 Variação por Natureza"
+])
 
-    with tab_visao:
+    if aba_atual == "🎯 Visão Estratégica":
         st.subheader("📊 Panorama Geral por Grupo de Despesa")
         fig_grupo = criar_grafico_grupo_despesa(df_latest)
         if fig_grupo is not None:
@@ -841,7 +841,7 @@ try:
         else:
             st.info("A coluna 'Grupo de Despesas' não foi identificada ou está vazia na base de dados atual.")
             
-    with tab_top10:
+    elif aba_atual == "🏆 Top 10":
         if var_acao_codigo == "Todas":
             st.subheader("Top 10 Maiores Despesas por Ação (Empenhado)")
             df_top = df_latest.groupby('Ação')['Empenhado'].sum().nlargest(10).reset_index()
@@ -883,7 +883,7 @@ try:
             else:
                 st.info("Não há valores empenhados para detalhar nesta Ação.")
 
-    with tab_evolucao:
+    elif aba_atual == "📈 Evolução Mensal":
         st.markdown(f"<div class='destaque-ano'>Evolução Mensal da Execução - Ano {ano_dinamico} <span style='font-size: 16px; font-weight: normal; color: #6B7280;'>(última atualização: {dt_atual})</span></div>", unsafe_allow_html=True)
         
         colunas_ex = [col for col in ['Autorizado', 'Empenhado', 'Liquidado', 'Pago', 'Disponível'] if col in df_base.columns]
@@ -911,7 +911,7 @@ try:
         else:
             st.info("Não há dados de evolução mensal para os filtros selecionados.")
 
-    with tab_projecao:
+    elif aba_atual == "📉 Projeção vs. Realizado":
         st.markdown(f"<div class='destaque-ano'>Projeção Orçamentária - Ano {ano_dinamico} <span style='font-size: 16px; font-weight: normal; color: #6B7280;'>(última atualização: {dt_atual})</span></div>", unsafe_allow_html=True)
         
         caminho_projecao = r"Projecao_2026.xlsx"
@@ -937,7 +937,7 @@ try:
             st.warning("⚠️ Arquivo de projeção não encontrado.")
 
     # AQUI ESTÁ A NOVA ABA COM O GRÁFICO INSERIDO
-    with tab_receita_despesa:
+    elif aba_atual == "⚖️ Receita vs. Despesa":
         st.markdown(f"<div class='destaque-ano'>Análise da Receita Arrecadada x Despesa Realizada <span style='font-size: 16px; font-weight: normal; color: #6B7280;'>(última atualização: {dt_atual})</span></div>", unsafe_allow_html=True)
         
         caminho_grupo_despesa = r"Grafico_Grupo de Despesa.xlsx"
@@ -951,7 +951,7 @@ try:
         else:
             st.warning(f"⚠️ Arquivo '{caminho_grupo_despesa}' não encontrado na pasta do projeto.")
 
-    with tab_tabela:
+    elif aba_atual == "🔍 Tabela de Variações":
         st.markdown(f"<div class='periodo-destaque'>📅 {texto_periodo}</div>", unsafe_allow_html=True)
         st.subheader("Tabela de Variações")
         
@@ -1028,7 +1028,7 @@ try:
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
 
-    with tab_var_natureza:
+    elif aba_atual == "📊 Variação por Natureza":
         if var_acao_codigo != "Todas":
             titulo_dinamico = f"Detalhamento da variação do Empenhado<br><span style='font-size: 20px; color: #4B5563;'>da Ação: {var_acao_str}</span>"
         else:
