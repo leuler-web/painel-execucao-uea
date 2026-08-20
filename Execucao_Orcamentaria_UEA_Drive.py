@@ -7,6 +7,8 @@ import re
 from io import BytesIO
 import matplotlib.pyplot as plt
 from modo_apresentacao import ativar_modo_apresentacao
+import os
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 # ==========================================
 # 1. CONFIGURAÇÃO DA PÁGINA
@@ -1063,11 +1065,12 @@ try:
 # 7. TRATAMENTO DE ERROS (PLANO B VISUAL)
 # ==========================================
 except Exception as e:
+    st.error(f"Erro técnico encontrado: {e}")  # <-- Adicione apenas esta linha temporariamente
     st.markdown("""
         <div style="background-color: #FEF2F2; border-left: 6px solid #DC2626; padding: 20px; border-radius: 5px; margin-top: 50px;">
             <h2 style="color: #991B1B; margin-top: 0;">⚠️ Ocorreu uma instabilidade no painel.</h2>
             <p style="color: #7F1D1D; font-size: 16px;">
-                Não se preocupe! Isto geralmente ocorre devido a uma atualização recente nos dados do SIAFI ou um conflito temporário na memória do seu navegador. O erro técnico foi recolhido em segurança.
+                Não se preocupe! *Isto geralmente ocorre devido a uma atualização recente nos dados do SIAFI ou um conflito temporário na memória do seu navegador. O erro técnico foi recolhido em segurança.
             </p>
         </div>
     """, unsafe_allow_html=True)
