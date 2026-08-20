@@ -288,7 +288,7 @@ def criar_grafico_grupo_despesa(df_filtrado):
         return None
 
 def criar_grafico_receita_x_despesa(caminho_arquivo):
-    """Lê a aba 'Receita X Despesa' e gera o gráfico comparativo de linhas com tabela"""
+    """Lê a aba 'ReceitaXDespesa' e gera o gráfico comparativo de linhas com tabela"""
     try:
         df = pd.read_excel(caminho_arquivo, sheet_name="ReceitaXDespesa")
         df.columns = [str(c).strip() for c in df.columns]
@@ -915,7 +915,7 @@ try:
             if fig_rec_desp is not None:
                 st.pyplot(fig_rec_desp)
             else:
-                st.warning("⚠️ Não foi possível gerar o gráfico. Verifique se a aba 'Receita X Despesa' existe e está preenchida corretamente no arquivo.")
+                st.warning("⚠️ Não foi possível gerar o gráfico. Verifique se a aba 'ReceitaXDespesa' existe e está preenchida corretamente no arquivo.")
         else:
             st.warning(f"⚠️ Arquivo '{caminho_grupo_despesa}' não encontrado na pasta do projeto.")
 
