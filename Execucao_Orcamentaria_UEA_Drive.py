@@ -290,7 +290,7 @@ def criar_grafico_grupo_despesa(df_filtrado):
 def criar_grafico_receita_x_despesa(caminho_arquivo):
     """Lê a aba 'Receita X Despesa' e gera o gráfico comparativo de linhas com tabela"""
     try:
-        df = pd.read_excel(caminho_arquivo, sheet_name="Receita X Despesa")
+        df = pd.read_excel(caminho_arquivo, sheet_name="ReceitaXDespesa")
         df.columns = [str(c).strip() for c in df.columns]
         df["Valor"] = df["Valor"].apply(extrair_numero)
 
