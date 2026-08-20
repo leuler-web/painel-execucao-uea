@@ -303,15 +303,11 @@ def criar_grafico_receita_x_despesa(caminho_arquivo):
         ]
 
         def padronizar_mes(val):
-            # Se for um objeto de data (Timestamp do pandas)
             if isinstance(val, pd.Timestamp) or hasattr(val, 'month'):
-                mes_numero = val.month - 1  # 0 para Jan, 1 para Fev...
+                mes_numero = val.month - 1
                 return meses_ordem[mes_numero]
             
-            # Se for string (como "Janeiro" ou "2026-01-01")
             v = str(val).strip()
-            
-            # Tenta converter de string "2026-01-01" para data
             if '-' in v and len(v) >= 10:
                 try:
                     data = pd.to_datetime(v)
@@ -319,7 +315,6 @@ def criar_grafico_receita_x_despesa(caminho_arquivo):
                 except:
                     pass
             
-            # Comportamento original para texto (Jan, Fev, etc)
             v_texto = v.capitalize()[:3]
             for m in meses_ordem:
                 if m.lower() in v_texto.lower():
@@ -338,27 +333,35 @@ def criar_grafico_receita_x_despesa(caminho_arquivo):
                 df_pivot[m] = np.nan
         df_pivot = df_pivot[meses_ordem]
 
-        categorias = [
+        # Nomes originais para busca dos dados
+        categorias_busca = [
             "LOA (A)",
             "Receita Arrecadada (B)",
             "Despesa Realizada (C)",
             "Saldo (B-C)",
         ]
 
+        # 3. Cabeçalhos com "(milhões)" para exibição na tabela
+        categorias_exibicao = [
+            "LOA (A) (milhões)",
+            "Receita Arrecadada (B) (milhões)",
+            "Despesa Realizada (C) (milhões)",
+            "Saldo (B-C) (milhões)",
+        ]
+
         estilos = {
-            "LOA (A)": {"color": "#3B82F6", "marker": "o"},  # Azul
-            "Receita Arrecadada (B)": {"color": "#F97316", "marker": "o"},  # Laranja
-            "Despesa Realizada (C)": {"color": "#9CA3AF", "marker": "o"},  # Cinza
-            "Saldo (B-C)": {"color": "#EAB308", "marker": "x"},  # Amarelo com X
+            "LOA (A)": {"color": "#3B82F6", "marker": "o"},
+            "Receita Arrecadada (B)": {"color": "#F97316", "marker": "o"},
+            "Despesa Realizada (C)": {"color": "#9CA3AF", "marker": "o"},
+            "Saldo (B-C)": {"color": "#EAB308", "marker": "x"},
         }
 
-        # Criação da figura com espaço dedicado para o gráfico e para a tabela
         fig, (ax1, ax2) = plt.subplots(
             2, 1, figsize=(14, 7), gridspec_kw={"height_ratios": [2.8, 1.2]}, sharex=False
         )
 
-        # Plotagem das linhas
-        for cat in categorias:
+        # Plotagem das linhas (apenas os 12 meses, sem o Total)
+        for cat in categorias_busca:
             if cat in df_pivot.index:
                 valores = df_pivot.loc[cat].values
                 estilo = estilos.get(cat, {"color": "#333333", "marker": "o"})
@@ -366,7 +369,9 @@ def criar_grafico_receita_x_despesa(caminho_arquivo):
                     meses_ordem, valores, label=cat, linewidth=1.8, markersize=5, **estilo
                 )
 
-        # Título do Gráfico
+        # 1. Ativação da Legenda no gráfico
+        ax1.legend(loc="upper right", fontsize=9, frameon=True, facecolor="white", edgecolor="#D1D5DB")
+
         ax1.set_title(
             "ANÁLISE DA RECEITA ARRECADADA X DESPESA REALIZADA\n(Fonte 1.599.116) - 2026",
             fontsize=13, fontweight="bold", pad=15
@@ -375,7 +380,6 @@ def criar_grafico_receita_x_despesa(caminho_arquivo):
         ax1.grid(True, linestyle="-", alpha=0.3, color="#D1D5DB")
         ax1.set_xlim(-0.5, 11.5)
 
-        # Formatação do Eixo Y no padrão brasileiro (100.000.000,00)
         def formata_y_br(x, pos):
             return f"{x:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
@@ -386,31 +390,39 @@ def criar_grafico_receita_x_despesa(caminho_arquivo):
         for spine in ["top", "right"]:
             ax1.spines[spine].set_visible(False)
 
-        # Construção da Tabela Acoplada
+        # 2. Construção da Tabela com a coluna Total extra
         ax2.axis("off")
+        col_labels = meses_ordem + ["Total"]
 
         cell_text = []
-        for cat in categorias:
+        for cat in categorias_busca:
             linha = []
             if cat in df_pivot.index:
-                for val in df_pivot.loc[cat].values:
+                valores = df_pivot.loc[cat].values
+                for val in valores:
                     if pd.isna(val) or val == 0:
                         linha.append("")
                     else:
                         linha.append(f"{val:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+                
+                # Soma da linha para a coluna Total
+                total_val = np.nansum(valores)
+                if total_val != 0:
+                    linha.append(f"{total_val:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+                else:
+                    linha.append("")
             else:
-                linha = [""] * 12
+                linha = [""] * 13
             cell_text.append(linha)
 
         tabela = ax2.table(
-            cellText=cell_text, rowLabels=categorias, colLabels=meses_ordem, cellLoc="center", loc="center"
+            cellText=cell_text, rowLabels=categorias_exibicao, colLabels=col_labels, cellLoc="center", loc="center"
         )
 
         tabela.auto_set_font_size(False)
         tabela.set_fontsize(8)
         tabela.scale(1, 1.4)
 
-        # Estilização das células da tabela
         for (row, col), cell in tabela.get_celld().items():
             cell.set_edgecolor("#D1D5DB")
             if row == 0:
