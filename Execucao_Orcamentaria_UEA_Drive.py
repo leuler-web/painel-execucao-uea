@@ -837,7 +837,7 @@ try:
             if os.path.exists(caminho_projecao):
                 fig_tendencia = criar_grafico_tendencia_global(caminho_projecao)
                 if fig_tendencia is not None:
-                    st.subheader("📉 LOA vs. Empenhado vs. Projeção vs Disponível - (Ação 2003: Folha de Pagamento)")
+                    st.subheader("📉 LOA vs. Empenhado vs. Projeção vs Disponível - (Ação 2003: Folha de Pagamento - UEA)")
                     st.pyplot(fig_tendencia)
                     plt.close(fig_tendencia)
                 else: st.warning("⚠️ Planilha de projeção não encontrada ou com formato inválido.")
