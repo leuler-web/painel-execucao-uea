@@ -98,7 +98,7 @@ def destacar_celulas_com_variacao(df):
     return estilos
 
 def criar_grafico_tendencia_global(caminho_planilha_proj):
-    """Cria o gráfico Empenhado vs. Projeção vs. LOA com tabela integrada (Agora com Disponível e Saldo)"""
+    """Cria o gráfico Empenhado vs. Projeção vs. LOA com tabela integrada (Agora com Disponível, Saldo e TOTAL)"""
     try:
         df_proj_raw = pd.read_excel(caminho_planilha_proj)
         meses_eixo = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ']
@@ -160,11 +160,12 @@ def criar_grafico_tendencia_global(caminho_planilha_proj):
         if row_disp is not None:
             ax1.plot(meses_eixo, [v if v > 0 else None for v in disponivel], marker='D', label='Disponível (D)', color='#10B981', linewidth=2)
         if row_saldo is not None:
-            ax1.plot(meses_eixo, [v if v != 0 else None for v in saldo], marker='X', label='Saldo Restante', color='#EF4444', linewidth=2, linestyle='-.')
+            # Substituindo 'Saldo Restante' por 'Saldo(D-C)'
+            ax1.plot(meses_eixo, [v if v != 0 else None for v in saldo], marker='X', label='Saldo(D-C)', color='#EF4444', linewidth=2, linestyle='-.')
             
         ax1.legend(loc='upper left', fontsize=10)
         ax1.grid(True, alpha=0.2)
-        ax1.set_title('Empenhado vs. Projeção vs. LOA e Saldos', fontweight='bold', fontsize=14)
+        # O título interno foi removido conforme solicitado.
         ax1.ticklabel_format(style='plain', axis='y')
         ax1.set_xlim(-0.5, 11.5)
         ax1.margins(x=0.04)
@@ -178,20 +179,37 @@ def criar_grafico_tendencia_global(caminho_planilha_proj):
         ax2.axis('off')
         meses_disp = [m for m in meses_eixo if m in df_proj_raw.columns]
         
-        dados_loa = [formatar_moeda_curta(converter_br_para_float(row_loa[m])) for m in meses_disp]
-        dados_emp = [formatar_moeda_curta(converter_br_para_float(row_emp[m])) if converter_br_para_float(row_emp[m]) > 0 else '-' for m in meses_disp]
-        dados_prj = [formatar_moeda_curta(converter_br_para_float(row_prj[m])) if converter_br_para_float(row_prj[m]) > 0 else '-' for m in meses_disp]
-        dados_disp = [formatar_moeda_curta(converter_br_para_float(row_disp[m])) if (row_disp is not None and converter_br_para_float(row_disp[m]) != 0) else '-' for m in meses_disp]
-        dados_saldo = [formatar_moeda_curta(converter_br_para_float(row_saldo[m])) if (row_saldo is not None and converter_br_para_float(row_saldo[m]) != 0) else '-' for m in meses_disp]
+        # Extraindo dados brutos apenas dos meses que existem na planilha para fazer a soma final
+        raw_loa = [converter_br_para_float(row_loa[m]) for m in meses_disp]
+        raw_emp = [converter_br_para_float(row_emp[m]) for m in meses_disp]
+        raw_prj = [converter_br_para_float(row_prj[m]) for m in meses_disp]
+        raw_disp = [converter_br_para_float(row_disp[m]) for m in meses_disp] if row_disp is not None else [0]*len(meses_disp)
+        raw_saldo = [converter_br_para_float(row_saldo[m]) for m in meses_disp] if row_saldo is not None else [0]*len(meses_disp)
         
+        # Formatando os valores de cada mês
+        dados_loa = [formatar_moeda_curta(v) for v in raw_loa]
+        dados_emp = [formatar_moeda_curta(v) if v > 0 else '-' for v in raw_emp]
+        dados_prj = [formatar_moeda_curta(v) if v > 0 else '-' for v in raw_prj]
+        dados_disp = [formatar_moeda_curta(v) if (row_disp is not None and v != 0) else '-' for v in raw_disp]
+        dados_saldo = [formatar_moeda_curta(v) if (row_saldo is not None and v != 0) else '-' for v in raw_saldo]
+        
+        # Calculando e formatando os totais gerais (soma)
+        tot_loa = formatar_moeda_curta(sum(raw_loa))
+        tot_emp = formatar_moeda_curta(sum(raw_emp)) if sum(raw_emp) > 0 else '-'
+        tot_prj = formatar_moeda_curta(sum(raw_prj)) if sum(raw_prj) > 0 else '-'
+        tot_disp = formatar_moeda_curta(sum(raw_disp)) if (row_disp is not None and sum(raw_disp) != 0) else '-'
+        tot_saldo = formatar_moeda_curta(sum(raw_saldo)) if (row_saldo is not None and sum(raw_saldo) != 0) else '-'
+        
+        # Incluindo a coluna TOTAL no fim da tabela
         cell_text = [
-            ['LOA (A)'] + dados_loa,
-            ['Empenho (B)'] + dados_emp,
-            ['Projeção (C)'] + dados_prj,
-            ['Disponível (D)'] + dados_disp,
-            ['Saldo Restante'] + dados_saldo
+            ['LOA (A)'] + dados_loa + [tot_loa],
+            ['Empenho (B)'] + dados_emp + [tot_emp],
+            ['Projeção (C)'] + dados_prj + [tot_prj],
+            ['Disponível (D)'] + dados_disp + [tot_disp],
+            ['Saldo(D-C)'] + dados_saldo + [tot_saldo]
         ]
-        col_labels = [''] + meses_disp
+        
+        col_labels = [''] + meses_disp + ['TOTAL']
         
         tabela = ax2.table(cellText=cell_text, colLabels=col_labels, cellLoc='center', loc='center')
         tabela.auto_set_font_size(False)
@@ -808,7 +826,8 @@ try:
             if os.path.exists(caminho_projecao):
                 fig_tendencia = criar_grafico_tendencia_global(caminho_projecao)
                 if fig_tendencia is not None:
-                    st.subheader("📉 Empenhado vs. Projeção vs. LOA")
+                    # ATUALIZAÇÃO: Título externo configurado exatamente como você pediu
+                    st.subheader("📉 LOA vs. Empenhado vs. Projeção vs Disponível - (Ação: 2003 - REMUNERAÇÃO DE PESSOAL ATIVO DO ESTADO E ENCARGOS SOCIAIS)")
                     st.pyplot(fig_tendencia)
                     plt.close(fig_tendencia)
                 else: st.warning("⚠️ Planilha de projeção não encontrada ou com formato inválido.")
