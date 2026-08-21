@@ -827,7 +827,7 @@ try:
                 fig_tendencia = criar_grafico_tendencia_global(caminho_projecao)
                 if fig_tendencia is not None:
                     # ATUALIZAÇÃO: Título externo configurado exatamente como você pediu
-                    st.subheader("📉 LOA vs. Empenhado vs. Projeção vs Disponível - (Ação: 2003 - REMUNERAÇÃO DE PESSOAL ATIVO DO ESTADO E ENCARGOS SOCIAIS)")
+                    st.subheader("📉 LOA vs. Empenhado vs. Projeção vs Disponível - (Ação: 2003 - Remuneração de Pessoal Ativo do Estado e Encargos Sociais)")
                     st.pyplot(fig_tendencia)
                     plt.close(fig_tendencia)
                 else: st.warning("⚠️ Planilha de projeção não encontrada ou com formato inválido.")
