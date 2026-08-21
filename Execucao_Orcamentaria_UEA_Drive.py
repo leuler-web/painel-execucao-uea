@@ -563,8 +563,8 @@ try:
     try:
         val_ant = df_var['Data_Extracao_Anterior'].dropna().iloc[0]
         val_atual = df_var['Data_Extracao_Atual'].dropna().iloc[0]
-        dt_ant = pd.to_datetime(val_ant, errors='coerce').strftime('%d/%m/%Y')
-        dt_atual = pd.to_datetime(val_atual, errors='coerce').strftime('%d/%m/%Y')
+        dt_ant = pd.to_datetime(val_ant, errors='coerce').strftime('%d/%m/%Y às %H:%M')
+        dt_atual = pd.to_datetime(val_atual, errors='coerce').strftime('%d/%m/%Y às %H:%M')
         texto_periodo = f"Posição Consolidada da Base: {dt_atual}" if dt_ant == dt_atual else f"Comparativo Automático: Extrato de {dt_ant} até {dt_atual}"
     except Exception: 
         dt_atual = "N/D"
