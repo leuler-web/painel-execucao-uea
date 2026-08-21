@@ -98,15 +98,19 @@ def destacar_celulas_com_variacao(df):
     return estilos
 
 def criar_grafico_tendencia_global(caminho_planilha_proj):
-    """Cria o gráfico Empenhado vs. Projeção vs. LOA com tabela integrada"""
+    """Cria o gráfico Empenhado vs. Projeção vs. LOA com tabela integrada (Agora com Disponível e Saldo)"""
     try:
         df_proj_raw = pd.read_excel(caminho_planilha_proj)
         meses_eixo = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ']
         
         primeira_coluna = df_proj_raw.iloc[:,0].astype(str).str.upper()
+        
+        # Mapeamento de todas as linhas necessárias
         mask_loa = primeira_coluna.str.contains("LOA", na=False)
         mask_emp = primeira_coluna.str.contains("EMPENHO", na=False)
         mask_prj = primeira_coluna.str.contains("PROJE", na=False)
+        mask_disp = primeira_coluna.str.contains("DISPON", na=False)
+        mask_saldo = primeira_coluna.str.contains("SALDO", na=False)
         
         if not (mask_loa.any() and mask_emp.any() and mask_prj.any()):
             return None
@@ -114,6 +118,8 @@ def criar_grafico_tendencia_global(caminho_planilha_proj):
         row_loa = df_proj_raw[mask_loa].iloc[0]
         row_emp = df_proj_raw[mask_emp].iloc[0]
         row_prj = df_proj_raw[mask_prj].iloc[0]
+        row_disp = df_proj_raw[mask_disp].iloc[0] if mask_disp.any() else None
+        row_saldo = df_proj_raw[mask_saldo].iloc[0] if mask_saldo.any() else None
         
         def converter_br_para_float(valor):
             if pd.isna(valor) or valor == '-': return 0.0
@@ -124,9 +130,12 @@ def criar_grafico_tendencia_global(caminho_planilha_proj):
             try: return float(v_str)
             except: return 0.0
         
+        # Extração de valores
         loa = [converter_br_para_float(row_loa[m]) for m in meses_eixo]
         executado = [converter_br_para_float(row_emp[m]) for m in meses_eixo]
         projetado = [converter_br_para_float(row_prj[m]) for m in meses_eixo]
+        disponivel = [converter_br_para_float(row_disp[m]) if row_disp is not None else 0.0 for m in meses_eixo]
+        saldo = [converter_br_para_float(row_saldo[m]) if row_saldo is not None else 0.0 for m in meses_eixo]
         
         final_exec = 0
         for i, v in enumerate(executado):
@@ -139,14 +148,23 @@ def criar_grafico_tendencia_global(caminho_planilha_proj):
         
         executado_display = [v if v > 0 else None for v in executado[:final_exec+1]] + [None]*(12 - final_exec - 1)
         
-        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(18, 8), gridspec_kw={'height_ratios': [3, 1]})
+        # Ajuste de layout para caber a tabela maior (2.5 vs 1.5)
+        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(18, 9), gridspec_kw={'height_ratios': [2.5, 1.5]})
         
+        # Plotagem das linhas
         ax1.plot(meses_eixo, loa, marker='^', label='LOA', color='#8B5CF6', linewidth=2, linestyle=':')
         ax1.plot(meses_eixo, executado_display, marker='o', label='Empenhado (AFI)', color='#0D47A1', linewidth=4)
         ax1.plot(meses_eixo, projetado_display, marker='s', label='Projetado (Meta)', color='#FF8F00', linewidth=3, linestyle='--')
+        
+        # Novas Linhas
+        if row_disp is not None:
+            ax1.plot(meses_eixo, [v if v > 0 else None for v in disponivel], marker='D', label='Disponível (D)', color='#10B981', linewidth=2)
+        if row_saldo is not None:
+            ax1.plot(meses_eixo, [v if v != 0 else None for v in saldo], marker='X', label='Saldo Restante', color='#EF4444', linewidth=2, linestyle='-.')
+            
         ax1.legend(loc='upper left', fontsize=10)
         ax1.grid(True, alpha=0.2)
-        ax1.set_title('Empenhado vs. Projeção vs. LOA', fontweight='bold', fontsize=14)
+        ax1.set_title('Empenhado vs. Projeção vs. LOA e Saldos', fontweight='bold', fontsize=14)
         ax1.ticklabel_format(style='plain', axis='y')
         ax1.set_xlim(-0.5, 11.5)
         ax1.margins(x=0.04)
@@ -163,11 +181,15 @@ def criar_grafico_tendencia_global(caminho_planilha_proj):
         dados_loa = [formatar_moeda_curta(converter_br_para_float(row_loa[m])) for m in meses_disp]
         dados_emp = [formatar_moeda_curta(converter_br_para_float(row_emp[m])) if converter_br_para_float(row_emp[m]) > 0 else '-' for m in meses_disp]
         dados_prj = [formatar_moeda_curta(converter_br_para_float(row_prj[m])) if converter_br_para_float(row_prj[m]) > 0 else '-' for m in meses_disp]
+        dados_disp = [formatar_moeda_curta(converter_br_para_float(row_disp[m])) if (row_disp is not None and converter_br_para_float(row_disp[m]) != 0) else '-' for m in meses_disp]
+        dados_saldo = [formatar_moeda_curta(converter_br_para_float(row_saldo[m])) if (row_saldo is not None and converter_br_para_float(row_saldo[m]) != 0) else '-' for m in meses_disp]
         
         cell_text = [
             ['LOA (A)'] + dados_loa,
             ['Empenho (B)'] + dados_emp,
-            ['Projeção (C)'] + dados_prj
+            ['Projeção (C)'] + dados_prj,
+            ['Disponível (D)'] + dados_disp,
+            ['Saldo Restante'] + dados_saldo
         ]
         col_labels = [''] + meses_disp
         
@@ -179,13 +201,15 @@ def criar_grafico_tendencia_global(caminho_planilha_proj):
         for j in range(len(col_labels)):
             tabela[0, j].set_facecolor('#1E3A8A')
             tabela[0, j].set_text_props(color='white', fontweight='bold')
-        for i in range(1, 4):
+            
+        # Aplica estilo às linhas de cabeçalho da tabela dinamicamente
+        for i in range(1, len(cell_text) + 1):
             tabela[i, 0].set_facecolor('#E8EAF6')
             tabela[i, 0].set_text_props(fontweight='bold')
         
         plt.tight_layout(pad=2)
         return fig
-    except Exception:
+    except Exception as e:
         return None
 
 def criar_grafico_grupo_despesa(df_filtrado):
@@ -921,7 +945,7 @@ except Exception as e:
             <p style="color: #7F1D1D; font-size: 16px;">
                 Não se preocupe! Isto geralmente ocorre devido a uma atualização recente nos dados do SIAFI ou conflito de memória.
             </p>
-            <p style="color: #991B1B; font-size: 13px;"><b>Erro técnico detalhado:</b> {e}</p>
+            <p style="color: #991B1B; font-size: 13px;"><b>Erro técnico detalhado:</b> {{e}}</p>
         </div>
     """, unsafe_allow_html=True)
     
