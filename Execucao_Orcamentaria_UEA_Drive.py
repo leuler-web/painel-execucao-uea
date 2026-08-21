@@ -98,7 +98,7 @@ def destacar_celulas_com_variacao(df):
     return estilos
 
 def criar_grafico_tendencia_global(caminho_planilha_proj):
-    """Cria o gráfico Empenhado vs. Projeção vs. LOA com tabela integrada (Agora com Disponível, Saldo e TOTAL)"""
+    """Cria o gráfico Empenhado vs. Projeção vs. LOA com tabela integrada (Buscando o TOTAL direto da planilha)"""
     try:
         df_proj_raw = pd.read_excel(caminho_planilha_proj)
         meses_eixo = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ']
@@ -130,7 +130,7 @@ def criar_grafico_tendencia_global(caminho_planilha_proj):
             try: return float(v_str)
             except: return 0.0
         
-        # Extração de valores
+        # Extração de valores mensais
         loa = [converter_br_para_float(row_loa[m]) for m in meses_eixo]
         executado = [converter_br_para_float(row_emp[m]) for m in meses_eixo]
         projetado = [converter_br_para_float(row_prj[m]) for m in meses_eixo]
@@ -148,24 +148,20 @@ def criar_grafico_tendencia_global(caminho_planilha_proj):
         
         executado_display = [v if v > 0 else None for v in executado[:final_exec+1]] + [None]*(12 - final_exec - 1)
         
-        # Ajuste de layout para caber a tabela maior (2.5 vs 1.5)
+        # Plotagem do gráfico
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(18, 9), gridspec_kw={'height_ratios': [2.5, 1.5]})
         
-        # Plotagem das linhas
         ax1.plot(meses_eixo, loa, marker='^', label='LOA', color='#8B5CF6', linewidth=2, linestyle=':')
         ax1.plot(meses_eixo, executado_display, marker='o', label='Empenhado (AFI)', color='#0D47A1', linewidth=4)
         ax1.plot(meses_eixo, projetado_display, marker='s', label='Projetado (Meta)', color='#FF8F00', linewidth=3, linestyle='--')
         
-        # Novas Linhas
         if row_disp is not None:
             ax1.plot(meses_eixo, [v if v > 0 else None for v in disponivel], marker='D', label='Disponível (D)', color='#10B981', linewidth=2)
         if row_saldo is not None:
-            # Substituindo 'Saldo Restante' por 'Saldo(D-C)'
             ax1.plot(meses_eixo, [v if v != 0 else None for v in saldo], marker='X', label='Saldo(D-C)', color='#EF4444', linewidth=2, linestyle='-.')
             
         ax1.legend(loc='upper left', fontsize=10)
         ax1.grid(True, alpha=0.2)
-        # O título interno foi removido conforme solicitado.
         ax1.ticklabel_format(style='plain', axis='y')
         ax1.set_xlim(-0.5, 11.5)
         ax1.margins(x=0.04)
@@ -179,34 +175,50 @@ def criar_grafico_tendencia_global(caminho_planilha_proj):
         ax2.axis('off')
         meses_disp = [m for m in meses_eixo if m in df_proj_raw.columns]
         
-        # Extraindo dados brutos apenas dos meses que existem na planilha para fazer a soma final
         raw_loa = [converter_br_para_float(row_loa[m]) for m in meses_disp]
         raw_emp = [converter_br_para_float(row_emp[m]) for m in meses_disp]
         raw_prj = [converter_br_para_float(row_prj[m]) for m in meses_disp]
         raw_disp = [converter_br_para_float(row_disp[m]) for m in meses_disp] if row_disp is not None else [0]*len(meses_disp)
         raw_saldo = [converter_br_para_float(row_saldo[m]) for m in meses_disp] if row_saldo is not None else [0]*len(meses_disp)
         
-        # Formatando os valores de cada mês
+        # Identificando a coluna de TOTAL na planilha Excel (independente de estar escrita como Total, TOTAL, etc.)
+        col_total = next((c for c in df_proj_raw.columns if 'TOTAL' in str(c).upper()), None)
+        
+        # Função para extrair o valor da planilha ou somar caso a coluna total não seja encontrada
+        def obter_total_real(row, raw_list):
+            if row is None: return 0.0
+            if col_total and col_total in row.index:
+                return converter_br_para_float(row[col_total])
+            return sum(raw_list)
+
+        # Extraindo os totais baseados nas fórmulas do Excel
+        val_tot_loa = obter_total_real(row_loa, raw_loa)
+        val_tot_emp = obter_total_real(row_emp, raw_emp)
+        val_tot_prj = obter_total_real(row_prj, raw_prj)
+        val_tot_disp = obter_total_real(row_disp, raw_disp)
+        val_tot_saldo = obter_total_real(row_saldo, raw_saldo)
+
+        # Formatando os valores dos meses
         dados_loa = [formatar_moeda_curta(v) for v in raw_loa]
         dados_emp = [formatar_moeda_curta(v) if v > 0 else '-' for v in raw_emp]
         dados_prj = [formatar_moeda_curta(v) if v > 0 else '-' for v in raw_prj]
         dados_disp = [formatar_moeda_curta(v) if (row_disp is not None and v != 0) else '-' for v in raw_disp]
         dados_saldo = [formatar_moeda_curta(v) if (row_saldo is not None and v != 0) else '-' for v in raw_saldo]
         
-        # Calculando e formatando os totais gerais (soma)
-        tot_loa = formatar_moeda_curta(sum(raw_loa))
-        tot_emp = formatar_moeda_curta(sum(raw_emp)) if sum(raw_emp) > 0 else '-'
-        tot_prj = formatar_moeda_curta(sum(raw_prj)) if sum(raw_prj) > 0 else '-'
-        tot_disp = formatar_moeda_curta(sum(raw_disp)) if (row_disp is not None and sum(raw_disp) != 0) else '-'
-        tot_saldo = formatar_moeda_curta(sum(raw_saldo)) if (row_saldo is not None and sum(raw_saldo) != 0) else '-'
+        # Formatando os valores Totais da planilha
+        str_tot_loa = formatar_moeda_curta(val_tot_loa)
+        str_tot_emp = formatar_moeda_curta(val_tot_emp) if val_tot_emp != 0 else '-'
+        str_tot_prj = formatar_moeda_curta(val_tot_prj) if val_tot_prj != 0 else '-'
+        str_tot_disp = formatar_moeda_curta(val_tot_disp) if val_tot_disp != 0 else '-'
+        str_tot_saldo = formatar_moeda_curta(val_tot_saldo) if val_tot_saldo != 0 else '-'
         
         # Incluindo a coluna TOTAL no fim da tabela
         cell_text = [
-            ['LOA (A)'] + dados_loa + [tot_loa],
-            ['Empenho (B)'] + dados_emp + [tot_emp],
-            ['Projeção (C)'] + dados_prj + [tot_prj],
-            ['Disponível (D)'] + dados_disp + [tot_disp],
-            ['Saldo(D-C)'] + dados_saldo + [tot_saldo]
+            ['LOA (A)'] + dados_loa + [str_tot_loa],
+            ['Empenho (B)'] + dados_emp + [str_tot_emp],
+            ['Projeção (C)'] + dados_prj + [str_tot_prj],
+            ['Disponível (D)'] + dados_disp + [str_tot_disp],
+            ['Saldo(D-C)'] + dados_saldo + [str_tot_saldo]
         ]
         
         col_labels = [''] + meses_disp + ['TOTAL']
@@ -220,7 +232,6 @@ def criar_grafico_tendencia_global(caminho_planilha_proj):
             tabela[0, j].set_facecolor('#1E3A8A')
             tabela[0, j].set_text_props(color='white', fontweight='bold')
             
-        # Aplica estilo às linhas de cabeçalho da tabela dinamicamente
         for i in range(1, len(cell_text) + 1):
             tabela[i, 0].set_facecolor('#E8EAF6')
             tabela[i, 0].set_text_props(fontweight='bold')
@@ -560,7 +571,7 @@ try:
         texto_periodo = "Aguardando atualização da base de dados."
 
     if 'Mês Referência' in df_base.columns:
-        def identificar_mes_streamlit(texto):
+        def identifying_mes_streamlit(texto):
             t = str(texto).upper().strip()
             if 'JAN' in t: return 'Janeiro'
             if 'FEV' in t: return 'Fevereiro'
@@ -576,7 +587,7 @@ try:
             if 'DEZ' in t: return 'Dezembro'
             return t.capitalize()
 
-        df_base['Mes_Nome'] = df_base['Mês Referência'].apply(identificar_mes_streamlit)
+        df_base['Mes_Nome'] = df_base['Mês Referência'].apply(identifying_mes_streamlit)
         df_base['Mes_Num'] = df_base['Mes_Nome'].map(ordem_meses)
         df_base['Ano_Ref'] = df_base['Mês Referência'].astype(str).str.extract(r'(\d{4})')
     else:
@@ -798,7 +809,7 @@ try:
             df_m = df_base[mask_evo].groupby('Mês Referência')[colunas_ex].sum().reset_index()
             
             if not df_m.empty:
-                df_m['Nome_Mes'] = df_m['Mês Referência'].apply(identificar_mes_streamlit)
+                df_m['Nome_Mes'] = df_m['Mês Referência'].apply(identifying_mes_streamlit)
                 df_m['mes_num'] = df_m['Nome_Mes'].map(ordem_meses)
                 df_m['Mês'] = df_m['Nome_Mes'].map(abrev_meses) + f'/{ano_dinamico}'
                 df_m = df_m.sort_values('mes_num')
@@ -826,8 +837,7 @@ try:
             if os.path.exists(caminho_projecao):
                 fig_tendencia = criar_grafico_tendencia_global(caminho_projecao)
                 if fig_tendencia is not None:
-                    # ATUALIZAÇÃO: Título externo configurado exatamente como você pediu
-                    st.subheader("📉 LOA vs. Empenhado vs. Projeção vs Disponível - (Ação: 2003 - Remuneração de Pessoal Ativo do Estado e Encargos Sociais)")
+                    st.subheader("📉 LOA vs. Empenhado vs. Projeção vs Disponível - (Ação 2003: Folha de Pagamento)")
                     st.pyplot(fig_tendencia)
                     plt.close(fig_tendencia)
                 else: st.warning("⚠️ Planilha de projeção não encontrada ou com formato inválido.")
