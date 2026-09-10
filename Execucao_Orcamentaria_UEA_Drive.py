@@ -332,7 +332,7 @@ def criar_grafico_grupo_despesa(df_filtrado):
         return None
 
 def criar_grafico_receita_x_despesa(caminho_arquivo):
-    """Lê a aba 'ReceitaXDespesa' e gera o gráfico comparativo de linhas com tabela"""
+    """Lê a aba 'ReceitaXDespesa' e gera o gráfico comparativo ajustando meses sem lançamento."""
     try:
         df = pd.read_excel(caminho_arquivo, sheet_name="ReceitaXDespesa")
         df.columns = [str(c).strip() for c in df.columns]
@@ -361,70 +361,109 @@ def criar_grafico_receita_x_despesa(caminho_arquivo):
             if m not in df_pivot.columns: df_pivot[m] = np.nan
         df_pivot = df_pivot[meses_ordem]
 
-        categorias_busca = ["LOA (A)", "Receita Arrecadada (B)", "Despesa Realizada (C)", "Saldo (B-C)"]
-        categorias_exibicao = ["LOA (A) (milhões)", "Receita Arrecadada (B) (milhões)", "Despesa Realizada (C) (milhões)", "Saldo (B-C) (milhões)"]
+        # Mapeamento flexível dos nomes das linhas
+        idx_map = {}
+        for idx_val in df_pivot.index:
+            idx_str = str(idx_val).upper()
+            if "LOA" in idx_str:
+                idx_map["LOA"] = idx_val
+            elif "RECEITA" in idx_str or "ARRECADADA" in idx_str:
+                idx_map["RECEITA"] = idx_val
+            elif "DESPESA" in idx_str or "REALIZADA" in idx_str:
+                idx_map["DESPESA"] = idx_val
+            elif "SALDO" in idx_str:
+                idx_map["SALDO"] = idx_val
 
-        estilos = {
-            "LOA (A)": {"color": "#3B82F6", "marker": "o"},
-            "Receita Arrecadada (B)": {"color": "#F97316", "marker": "o"},
-            "Despesa Realizada (C)": {"color": "#9CA3AF", "marker": "o"},
-            "Saldo (B-C)": {"color": "#EAB308", "marker": "x"},
-        }
+        # Identifica o último mês que possui dados de Receita ou Despesa
+        ultimo_mes_idx = -1
+        for i, m in enumerate(meses_ordem):
+            r_val = df_pivot.loc[idx_map["RECEITA"], m] if "RECEITA" in idx_map else np.nan
+            d_val = df_pivot.loc[idx_map["DESPESA"], m] if "DESPESA" in idx_map else np.nan
+            
+            if (pd.notna(r_val) and r_val != 0) or (pd.notna(d_val) and d_val != 0):
+                ultimo_mes_idx = i
 
-        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(14, 7), gridspec_kw={"height_ratios": [2.8, 1.2]}, sharex=False)
+        # Substitui meses futuros por NaN para interromper o traçado das linhas (exceto LOA)
+        if ultimo_mes_idx != -1 and ultimo_mes_idx < 11:
+            meses_futuros = meses_ordem[ultimo_mes_idx + 1:]
+            for chave in ["RECEITA", "DESPESA", "SALDO"]:
+                if chave in idx_map:
+                    df_pivot.loc[idx_map[chave], meses_futuros] = np.nan
 
-        for cat in categorias_busca:
-            if cat in df_pivot.index:
-                valores = df_pivot.loc[cat].values
-                estilo = estilos.get(cat, {"color": "#333333", "marker": "o"})
-                ax1.plot(meses_ordem, valores, label=cat, linewidth=1.8, markersize=5, **estilo)
+        # Verifica se os valores na planilha já estão na escala de milhões (ex: 84.42)
+        todos_valores = df_pivot.values.flatten()
+        valores_validos = [abs(v) for v in todos_valores if pd.notna(v) and v != 0]
+        max_val = max(valores_validos) if valores_validos else 0
+        em_milhoes_ja = max_val < 100_000
 
-        ax1.legend(loc="upper right", fontsize=9, frameon=True, facecolor="white", edgecolor="#D1D5DB")
-        ax1.set_title("ANÁLISE DA RECEITA ARRECADADA X DESPESA REALIZADA\n(Fonte 1.599.116) - 2026", fontsize=13, fontweight="bold", pad=15)
-        ax1.grid(True, linestyle="-", alpha=0.3, color="#D1D5DB")
-        ax1.set_xlim(-0.5, 11.5)
+        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(15, 7), gridspec_kw={'height_ratios': [2.5, 1]})
 
-        def formata_y_br(x, pos): return f"{x:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-        ax1.yaxis.set_major_formatter(plt.FuncFormatter(formata_y_br))
-        ax1.tick_params(axis="y", labelsize=8.5)
-        ax1.tick_params(axis="x", labelbottom=False)
+        config_cats = [
+            ("LOA", "LOA (A)", '#8B5CF6', '^', ':'),
+            ("RECEITA", "Receita Arrecadada (B)", '#0D47A1', 'o', '-'),
+            ("DESPESA", "Despesa Realizada (C)", '#FF8F00', 's', '--'),
+            ("SALDO", "Saldo (B-C)", '#10B981', 'D', '-.')
+        ]
 
-        for spine in ["top", "right"]: ax1.spines[spine].set_visible(False)
+        linhas_tabela = []
+        labels_tabela = []
 
-        ax2.axis("off")
-        col_labels = meses_ordem + ["Total"]
-
-        cell_text = []
-        for cat in categorias_busca:
-            linha = []
-            if cat in df_pivot.index:
-                valores = df_pivot.loc[cat].values
+        for chave, label_exibicao, cor, marcador, estilo in config_cats:
+            if chave in idx_map:
+                row_name = idx_map[chave]
+                valores = df_pivot.loc[row_name].values
+                
+                # Plota a linha no gráfico
+                ax1.plot(meses_ordem, valores, marker=marcador, 
+                         label=label_exibicao, color=cor, linewidth=2, linestyle=estilo)
+                
+                # Formata a tabela
+                linha = []
                 for val in valores:
-                    if pd.isna(val) or val == 0: linha.append("")
-                    else: linha.append(f"{val:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
-                total_val = np.nansum(valores)
-                linha.append(f"{total_val:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".") if total_val != 0 else "")
+                    if pd.isna(val): 
+                        linha.append("-")
+                    else: 
+                        if em_milhoes_ja:
+                            linha.append(f"{val:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.'))
+                        else:
+                            linha.append(f"{val/1_000_000:,.1f} M".replace(',', 'X').replace('.', ',').replace('X', '.'))
+                
+                linhas_tabela.append(linha)
+                labels_tabela.append(label_exibicao)
+
+        ax1.legend(loc='upper left', fontsize=10)
+        ax1.grid(True, alpha=0.3, linestyle='--')
+        
+        def formatar_eixo_y(x, pos):
+            if em_milhoes_ja:
+                return f"{x:,.1f}".replace(',', 'X').replace('.', ',').replace('X', '.')
             else:
-                linha = [""] * 13
-            cell_text.append(linha)
+                return f"{x/1_000_000:,.1f} M".replace(',', 'X').replace('.', ',').replace('X', '.')
+        
+        ax1.yaxis.set_major_formatter(plt.FuncFormatter(formatar_eixo_y))
+        ax1.set_xlim(-0.5, 11.5)
+        ax1.margins(x=0.04)
 
-        tabela = ax2.table(cellText=cell_text, rowLabels=categorias_exibicao, colLabels=col_labels, cellLoc="center", loc="center")
-        tabela.auto_set_font_size(False)
-        tabela.set_fontsize(8)
-        tabela.scale(1, 1.4)
+        ax2.axis('off')
+        
+        if linhas_tabela:
+            tabela = ax2.table(cellText=linhas_tabela, colLabels=meses_ordem, rowLabels=labels_tabela,
+                               cellLoc='center', loc='center')
+            tabela.auto_set_font_size(False)
+            tabela.set_fontsize(9)
+            tabela.scale(1, 1.4)
+            
+            for j in range(len(meses_ordem)):
+                tabela[0, j].set_facecolor('#1E3A8A')
+                tabela[0, j].set_text_props(color='white', fontweight='bold')
+                
+            for i in range(1, len(linhas_tabela) + 1):
+                tabela[i, -1].set_facecolor('#E8EAF6')
+                tabela[i, -1].set_text_props(fontweight='bold', color=config_cats[i-1][2] if i-1 < len(config_cats) else 'black')
 
-        for (row, col), cell in tabela.get_celld().items():
-            cell.set_edgecolor("#D1D5DB")
-            if row == 0:
-                cell.set_text_props(fontweight="bold")
-                cell.set_facecolor("#F3F4F6")
-            if col == -1:
-                cell.set_text_props(fontweight="bold", ha="right")
-                cell.set_facecolor("#F3F4F6")
-
-        plt.subplots_adjust(hspace=0.08)
-        plt.tight_layout()
+        plt.tight_layout(pad=2)
         return fig
+
     except Exception as e:
         return None
 
