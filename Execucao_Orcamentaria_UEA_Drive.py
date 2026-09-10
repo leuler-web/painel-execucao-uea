@@ -332,7 +332,7 @@ def criar_grafico_grupo_despesa(df_filtrado):
         return None
 
 def criar_grafico_receita_x_despesa(caminho_arquivo):
-    """Lê a aba 'ReceitaXDespesa' e gera o gráfico comparativo ajustando meses sem lançamento."""
+    """Lê a aba 'ReceitaXDespesa' e gera o gráfico comparativo de linhas com tabela"""
     try:
         df = pd.read_excel(caminho_arquivo, sheet_name="ReceitaXDespesa")
         df.columns = [str(c).strip() for c in df.columns]
@@ -361,109 +361,73 @@ def criar_grafico_receita_x_despesa(caminho_arquivo):
             if m not in df_pivot.columns: df_pivot[m] = np.nan
         df_pivot = df_pivot[meses_ordem]
 
-        # ==============================================================
-        # CORREÇÃO: CORTA AS LINHAS NO ÚLTIMO MÊS COM DADOS REAIS
-        # ==============================================================
-        ultimo_mes_idx = -1
-        for i, m in enumerate(meses_ordem):
-            r_val = df_pivot.loc["Receita Arrecadada (B)", m] if "Receita Arrecadada (B)" in df_pivot.index else np.nan
-            d_val = df_pivot.loc["Despesa Realizada (C)", m] if "Despesa Realizada (C)" in df_pivot.index else np.nan
-            
-            # Considera apenas meses com valores reais diferente de zero/nulo
-            if (pd.notna(r_val) and r_val != 0) or (pd.notna(d_val) and d_val != 0):
-                ultimo_mes_idx = i
-
-        # Força np.nan nos meses futuros para que o gráfico interrompa as linhas
-        if ultimo_mes_idx != -1 and ultimo_mes_idx < 11:
-            meses_futuros = meses_ordem[ultimo_mes_idx + 1:]
-            for cat in ["Receita Arrecadada (B)", "Despesa Realizada (C)", "Saldo (B-C)"]:
-                if cat in df_pivot.index:
-                    df_pivot.loc[cat, meses_futuros] = np.nan
-        # ==============================================================
-
-        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(15, 7), gridspec_kw={'height_ratios': [2.5, 1]})
-
-        cores = {
-            "Previsão LOA (A)": '#8B5CF6', 
-            "Receita Arrecadada (B)": '#0D47A1', 
-            "Despesa Realizada (C)": '#FF8F00', 
-            "Saldo (B-C)": '#10B981'
-        }
-        
-        marcadores = {
-            "Previsão LOA (A)": '^', 
-            "Receita Arrecadada (B)": 'o', 
-            "Despesa Realizada (C)": 's', 
-            "Saldo (B-C)": 'D'
-        }
+        categorias_busca = ["LOA (A)", "Receita Arrecadada (B)", "Despesa Realizada (C)", "Saldo (B-C)"]
+        categorias_exibicao = ["LOA (A) (milhões)", "Receita Arrecadada (B) (milhões)", "Despesa Realizada (C) (milhões)", "Saldo (B-C) (milhões)"]
 
         estilos = {
-            "Previsão LOA (A)": ':', 
-            "Receita Arrecadada (B)": '-', 
-            "Despesa Realizada (C)": '--', 
-            "Saldo (B-C)": '-.'
+            "LOA (A)": {"color": "#3B82F6", "marker": "o"},
+            "Receita Arrecadada (B)": {"color": "#F97316", "marker": "o"},
+            "Despesa Realizada (C)": {"color": "#9CA3AF", "marker": "o"},
+            "Saldo (B-C)": {"color": "#EAB308", "marker": "x"},
         }
 
-        categorias_busca = [
-            "Previsão LOA (A)",
-            "Receita Arrecadada (B)",
-            "Despesa Realizada (C)",
-            "Saldo (B-C)"
-        ]
-
-        linhas_tabela = []
-        labels_tabela = []
+        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(14, 7), gridspec_kw={"height_ratios": [2.8, 1.2]}, sharex=False)
 
         for cat in categorias_busca:
             if cat in df_pivot.index:
                 valores = df_pivot.loc[cat].values
-                
-                # Se for LOA mantém a linha toda, senão plota até onde há dados
-                ax1.plot(meses_ordem, valores, marker=marcadores.get(cat, 'o'), 
-                         label=cat, color=cores.get(cat, 'gray'), linewidth=2, linestyle=estilos.get(cat, '-'))
-                
-                linha = []
-                for val in valores:
-                    if pd.isna(val): 
-                        linha.append("-")
-                    else: 
-                        linha.append(f"{val/1_000_000:,.1f} M".replace(',', 'X').replace('.', ',').replace('X', '.'))
-                
-                linhas_tabela.append(linha)
-                labels_tabela.append(cat)
+                estilo = estilos.get(cat, {"color": "#333333", "marker": "o"})
+                ax1.plot(meses_ordem, valores, label=cat, linewidth=1.8, markersize=5, **estilo)
 
-        ax1.legend(loc='upper left', fontsize=10)
-        ax1.grid(True, alpha=0.3, linestyle='--')
-        
-        def formatar_eixo_y(x, pos):
-            return f"{x/1_000_000:,.1f} M".replace(',', 'X').replace('.', ',').replace('X', '.')
-        
-        ax1.yaxis.set_major_formatter(plt.FuncFormatter(formatar_eixo_y))
+        ax1.legend(loc="upper right", fontsize=9, frameon=True, facecolor="white", edgecolor="#D1D5DB")
+        ax1.set_title("ANÁLISE DA RECEITA ARRECADADA X DESPESA REALIZADA\n(Fonte 1.599.116) - 2026", fontsize=13, fontweight="bold", pad=15)
+        ax1.grid(True, linestyle="-", alpha=0.3, color="#D1D5DB")
         ax1.set_xlim(-0.5, 11.5)
-        ax1.margins(x=0.04)
 
-        ax2.axis('off')
-        
-        if linhas_tabela:
-            tabela = ax2.table(cellText=linhas_tabela, colLabels=meses_ordem, rowLabels=labels_tabela,
-                               cellLoc='center', loc='center')
-            tabela.auto_set_font_size(False)
-            tabela.set_fontsize(9)
-            tabela.scale(1, 1.4)
-            
-            for j in range(len(meses_ordem)):
-                tabela[0, j].set_facecolor('#1E3A8A')
-                tabela[0, j].set_text_props(color='white', fontweight='bold')
-                
-            for i in range(1, len(linhas_tabela) + 1):
-                tabela[i, -1].set_facecolor('#E8EAF6')
-                tabela[i, -1].set_text_props(fontweight='bold', color=cores.get(labels_tabela[i-1], 'black'))
+        def formata_y_br(x, pos): return f"{x:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+        ax1.yaxis.set_major_formatter(plt.FuncFormatter(formata_y_br))
+        ax1.tick_params(axis="y", labelsize=8.5)
+        ax1.tick_params(axis="x", labelbottom=False)
 
-        plt.tight_layout(pad=2)
+        for spine in ["top", "right"]: ax1.spines[spine].set_visible(False)
+
+        ax2.axis("off")
+        col_labels = meses_ordem + ["Total"]
+
+        cell_text = []
+        for cat in categorias_busca:
+            linha = []
+            if cat in df_pivot.index:
+                valores = df_pivot.loc[cat].values
+                for val in valores:
+                    if pd.isna(val) or val == 0: linha.append("")
+                    else: linha.append(f"{val:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+                total_val = np.nansum(valores)
+                linha.append(f"{total_val:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".") if total_val != 0 else "")
+            else:
+                linha = [""] * 13
+            cell_text.append(linha)
+
+        tabela = ax2.table(cellText=cell_text, rowLabels=categorias_exibicao, colLabels=col_labels, cellLoc="center", loc="center")
+        tabela.auto_set_font_size(False)
+        tabela.set_fontsize(8)
+        tabela.scale(1, 1.4)
+
+        for (row, col), cell in tabela.get_celld().items():
+            cell.set_edgecolor("#D1D5DB")
+            if row == 0:
+                cell.set_text_props(fontweight="bold")
+                cell.set_facecolor("#F3F4F6")
+            if col == -1:
+                cell.set_text_props(fontweight="bold", ha="right")
+                cell.set_facecolor("#F3F4F6")
+
+        plt.subplots_adjust(hspace=0.08)
+        plt.tight_layout()
         return fig
-
     except Exception as e:
         return None
+
 # ==========================================
 # 5. CARREGAMENTO DOS DADOS E DICIONÁRIOS
 # ==========================================
