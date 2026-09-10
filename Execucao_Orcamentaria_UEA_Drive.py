@@ -332,7 +332,7 @@ def criar_grafico_grupo_despesa(df_filtrado):
         return None
 
 def criar_grafico_receita_x_despesa(caminho_arquivo):
-    """Lê a aba 'ReceitaXDespesa' e gera o gráfico comparativo ajustando meses sem lançamento."""
+    """Lê a aba 'ReceitaXDespesa' e gera o gráfico comparativo com layout original e Totais."""
     try:
         df = pd.read_excel(caminho_arquivo, sheet_name="ReceitaXDespesa")
         df.columns = [str(c).strip() for c in df.columns]
@@ -361,7 +361,6 @@ def criar_grafico_receita_x_despesa(caminho_arquivo):
             if m not in df_pivot.columns: df_pivot[m] = np.nan
         df_pivot = df_pivot[meses_ordem]
 
-        # Mapeamento flexível dos nomes das linhas
         idx_map = {}
         for idx_val in df_pivot.index:
             idx_str = str(idx_val).upper()
@@ -374,7 +373,6 @@ def criar_grafico_receita_x_despesa(caminho_arquivo):
             elif "SALDO" in idx_str:
                 idx_map["SALDO"] = idx_val
 
-        # Identifica o último mês que possui dados de Receita ou Despesa
         ultimo_mes_idx = -1
         for i, m in enumerate(meses_ordem):
             r_val = df_pivot.loc[idx_map["RECEITA"], m] if "RECEITA" in idx_map else np.nan
@@ -383,14 +381,16 @@ def criar_grafico_receita_x_despesa(caminho_arquivo):
             if (pd.notna(r_val) and r_val != 0) or (pd.notna(d_val) and d_val != 0):
                 ultimo_mes_idx = i
 
-        # Substitui meses futuros por NaN para interromper o traçado das linhas (exceto LOA)
+        # Guarda os dados intactos antes de colocar NaN para conseguir calcular o Total corretamente
+        df_pivot_totais = df_pivot.copy()
+
+        # Substitui meses futuros por NaN para interromper a linha no gráfico
         if ultimo_mes_idx != -1 and ultimo_mes_idx < 11:
             meses_futuros = meses_ordem[ultimo_mes_idx + 1:]
             for chave in ["RECEITA", "DESPESA", "SALDO"]:
                 if chave in idx_map:
                     df_pivot.loc[idx_map[chave], meses_futuros] = np.nan
 
-        # Verifica se os valores na planilha já estão na escala de milhões (ex: 84.42)
         todos_valores = df_pivot.values.flatten()
         valores_validos = [abs(v) for v in todos_valores if pd.notna(v) and v != 0]
         max_val = max(valores_validos) if valores_validos else 0
@@ -398,47 +398,62 @@ def criar_grafico_receita_x_despesa(caminho_arquivo):
 
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(15, 7), gridspec_kw={'height_ratios': [2.5, 1]})
 
+        # Restaura as cores, estilos e marcadores EXATOS do gráfico original
         config_cats = [
-            ("LOA", "LOA (A)", '#8B5CF6', '^', ':'),
-            ("RECEITA", "Receita Arrecadada (B)", '#0D47A1', 'o', '-'),
-            ("DESPESA", "Despesa Realizada (C)", '#FF8F00', 's', '--'),
-            ("SALDO", "Saldo (B-C)", '#10B981', 'D', '-.')
+            ("LOA", "LOA (A)", '#3B82F6', 'o', '-'),           # Azul claro, linha sólida, bolinha
+            ("RECEITA", "Receita Arrecadada (B)", '#F97316', 'o', '-'), # Laranja, linha sólida, bolinha
+            ("DESPESA", "Despesa Realizada (C)", '#9CA3AF', 'o', '-'),  # Cinza, linha sólida, bolinha
+            ("SALDO", "Saldo (B-C)", '#EAB308', 'x', '-')      # Amarelo, linha sólida, 'x'
         ]
 
         linhas_tabela = []
         labels_tabela = []
+        colunas_tabela = meses_ordem + ["Total"] # Adiciona a coluna Total de volta
 
         for chave, label_exibicao, cor, marcador, estilo in config_cats:
             if chave in idx_map:
                 row_name = idx_map[chave]
-                valores = df_pivot.loc[row_name].values
+                valores_grafico = df_pivot.loc[row_name].values
+                valores_integrais = df_pivot_totais.loc[row_name].values
                 
-                # Plota a linha no gráfico
-                ax1.plot(meses_ordem, valores, marker=marcador, 
+                # Plota a linha
+                ax1.plot(meses_ordem, valores_grafico, marker=marcador, 
                          label=label_exibicao, color=cor, linewidth=2, linestyle=estilo)
                 
-                # Formata a tabela
                 linha = []
-                for val in valores:
+                # Popula os meses na tabela
+                for val in valores_grafico:
                     if pd.isna(val): 
                         linha.append("-")
                     else: 
                         if em_milhoes_ja:
                             linha.append(f"{val:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.'))
                         else:
-                            linha.append(f"{val/1_000_000:,.1f} M".replace(',', 'X').replace('.', ',').replace('X', '.'))
+                            linha.append(f"{val/1_000_000:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.'))
+                
+                # Calcula e adiciona o Total na última coluna
+                total = np.nansum(valores_integrais)
+                if em_milhoes_ja:
+                    linha.append(f"{total:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.'))
+                else:
+                    linha.append(f"{total/1_000_000:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.'))
+
+                label_tabela = f"{label_exibicao} (milhões)" if not label_exibicao.endswith("(milhões)") else label_exibicao
                 
                 linhas_tabela.append(linha)
-                labels_tabela.append(label_exibicao)
+                labels_tabela.append(label_tabela)
 
-        ax1.legend(loc='upper left', fontsize=10)
-        ax1.grid(True, alpha=0.3, linestyle='--')
+        # Configurações visuais do gráfico
+        ax1.legend(loc='upper right', fontsize=10, bbox_to_anchor=(1, 1))
+        ax1.grid(True, alpha=0.3, linestyle='-')
+        ax1.spines['top'].set_visible(False)
+        ax1.spines['right'].set_visible(False)
         
         def formatar_eixo_y(x, pos):
             if em_milhoes_ja:
-                return f"{x:,.1f}".replace(',', 'X').replace('.', ',').replace('X', '.')
+                return f"{x:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
             else:
-                return f"{x/1_000_000:,.1f} M".replace(',', 'X').replace('.', ',').replace('X', '.')
+                return f"{x/1_000_000:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
         
         ax1.yaxis.set_major_formatter(plt.FuncFormatter(formatar_eixo_y))
         ax1.set_xlim(-0.5, 11.5)
@@ -447,19 +462,21 @@ def criar_grafico_receita_x_despesa(caminho_arquivo):
         ax2.axis('off')
         
         if linhas_tabela:
-            tabela = ax2.table(cellText=linhas_tabela, colLabels=meses_ordem, rowLabels=labels_tabela,
+            tabela = ax2.table(cellText=linhas_tabela, colLabels=colunas_tabela, rowLabels=labels_tabela,
                                cellLoc='center', loc='center')
             tabela.auto_set_font_size(False)
             tabela.set_fontsize(9)
             tabela.scale(1, 1.4)
             
-            for j in range(len(meses_ordem)):
-                tabela[0, j].set_facecolor('#1E3A8A')
-                tabela[0, j].set_text_props(color='white', fontweight='bold')
-                
-            for i in range(1, len(linhas_tabela) + 1):
-                tabela[i, -1].set_facecolor('#E8EAF6')
-                tabela[i, -1].set_text_props(fontweight='bold', color=config_cats[i-1][2] if i-1 < len(config_cats) else 'black')
+            # Restaura o layout cinza claro da tabela original
+            for key, cell in tabela.get_celld().items():
+                cell.set_edgecolor('#D1D5DB')
+                if key[0] == 0 or key[1] == -1: # Cabeçalho superior ou lateral
+                    cell.set_facecolor('#F3F4F6')
+                    cell.set_text_props(fontweight='bold', color='black')
+                else: # Células de dados
+                    cell.set_facecolor('#FFFFFF')
+                    cell.set_text_props(color='black')
 
         plt.tight_layout(pad=2)
         return fig
