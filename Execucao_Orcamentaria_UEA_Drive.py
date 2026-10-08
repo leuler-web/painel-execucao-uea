@@ -974,6 +974,8 @@ try:
                     st.info("Não há valores empenhados para detalhar nesta Ação.")
 
         elif aba_atual == "📈 Evolução Mensal":
+            import time
+
             st.markdown(f"<div class='destaque-ano'>Evolução Mensal da Execução - Ano {ano_dinamico} <span style='font-size: 18px; font-weight: normal; color: #6B7280;'>(última atualização: {dt_atual})</span></div>", unsafe_allow_html=True)
             colunas_ex = [col for col in ['Autorizado', 'Empenhado', 'Liquidado', 'Pago', 'Disponível'] if col in df_base.columns]
             df_m = df_base[mask_evo].groupby('Mês Referência')[colunas_ex].sum().reset_index()
@@ -984,60 +986,41 @@ try:
                 df_m['Mês'] = df_m['Nome_Mes'].map(abrev_meses) + f'/{ano_dinamico}'
                 df_m = df_m.sort_values('mes_num')
 
-                # Configurações estilizadas para cada camada do gráfico
                 estilos_fases = {
-                    'Autorizado': {
-                        'cor': '#64748B', 
-                        'dash': 'dot', 
-                        'fill': None, 
-                        'fillcolor': 'rgba(0,0,0,0)', 
-                        'width': 2.5,
-                        'pos': 'top center'
-                    },
-                    'Empenhado': {
-                        'cor': '#1E3A8A', 
-                        'dash': 'solid', 
-                        'fill': 'tozeroy', 
-                        'fillcolor': 'rgba(30, 58, 138, 0.14)', 
-                        'width': 3.5,
-                        'pos': 'top center'
-                    },
-                    'Liquidado': {
-                        'cor': '#3B82F6', 
-                        'dash': 'solid', 
-                        'fill': 'tozeroy', 
-                        'fillcolor': 'rgba(59, 130, 246, 0.10)', 
-                        'width': 3,
-                        'pos': 'top center'
-                    },
-                    'Pago': {
-                        'cor': '#10B981', 
-                        'dash': 'solid', 
-                        'fill': 'tozeroy', 
-                        'fillcolor': 'rgba(16, 185, 129, 0.10)', 
-                        'width': 3,
-                        'pos': 'bottom center'
-                    },
-                    'Disponível': {
-                        'cor': '#D97706', 
-                        'dash': 'solid', 
-                        'fill': 'tozeroy', 
-                        'fillcolor': 'rgba(217, 119, 6, 0.08)', 
-                        'width': 3,
-                        'pos': 'top center'
-                    }
+                    'Autorizado': {'cor': '#64748B', 'dash': 'dot', 'fill': None, 'fillcolor': 'rgba(0,0,0,0)', 'width': 2.5, 'pos': 'top center'},
+                    'Empenhado': {'cor': '#1E3A8A', 'dash': 'solid', 'fill': 'tozeroy', 'fillcolor': 'rgba(30, 58, 138, 0.14)', 'width': 3.5, 'pos': 'top center'},
+                    'Liquidado': {'cor': '#3B82F6', 'dash': 'solid', 'fill': 'tozeroy', 'fillcolor': 'rgba(59, 130, 246, 0.10)', 'width': 3, 'pos': 'top center'},
+                    'Pago': {'cor': '#10B981', 'dash': 'solid', 'fill': 'tozeroy', 'fillcolor': 'rgba(16, 185, 129, 0.10)', 'width': 3, 'pos': 'bottom center'},
+                    'Disponível': {'cor': '#D97706', 'dash': 'solid', 'fill': 'tozeroy', 'fillcolor': 'rgba(217, 119, 6, 0.08)', 'width': 3, 'pos': 'top center'}
                 }
 
-                fig_line = go.Figure()
+                max_val = max([df_m[col].max() for col in colunas_ex if col in df_m.columns])
 
-                # Adiciona cada fase como uma camada independente de área e linha
+                # Container reservado onde o gráfico será redesenhado linha por linha
+                plot_spot = st.empty()
+                fig_animated = go.Figure()
+
+                # Configura os eixos fixos antes de animar para evitar redimensionamento
+                fig_animated.update_layout(
+                    font=dict(size=15, color="black"),
+                    margin=dict(l=40, r=60, t=30, b=20),
+                    yaxis_range=[0, max_val * 1.35],
+                    yaxis=dict(showticklabels=False, title=""),
+                    xaxis=dict(tickfont=dict(size=16, weight="bold", color="#111827")),
+                    legend=dict(orientation="h", y=1.1, x=0.5, xanchor="center", font=dict(size=15, weight="bold")),
+                    plot_bgcolor='rgba(0,0,0,0)',
+                    height=480
+                )
+                fig_animated.update_yaxes(showgrid=True, gridwidth=1, gridcolor='#E5E7EB', griddash='dash')
+
+                # Animação: adiciona uma linha por vez com intervalo de tempo
                 for fase in colunas_ex:
                     if fase in estilos_fases and fase in df_m.columns:
                         cfg = estilos_fases[fase]
                         y_vals = df_m[fase].values
                         rotulos = [f"<b>{formata_abreviado(v)}</b>" if v > 0 else "" for v in y_vals]
                         
-                        fig_line.add_trace(go.Scatter(
+                        fig_animated.add_trace(go.Scatter(
                             x=df_m['Mês'],
                             y=y_vals,
                             name=fase,
@@ -1051,22 +1034,12 @@ try:
                             marker=dict(size=8, color=cfg['cor']),
                             hovertemplate=f"<b>{fase}</b><br>Mês: %{{x}}<br>Valor: R$ %{{y:,.2f}}<extra></extra>"
                         ))
-
-                max_val = max([df_m[col].max() for col in colunas_ex if col in df_m.columns])
-
-                fig_line.update_layout(
-                    font=dict(size=15, color="black"),
-                    margin=dict(l=40, r=60, t=30, b=20),
-                    yaxis_range=[0, max_val * 1.35],
-                    yaxis=dict(showticklabels=False, title=""),
-                    xaxis=dict(tickfont=dict(size=16, weight="bold", color="#111827")),
-                    legend=dict(orientation="h", y=1.1, x=0.5, xanchor="center", font=dict(size=15, weight="bold")),
-                    plot_bgcolor='rgba(0,0,0,0)',
-                    height=480
-                )
-                fig_line.update_yaxes(showgrid=True, gridwidth=1, gridcolor='#E5E7EB', griddash='dash')
-
-                st.plotly_chart(fig_line, use_container_width=True)
+                        
+                        # Atualiza o gráfico na tela
+                        plot_spot.plotly_chart(fig_animated, use_container_width=True)
+                        
+                        # Pausa de 0.4 segundos entre cada linha (ajuste a velocidade aqui)
+                        time.sleep(0.4)
             else:
                 st.info("Não há dados de evolução mensal para os filtros selecionados.")
 
