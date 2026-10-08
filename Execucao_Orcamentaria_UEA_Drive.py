@@ -1038,8 +1038,8 @@ try:
                         # Atualiza o gráfico na tela
                         plot_spot.plotly_chart(fig_animated, use_container_width=True)
                         
-                        # Pausa de 0.4 segundos entre cada linha (ajuste a velocidade aqui)
-                        time.sleep(0.4)
+                        # Pausa de 0.7 segundos entre cada linha (ajuste a velocidade aqui)
+                        time.sleep(0.7)
             else:
                 st.info("Não há dados de evolução mensal para os filtros selecionados.")
 
