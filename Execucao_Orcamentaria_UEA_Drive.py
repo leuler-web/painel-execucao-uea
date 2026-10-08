@@ -453,7 +453,7 @@ def criar_grafico_grupo_despesa(df_filtrado):
         return None, None
 
 def criar_grafico_receita_x_despesa(caminho_arquivo):
-    """Lê a aba 'ReceitaXDespesa' e gera o gráfico comparativo com layout original e Totais."""
+    """Lê a aba 'ReceitaXDespesa' e gera o gráfico comparativo com as cores atualizadas."""
     try:
         df = pd.read_excel(caminho_arquivo, sheet_name="ReceitaXDespesa")
         df.columns = [str(c).strip() for c in df.columns]
@@ -517,11 +517,12 @@ def criar_grafico_receita_x_despesa(caminho_arquivo):
 
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(15, 7), gridspec_kw={'height_ratios': [2.5, 1]})
 
+        # NOVAS CORES CONFORME A IMAGEM DE REFERÊNCIA
         config_cats = [
-            ("LOA", "LOA (A)", '#3B82F6', 'o', '-'),           
-            ("RECEITA", "Receita Arrecadada (B)", '#F97316', 'o', '-'), 
-            ("DESPESA", "Despesa Realizada (C)", '#9CA3AF', 'o', '-'),  
-            ("SALDO", "Saldo (B-C)", '#EAB308', 'x', '-')      
+            ("LOA", "LOA (A)", '#000000', 'o', '-'),            # Preto
+            ("RECEITA", "Receita Arrecadada (B)", '#16A34A', 'o', '-'), # Verde
+            ("DESPESA", "Despesa Realizada (C)", '#DC2626', 'o', '-'),  # Vermelho
+            ("SALDO", "Saldo (B-C)", '#9333EA', 'x', '-')       # Roxo
         ]
 
         linhas_tabela = []
@@ -535,7 +536,7 @@ def criar_grafico_receita_x_despesa(caminho_arquivo):
                 valores_integrais = df_pivot_totais.loc[row_name].values
                 
                 ax1.plot(meses_ordem, valores_grafico, marker=marcador, 
-                         label=label_exibicao, color=cor, linewidth=2, linestyle=estilo)
+                         label=label_exibicao, color=cor, linewidth=2.5, linestyle=estilo)
                 
                 linha = []
                 for val in valores_grafico:
