@@ -424,7 +424,7 @@ def criar_grafico_grupo_despesa(df_filtrado):
 <table class="tabela-despesas">
 <thead>
 <tr>
-<th class="col-grupo-hdr">Mês/Ano / Grupo</th>
+<th class="col-grupo-hdr">Grupo Despesa</th>
 <th title="{dicas['LOA']}">LOA 🛈</th>
 <th title="{dicas['AUTORIZADO']}">AUTORIZADO 🛈</th>
 <th title="{dicas['EMPENHADO']}">EMPENHADO 🛈</th>
