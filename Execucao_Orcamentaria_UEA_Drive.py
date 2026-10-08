@@ -1,3 +1,14 @@
+Aqui está o código completo do Execucao_Orcamentaria_UEA_Drive.py atualizado com todas as melhorias solicitadas:
+
+Figurinhas em todas as colunas: Cada grupo de despesa possui seu ícone característico (👥 Pessoal, 💸 Custeio, 🏗️ Investimento) renderizado em todas as barras (LOA, AUTORIZADO, EMPENHADO, BLOQUEADO e DISPONÍVEL).
+
+Redução de ~25% no gráfico: Altura do gráfico Plotly reduzida para 330px e margens ajustadas para otimizar o espaço em tela.
+
+Tooltips no cabeçalho da Tabela: As explicações das contas (LOA, AUTORIZADO, EMPENHADO, BLOQUEADO e DISPONÍVEL) foram transferidas para os cabeçalhos da tabela de dados (<th title="..."> com indicativo visual 🛈). O tooltip do gráfico foi simplificado.
+
+Tabela de dados centralizada e estilizada: Tabela construída em HTML/CSS customizado com dados centralizados, fundo azul escuro nos cabeçalhos (#1E3A8A), bordas suaves e efeito hover.
+
+Python
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -106,7 +117,6 @@ def criar_grafico_tendencia_global(caminho_planilha_proj):
         
         primeira_coluna = df_proj_raw.iloc[:,0].astype(str).str.upper()
         
-        # Mapeamento de todas as linhas necessárias[cite: 4]
         mask_loa = primeira_coluna.str.contains("LOA", na=False)
         mask_emp = primeira_coluna.str.contains("EMPENHO", na=False)
         mask_prj = primeira_coluna.str.contains("PROJE", na=False)
@@ -131,7 +141,6 @@ def criar_grafico_tendencia_global(caminho_planilha_proj):
             try: return float(v_str)
             except: return 0.0
         
-        # Extração de valores mensais
         loa = [converter_br_para_float(row_loa[m]) for m in meses_eixo]
         executado = [converter_br_para_float(row_emp[m]) for m in meses_eixo]
         projetado = [converter_br_para_float(row_prj[m]) for m in meses_eixo]
@@ -149,7 +158,6 @@ def criar_grafico_tendencia_global(caminho_planilha_proj):
         
         executado_display = [v if v > 0 else None for v in executado[:final_exec+1]] + [None]*(12 - final_exec - 1)
         
-        # Plotagem do gráfico
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(18, 9), gridspec_kw={'height_ratios': [2.5, 1.5]})
         
         ax1.plot(meses_eixo, loa, marker='^', label='LOA', color='#8B5CF6', linewidth=2, linestyle=':')
@@ -237,7 +245,7 @@ def criar_grafico_tendencia_global(caminho_planilha_proj):
         return None
 
 def criar_grafico_grupo_despesa(df_filtrado):
-    """Cria o gráfico interativo com Plotly em R$ milhões e Tooltips personalizados."""
+    """Cria o gráfico interativo com Plotly (reduzido em ~25%) e Tabela HTML centralizada com Tooltips nos cabeçalhos."""
     try:
         col_grupo = next((c for c in df_filtrado.columns if 'GRUPO' in c.upper() and 'DESPESA' in c.upper()), None)
         if not col_grupo:
@@ -278,38 +286,33 @@ def criar_grafico_grupo_despesa(df_filtrado):
             
         df_grafico = pd.DataFrame(dados_resumo)
 
-        dicas = {
-            'LOA': 'LOA (Lei Orçamentária Anual) é o instrumento legal que estima as receitas e fixa as despesas da UEA para o período de um ano.',
-            'AUTORIZADO': 'Dotação Inicial acrescida ou reduzida por créditos adicionais durante o exercício financeiro.',
-            'EMPENHADO': 'Valor do orçamento reservado para garantir o pagamento dos compromissos assumidos.',
-            'BLOQUEADO': 'Valores orçamentários indisponíveis temporariamente por determinação legal ou administrativa.',
-            'DISPONÍVEL': 'Saldo orçamentário livre que ainda pode ser utilizado para novas contratações.'
-        }
-
         cores = {
             'Pessoal': '#3B82F6',      # Azul
             'Custeio': '#DC2626',      # Vermelho
             'Investimento': '#000000'  # Preto
         }
 
+        # Emojis/Figurinhas específicos para cada Grupo de Despesa
+        emojis_grupo = {
+            'Pessoal': '👥',
+            'Custeio': '💸',
+            'Investimento': '🏗️'
+        }
+
         fig = go.Figure()
 
         for index, row in df_grafico.iterrows():
             grupo = row['Grupo']
+            emoji = emojis_grupo.get(grupo, '')
             
+            # Hover simplificado (sem explicações longas nas barras)
             hover_texts = [
-                f"<b>{grupo} - {col}</b><br>Valor: R$ {row[col]} milhões<br><br><i>{dicas[col]}</i>"
+                f"<b>{grupo} - {col}</b><br>Valor: R$ {row[col]} milhões"
                 for col in fases_labels
             ]
             
-            text_labels = [str(row[col]) for col in fases_labels]
-            
-            if grupo == 'Custeio':
-                text_labels[2] = f"💸 {text_labels[2]}"
-            elif grupo == 'Pessoal':
-                text_labels[2] = f"👥 {text_labels[2]}"
-            elif grupo == 'Investimento':
-                text_labels[2] = f"🏗️ {text_labels[2]}"
+            # Figurinhas aplicadas em TODAS as colunas/barras
+            text_labels = [f"{emoji} {row[col]}" if row[col] > 0 else f"{row[col]}" for col in fases_labels]
 
             fig.add_trace(go.Bar(
                 name=grupo,
@@ -322,23 +325,111 @@ def criar_grafico_grupo_despesa(df_filtrado):
                 customdata=hover_texts
             ))
 
+        # Redução do tamanho do gráfico em ~25% (altura de 330px)
         fig.update_layout(
-            title=dict(text='Execução Orçamentária por Grupo de Despesa (em R$ milhões)', font=dict(size=18, color='#111827')),
+            title=dict(text='Execução Orçamentária por Grupo de Despesa (em R$ milhões)', font=dict(size=16, color='#111827')),
             yaxis_title='R$ (Em milhões de reais)',
             barmode='group',
             legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5),
             plot_bgcolor='rgba(0,0,0,0)',
-            margin=dict(t=80, b=10, l=10, r=10),
-            height=450
+            margin=dict(t=60, b=10, l=10, r=10),
+            height=330
         )
 
         fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='#E5E7EB', griddash='dash')
 
-        df_tabela = df_grafico.copy()
-        df_tabela['Grupo'] = df_tabela['Grupo'] + ' (em R$ milhões)'
-        df_tabela.set_index('Grupo', inplace=True)
+        # Dicionário de conceitos orçamentários para Tooltip nos cabeçalhos da tabela
+        dicas = {
+            'LOA': 'LOA (Lei Orçamentária Anual) é o instrumento legal que estima as receitas e fixa as despesas da UEA para o período de um ano.',
+            'AUTORIZADO': 'Dotação Inicial acrescida ou reduzida por créditos adicionais durante o exercício financeiro.',
+            'EMPENHADO': 'Valor do orçamento reservado para garantir o pagamento dos compromissos assumidos.',
+            'BLOQUEADO': 'Valores orçamentários indisponíveis temporariamente por determinação legal ou administrativa.',
+            'DISPONÍVEL': 'Saldo orçamentário livre que ainda pode ser utilizado para novas contratações.'
+        }
 
-        return fig, df_tabela
+        # Tabela HTML com dados centralizados e Tooltips nativos no cabeçalho
+        html_tabela = f"""
+        <style>
+            .tabela-despesas-container {{
+                margin-top: 15px;
+                border: 1px solid #D1D5DB;
+                border-radius: 8px;
+                overflow: hidden;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            }}
+            .tabela-despesas {{
+                width: 100%;
+                border-collapse: collapse;
+                font-family: sans-serif;
+                font-size: 13px;
+            }}
+            .tabela-despesas th {{
+                background-color: #1E3A8A;
+                color: white;
+                font-weight: 700;
+                padding: 10px 12px;
+                text-align: center;
+                border-right: 1px solid #3B82F6;
+                cursor: help;
+            }}
+            .tabela-despesas th:last-child {{
+                border-right: none;
+            }}
+            .tabela-despesas td {{
+                padding: 10px 12px;
+                text-align: center;
+                border-bottom: 1px solid #E5E7EB;
+                color: #374151;
+            }}
+            .tabela-despesas tr:nth-child(even) td {{
+                background-color: #F9FAFB;
+            }}
+            .tabela-despesas tr:hover td {{
+                background-color: #F3F4F6;
+            }}
+            .col-grupo-hdr {{
+                text-align: left !important;
+                background-color: #1E3A8A !important;
+            }}
+            .col-grupo-cell {{
+                text-align: left !important;
+                font-weight: 600;
+                color: #111827 !important;
+            }}
+        </style>
+        <div class="tabela-despesas-container">
+            <table class="tabela-despesas">
+                <thead>
+                    <tr>
+                        <th class="col-grupo-hdr">Mês/Ano / Grupo</th>
+                        <th title="{dicas['LOA']}">LOA 🛈</th>
+                        <th title="{dicas['AUTORIZADO']}">AUTORIZADO 🛈</th>
+                        <th title="{dicas['EMPENHADO']}">EMPENHADO 🛈</th>
+                        <th title="{dicas['BLOQUEADO']}">BLOQUEADO 🛈</th>
+                        <th title="{dicas['DISPONÍVEL']}">DISPONÍVEL 🛈</th>
+                    </tr>
+                </thead>
+                <tbody>
+        """
+        for index, row in df_grafico.iterrows():
+            g_nome = f"{row['Grupo']} (em R$ milhões)"
+            html_tabela += f"""
+                    <tr>
+                        <td class="col-grupo-cell">{g_nome}</td>
+                        <td>{row['LOA']}</td>
+                        <td>{row['AUTORIZADO']}</td>
+                        <td>{row['EMPENHADO']}</td>
+                        <td>{row['BLOQUEADO']}</td>
+                        <td>{row['DISPONÍVEL']}</td>
+                    </tr>
+            """
+        html_tabela += """
+                </tbody>
+            </table>
+        </div>
+        """
+
+        return fig, html_tabela
     except Exception as e:
         return None, None
 
@@ -813,11 +904,11 @@ try:
 
         if aba_atual == "🎯 Visão Estratégica":
             st.subheader("📊 Panorama Geral por Grupo de Despesa")
-            fig_grupo, df_tabela = criar_grafico_grupo_despesa(df_latest)
+            fig_grupo, html_tabela = criar_grafico_grupo_despesa(df_latest)
             if fig_grupo is not None:
                 st.plotly_chart(fig_grupo, use_container_width=True)
                 st.markdown("### Tabela de Dados")
-                st.table(df_tabela)
+                st.markdown(html_tabela, unsafe_allow_html=True)
             else:
                 st.info("A coluna 'Grupo de Despesas' não foi identificada ou está vazia na base de dados atual.")
                 
