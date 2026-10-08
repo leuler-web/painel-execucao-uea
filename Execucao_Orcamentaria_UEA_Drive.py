@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.express as px
+import plotly.graph_objects as go
 import os
 import re   
 from io import BytesIO
@@ -105,7 +106,7 @@ def criar_grafico_tendencia_global(caminho_planilha_proj):
         
         primeira_coluna = df_proj_raw.iloc[:,0].astype(str).str.upper()
         
-        # Mapeamento de todas as linhas necessárias
+        # Mapeamento de todas as linhas necessárias[cite: 4]
         mask_loa = primeira_coluna.str.contains("LOA", na=False)
         mask_emp = primeira_coluna.str.contains("EMPENHO", na=False)
         mask_prj = primeira_coluna.str.contains("PROJE", na=False)
@@ -178,41 +179,35 @@ def criar_grafico_tendencia_global(caminho_planilha_proj):
         raw_loa = [converter_br_para_float(row_loa[m]) for m in meses_disp]
         raw_emp = [converter_br_para_float(row_emp[m]) for m in meses_disp]
         raw_prj = [converter_br_para_float(row_prj[m]) for m in meses_disp]
-        raw_disp = [converter_br_para_float(row_disp[m]) for m in meses_disp] if row_disp is not None else [0]*len(meses_disp)
-        raw_saldo = [converter_br_para_float(row_saldo[m]) for m in meses_disp] if row_saldo is not None else [0]*len(meses_disp)
+        raw_disp = [converter_br_para_float(row_disp[m]) if row_disp is not None else 0.0 for m in meses_disp]
+        raw_saldo = [converter_br_para_float(row_saldo[m]) if row_saldo is not None else 0.0 for m in meses_disp]
         
-        # Identificando a coluna de TOTAL na planilha Excel (independente de estar escrita como Total, TOTAL, etc.)
         col_total = next((c for c in df_proj_raw.columns if 'TOTAL' in str(c).upper()), None)
         
-        # Função para extrair o valor da planilha ou somar caso a coluna total não seja encontrada
         def obter_total_real(row, raw_list):
             if row is None: return 0.0
             if col_total and col_total in row.index:
                 return converter_br_para_float(row[col_total])
             return sum(raw_list)
 
-        # Extraindo os totais baseados nas fórmulas do Excel
         val_tot_loa = obter_total_real(row_loa, raw_loa)
         val_tot_emp = obter_total_real(row_emp, raw_emp)
         val_tot_prj = obter_total_real(row_prj, raw_prj)
         val_tot_disp = obter_total_real(row_disp, raw_disp)
         val_tot_saldo = obter_total_real(row_saldo, raw_saldo)
 
-        # Formatando os valores dos meses
         dados_loa = [formatar_moeda_curta(v) for v in raw_loa]
         dados_emp = [formatar_moeda_curta(v) if v > 0 else '-' for v in raw_emp]
         dados_prj = [formatar_moeda_curta(v) if v > 0 else '-' for v in raw_prj]
         dados_disp = [formatar_moeda_curta(v) if (row_disp is not None and v != 0) else '-' for v in raw_disp]
         dados_saldo = [formatar_moeda_curta(v) if (row_saldo is not None and v != 0) else '-' for v in raw_saldo]
         
-        # Formatando os valores Totais da planilha
         str_tot_loa = formatar_moeda_curta(val_tot_loa)
         str_tot_emp = formatar_moeda_curta(val_tot_emp) if val_tot_emp != 0 else '-'
         str_tot_prj = formatar_moeda_curta(val_tot_prj) if val_tot_prj != 0 else '-'
         str_tot_disp = formatar_moeda_curta(val_tot_disp) if val_tot_disp != 0 else '-'
         str_tot_saldo = formatar_moeda_curta(val_tot_saldo) if val_tot_saldo != 0 else '-'
         
-        # Incluindo a coluna TOTAL no fim da tabela
         cell_text = [
             ['LOA (A)'] + dados_loa + [str_tot_loa],
             ['Empenho (B)'] + dados_emp + [str_tot_emp],
@@ -242,12 +237,12 @@ def criar_grafico_tendencia_global(caminho_planilha_proj):
         return None
 
 def criar_grafico_grupo_despesa(df_filtrado):
-    """Cria o gráfico de barras agrupadas com tabela acoplada estilo Excel"""
+    """Cria o gráfico interativo com Plotly em R$ milhões e Tooltips personalizados."""
     try:
         col_grupo = next((c for c in df_filtrado.columns if 'GRUPO' in c.upper() and 'DESPESA' in c.upper()), None)
         if not col_grupo:
             if 'Grupo de Despesas' in df_filtrado.columns: col_grupo = 'Grupo de Despesas'
-            else: return None
+            else: return None, None
 
         col_loa = next((c for c in df_filtrado.columns if 'DOTAÇÃO' in c.upper() or 'LOA' in c.upper()), None)
         col_aut = next((c for c in df_filtrado.columns if 'AUTORIZADO' in c.upper()), None)
@@ -270,66 +265,82 @@ def criar_grafico_grupo_despesa(df_filtrado):
         df_temp = df_filtrado.copy()
         df_temp['Grupo_Padrao'] = df_temp[col_grupo].apply(padronizar_grupo)
         
-        valores_grafico = {g: [] for g in grupos_alvo}
+        dados_resumo = []
         for g in grupos_alvo:
             df_g = df_temp[df_temp['Grupo_Padrao'] == g]
-            linha = []
-            for c in cols_reais:
-                if c and c in df_g.columns: linha.append(df_g[c].sum())
-                else: linha.append(0.0)
-            valores_grafico[g] = linha
+            linha = {'Grupo': g}
+            for label, c in zip(fases_labels, cols_reais):
+                if c and c in df_g.columns:
+                    linha[label] = int(round(df_g[c].sum() / 1_000_000))
+                else:
+                    linha[label] = 0
+            dados_resumo.append(linha)
             
-        fig, ax = plt.subplots(figsize=(8, 3.0))
-        
-        bar_width = 0.18
-        r1 = np.arange(len(fases_labels))
-        r2 = [x + bar_width for x in r1]
-        r3 = [x + bar_width for x in r2]
-        
-        cores = {'Pessoal': '#4472C4', 'Custeio': '#ED7D31', 'Investimento': '#A5A5A5'}
-        
-        ax.bar(r1, valores_grafico['Pessoal'], color=cores['Pessoal'], width=bar_width, label='Pessoal', edgecolor='white')
-        ax.bar(r2, valores_grafico['Custeio'], color=cores['Custeio'], width=bar_width, label='Custeio', edgecolor='white')
-        ax.bar(r3, valores_grafico['Investimento'], color=cores['Investimento'], width=bar_width, label='Investimento', edgecolor='white')
-        
-        def formata_y(x, pos):
-            return f"{x:,.0f}".replace(',', 'X').replace('.', ',').replace('X', '.')
-        ax.yaxis.set_major_formatter(plt.FuncFormatter(formata_y))
-        ax.tick_params(axis='y', labelsize=6)
-        ax.grid(axis='y', linestyle='--', alpha=0.4)
-        ax.set_xticks([]) 
-        
-        for spine in ['top', 'right', 'bottom']:
-            ax.spines[spine].set_visible(False)
-        
-        def formata_moeda(v):
-            return f"{v:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
+        df_grafico = pd.DataFrame(dados_resumo)
+
+        dicas = {
+            'LOA': 'LOA (Lei Orçamentária Anual) é o instrumento legal que estima as receitas e fixa as despesas da UEA para o período de um ano.',
+            'AUTORIZADO': 'Dotação Inicial acrescida ou reduzida por créditos adicionais durante o exercício financeiro.',
+            'EMPENHADO': 'Valor do orçamento reservado para garantir o pagamento dos compromissos assumidos.',
+            'BLOQUEADO': 'Valores orçamentários indisponíveis temporariamente por determinação legal ou administrativa.',
+            'DISPONÍVEL': 'Saldo orçamentário livre que ainda pode ser utilizado para novas contratações.'
+        }
+
+        cores = {
+            'Pessoal': '#3B82F6',      # Azul
+            'Custeio': '#DC2626',      # Vermelho
+            'Investimento': '#000000'  # Preto
+        }
+
+        fig = go.Figure()
+
+        for index, row in df_grafico.iterrows():
+            grupo = row['Grupo']
             
-        cell_text = [
-            [formata_moeda(v) for v in valores_grafico['Pessoal']],
-            [formata_moeda(v) for v in valores_grafico['Custeio']],
-            [formata_moeda(v) for v in valores_grafico['Investimento']]
-        ]
-        
-        tabela = plt.table(cellText=cell_text, rowLabels=grupos_alvo, 
-                           rowColours=[cores['Pessoal'], cores['Custeio'], cores['Investimento']],
-                           colLabels=fases_labels, loc='bottom', cellLoc='center')
-                           
-        tabela.scale(1, 1.3) 
-        tabela.set_fontsize(6) 
-        
-        for key, cell in tabela.get_celld().items():
-            cell.set_edgecolor('#D1D5DB')
-            if key[0] == 0: 
-                cell.set_text_props(fontweight='bold', color='#4B5563')
-                cell.set_facecolor('#F3F4F6')
-            elif key[1] == -1: 
-                cell.set_text_props(color='white', fontweight='bold')
-        
-        plt.subplots_adjust(bottom=0.25)
-        return fig
+            hover_texts = [
+                f"<b>{grupo} - {col}</b><br>Valor: R$ {row[col]} milhões<br><br><i>{dicas[col]}</i>"
+                for col in fases_labels
+            ]
+            
+            text_labels = [str(row[col]) for col in fases_labels]
+            
+            if grupo == 'Custeio':
+                text_labels[2] = f"💸 {text_labels[2]}"
+            elif grupo == 'Pessoal':
+                text_labels[2] = f"👥 {text_labels[2]}"
+            elif grupo == 'Investimento':
+                text_labels[2] = f"🏗️ {text_labels[2]}"
+
+            fig.add_trace(go.Bar(
+                name=grupo,
+                x=fases_labels,
+                y=[row[col] for col in fases_labels],
+                text=text_labels,
+                textposition='outside',
+                marker_color=cores.get(grupo, '#6B7280'),
+                hovertemplate="%{customdata}<extra></extra>",
+                customdata=hover_texts
+            ))
+
+        fig.update_layout(
+            title=dict(text='Execução Orçamentária por Grupo de Despesa (em R$ milhões)', font=dict(size=18, color='#111827')),
+            yaxis_title='R$ (Em milhões de reais)',
+            barmode='group',
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5),
+            plot_bgcolor='rgba(0,0,0,0)',
+            margin=dict(t=80, b=10, l=10, r=10),
+            height=450
+        )
+
+        fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='#E5E7EB', griddash='dash')
+
+        df_tabela = df_grafico.copy()
+        df_tabela['Grupo'] = df_tabela['Grupo'] + ' (em R$ milhões)'
+        df_tabela.set_index('Grupo', inplace=True)
+
+        return fig, df_tabela
     except Exception as e:
-        return None
+        return None, None
 
 def criar_grafico_receita_x_despesa(caminho_arquivo):
     """Lê a aba 'ReceitaXDespesa' e gera o gráfico comparativo com layout original e Totais."""
@@ -381,10 +392,8 @@ def criar_grafico_receita_x_despesa(caminho_arquivo):
             if (pd.notna(r_val) and r_val != 0) or (pd.notna(d_val) and d_val != 0):
                 ultimo_mes_idx = i
 
-        # Guarda os dados intactos antes de colocar NaN para conseguir calcular o Total corretamente
         df_pivot_totais = df_pivot.copy()
 
-        # Substitui meses futuros por NaN para interromper a linha no gráfico
         if ultimo_mes_idx != -1 and ultimo_mes_idx < 11:
             meses_futuros = meses_ordem[ultimo_mes_idx + 1:]
             for chave in ["RECEITA", "DESPESA", "SALDO"]:
@@ -398,17 +407,16 @@ def criar_grafico_receita_x_despesa(caminho_arquivo):
 
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(15, 7), gridspec_kw={'height_ratios': [2.5, 1]})
 
-        # Restaura as cores, estilos e marcadores EXATOS do gráfico original
         config_cats = [
-            ("LOA", "LOA (A)", '#3B82F6', 'o', '-'),           # Azul claro, linha sólida, bolinha
-            ("RECEITA", "Receita Arrecadada (B)", '#F97316', 'o', '-'), # Laranja, linha sólida, bolinha
-            ("DESPESA", "Despesa Realizada (C)", '#9CA3AF', 'o', '-'),  # Cinza, linha sólida, bolinha
-            ("SALDO", "Saldo (B-C)", '#EAB308', 'x', '-')      # Amarelo, linha sólida, 'x'
+            ("LOA", "LOA (A)", '#3B82F6', 'o', '-'),           
+            ("RECEITA", "Receita Arrecadada (B)", '#F97316', 'o', '-'), 
+            ("DESPESA", "Despesa Realizada (C)", '#9CA3AF', 'o', '-'),  
+            ("SALDO", "Saldo (B-C)", '#EAB308', 'x', '-')      
         ]
 
         linhas_tabela = []
         labels_tabela = []
-        colunas_tabela = meses_ordem + ["Total"] # Adiciona a coluna Total de volta
+        colunas_tabela = meses_ordem + ["Total"] 
 
         for chave, label_exibicao, cor, marcador, estilo in config_cats:
             if chave in idx_map:
@@ -416,12 +424,10 @@ def criar_grafico_receita_x_despesa(caminho_arquivo):
                 valores_grafico = df_pivot.loc[row_name].values
                 valores_integrais = df_pivot_totais.loc[row_name].values
                 
-                # Plota a linha
                 ax1.plot(meses_ordem, valores_grafico, marker=marcador, 
                          label=label_exibicao, color=cor, linewidth=2, linestyle=estilo)
                 
                 linha = []
-                # Popula os meses na tabela
                 for val in valores_grafico:
                     if pd.isna(val): 
                         linha.append("-")
@@ -431,7 +437,6 @@ def criar_grafico_receita_x_despesa(caminho_arquivo):
                         else:
                             linha.append(f"{val/1_000_000:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.'))
                 
-                # Calcula e adiciona o Total na última coluna
                 total = np.nansum(valores_integrais)
                 if em_milhoes_ja:
                     linha.append(f"{total:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.'))
@@ -443,7 +448,6 @@ def criar_grafico_receita_x_despesa(caminho_arquivo):
                 linhas_tabela.append(linha)
                 labels_tabela.append(label_tabela)
 
-        # Configurações visuais do gráfico
         ax1.legend(loc='upper right', fontsize=10, bbox_to_anchor=(1, 1))
         ax1.grid(True, alpha=0.3, linestyle='-')
         ax1.spines['top'].set_visible(False)
@@ -468,13 +472,12 @@ def criar_grafico_receita_x_despesa(caminho_arquivo):
             tabela.set_fontsize(9)
             tabela.scale(1, 1.4)
             
-            # Restaura o layout cinza claro da tabela original
             for key, cell in tabela.get_celld().items():
                 cell.set_edgecolor('#D1D5DB')
-                if key[0] == 0 or key[1] == -1: # Cabeçalho superior ou lateral
+                if key[0] == 0 or key[1] == -1: 
                     cell.set_facecolor('#F3F4F6')
                     cell.set_text_props(fontweight='bold', color='black')
-                else: # Células de dados
+                else: 
                     cell.set_facecolor('#FFFFFF')
                     cell.set_text_props(color='black')
 
@@ -810,10 +813,11 @@ try:
 
         if aba_atual == "🎯 Visão Estratégica":
             st.subheader("📊 Panorama Geral por Grupo de Despesa")
-            fig_grupo = criar_grafico_grupo_despesa(df_latest)
+            fig_grupo, df_tabela = criar_grafico_grupo_despesa(df_latest)
             if fig_grupo is not None:
-                st.pyplot(fig_grupo)
-                plt.close(fig_grupo)
+                st.plotly_chart(fig_grupo, use_container_width=True)
+                st.markdown("### Tabela de Dados")
+                st.table(df_tabela)
             else:
                 st.info("A coluna 'Grupo de Despesas' não foi identificada ou está vazia na base de dados atual.")
                 
@@ -1030,7 +1034,7 @@ except Exception as e:
             <p style="color: #7F1D1D; font-size: 16px;">
                 Não se preocupe! Isto geralmente ocorre devido a uma atualização recente nos dados do SIAFI ou conflito de memória.
             </p>
-            <p style="color: #991B1B; font-size: 13px;"><b>Erro técnico detalhado:</b> {{e}}</p>
+            <p style="color: #991B1B; font-size: 13px;"><b>Erro técnico detalhado:</b> {e}</p>
         </div>
     """, unsafe_allow_html=True)
     
