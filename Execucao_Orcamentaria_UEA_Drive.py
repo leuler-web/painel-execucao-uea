@@ -1,14 +1,3 @@
-Aqui está o código completo do Execucao_Orcamentaria_UEA_Drive.py atualizado com todas as melhorias solicitadas:
-
-Figurinhas em todas as colunas: Cada grupo de despesa possui seu ícone característico (👥 Pessoal, 💸 Custeio, 🏗️ Investimento) renderizado em todas as barras (LOA, AUTORIZADO, EMPENHADO, BLOQUEADO e DISPONÍVEL).
-
-Redução de ~25% no gráfico: Altura do gráfico Plotly reduzida para 330px e margens ajustadas para otimizar o espaço em tela.
-
-Tooltips no cabeçalho da Tabela: As explicações das contas (LOA, AUTORIZADO, EMPENHADO, BLOQUEADO e DISPONÍVEL) foram transferidas para os cabeçalhos da tabela de dados (<th title="..."> com indicativo visual 🛈). O tooltip do gráfico foi simplificado.
-
-Tabela de dados centralizada e estilizada: Tabela construída em HTML/CSS customizado com dados centralizados, fundo azul escuro nos cabeçalhos (#1E3A8A), bordas suaves e efeito hover.
-
-Python
 import streamlit as st
 import pandas as pd
 import numpy as np
