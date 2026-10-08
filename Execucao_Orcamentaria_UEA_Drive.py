@@ -27,9 +27,44 @@ st.set_page_config(
 )
 
 # ==========================================
-# 2. BLOCO ÚNICO DE ESTILOS CSS
+# 2. BLOCO ÚNICO DE ESTILOS CSS (AMPLIADO PARA TELAS GRANDES)
 # ==========================================
-st.markdown("<style>.topo-congelado{position:sticky;top:0;background-color:white;z-index:1000;padding-top:10px;padding-bottom:5px;border-bottom:2px solid #e5e7eb;margin-bottom:15px;}h1{font-size:1.6rem !important;margin-top:0 !important;line-height:1.2 !important;color:#111827 !important;}.stTabs{margin-top:-20px !important;}.tabela-container{max-height:480px;overflow:auto;border:1px solid #e5e7eb;border-radius:8px;position:relative;}table{width:100%;min-width:800px;border-collapse:separate;border-spacing:0;font-family:sans-serif;table-layout:auto;}thead th{position:sticky;top:0;background-color:#1E3A8A !important;color:white !important;padding:12px 8px;text-align:center;font-size:13px;font-weight:bold;border-bottom:2px solid #D1D5DB;white-space:nowrap;z-index:20;}thead th:nth-child(1){position:sticky;left:0;z-index:25;background-color:#1E3A8A !important;}tbody td:nth-child(1){position:sticky;left:0;z-index:15;background-color:white;}thead th:nth-child(2){position:sticky;left:60px;z-index:25;background-color:#1E3A8A !important;}tbody td:nth-child(2){position:sticky;left:60px;z-index:15;background-color:white;}thead th:nth-child(3){position:sticky;left:120px;z-index:25;background-color:#1E3A8A !important;box-shadow:2px 0 5px -2px rgba(0,0,0,0.15);}tbody td:nth-child(3){position:sticky;left:120px;z-index:15;background-color:white;box-shadow:2px 0 5px -2px rgba(0,0,0,0.15);}tbody td{padding:10px 8px;border-bottom:1px solid #F3F4F6;font-size:13px;color:#4B5563;white-space:nowrap;background-color:white;text-align:right;}tbody td:nth-child(1),tbody td:nth-child(2),tbody td:nth-child(3){text-align:center;}tr:hover td{background-color:#F9FAFB !important;}tr:hover td:nth-child(1),tr:hover td:nth-child(2),tr:hover td:nth-child(3){background-color:#F9FAFB !important;}.pos{color:#059669;font-weight:bold;}.neg{color:#DC2626;font-weight:bold;}.zero{color:#6B7280;}#MainMenu{visibility:hidden !important;}footer{visibility:hidden !important;}header[data-testid=stHeader]{display:none !important;}div[data-testid=stToolbar]{display:none !important;}div[data-testid=stDecoration]{display:none !important;}.st-emotion-cache-1f3f2m8{display:none !important;}.stApp{margin-top:0 !important;}.stMain{padding-top:0 !important;}button[kind=header]{display:none !important;}.st-emotion-cache-1q3nhyv{display:none !important;}[data-testid=baseButton-header]{display:none !important;}[data-testid=stMetricValue]{color:#2E7D32 !important;font-size:1.2rem !important;}</style>", unsafe_allow_html=True)
+st.markdown("""
+<style>
+.topo-congelado{position:sticky;top:0;background-color:white;z-index:1000;padding-top:10px;padding-bottom:5px;border-bottom:2px solid #e5e7eb;margin-bottom:15px;}
+h1{font-size:2rem !important;margin-top:0 !important;line-height:1.2 !important;color:#111827 !important;font-weight:800 !important;}
+.stTabs{margin-top:-20px !important;}
+.tabela-container{max-height:520px;overflow:auto;border:1px solid #e5e7eb;border-radius:8px;position:relative;}
+table{width:100%;min-width:800px;border-collapse:separate;border-spacing:0;font-family:sans-serif;table-layout:auto;}
+thead th{position:sticky;top:0;background-color:#1E3A8A !important;color:white !important;padding:14px 10px;text-align:center;font-size:16px !important;font-weight:bold;border-bottom:2px solid #D1D5DB;white-space:nowrap;z-index:20;}
+thead th:nth-child(1){position:sticky;left:0;z-index:25;background-color:#1E3A8A !important;}
+tbody td:nth-child(1){position:sticky;left:0;z-index:15;background-color:white;}
+thead th:nth-child(2){position:sticky;left:60px;z-index:25;background-color:#1E3A8A !important;}
+tbody td:nth-child(2){position:sticky;left:60px;z-index:15;background-color:white;}
+thead th:nth-child(3){position:sticky;left:120px;z-index:25;background-color:#1E3A8A !important;box-shadow:2px 0 5px -2px rgba(0,0,0,0.15);}
+tbody td:nth-child(3){position:sticky;left:120px;z-index:15;background-color:white;box-shadow:2px 0 5px -2px rgba(0,0,0,0.15);}
+tbody td{padding:12px 10px;border-bottom:1px solid #F3F4F6;font-size:16px !important;color:#1F2937;white-space:nowrap;background-color:white;text-align:right;font-weight:600;}
+tbody td:nth-child(1),tbody td:nth-child(2),tbody td:nth-child(3){text-align:center;}
+tr:hover td{background-color:#F9FAFB !important;}
+tr:hover td:nth-child(1),tr:hover td:nth-child(2),tr:hover td:nth-child(3){background-color:#F9FAFB !important;}
+.pos{color:#059669;font-weight:bold;}
+.neg{color:#DC2626;font-weight:bold;}
+.zero{color:#6B7280;}
+#MainMenu{visibility:hidden !important;}
+footer{visibility:hidden !important;}
+header[data-testid=stHeader]{display:none !important;}
+div[data-testid=stToolbar]{display:none !important;}
+div[data-testid=stDecoration]{display:none !important;}
+.st-emotion-cache-1f3f2m8{display:none !important;}
+.stApp{margin-top:0 !important;}
+.stMain{padding-top:0 !important;}
+button[kind=header]{display:none !important;}
+.st-emotion-cache-1q3nhyv{display:none !important;}
+[data-testid=baseButton-header]{display:none !important;}
+[data-testid=stMetricValue]{color:#2E7D32 !important;font-size:1.5rem !important;}
+.destaque-ano{font-size: 20px !important; font-weight: 800 !important; color: #1E3A8A;}
+</style>
+""", unsafe_allow_html=True)
 
 # ==========================================
 # 3. GESTÃO DE ESTADO
@@ -158,7 +193,7 @@ def criar_grafico_tendencia_global(caminho_planilha_proj):
         if row_saldo is not None:
             ax1.plot(meses_eixo, [v if v != 0 else None for v in saldo], marker='X', label='Saldo(D-C)', color='#EF4444', linewidth=2, linestyle='-.')
             
-        ax1.legend(loc='upper left', fontsize=10)
+        ax1.legend(loc='upper left', fontsize=11)
         ax1.grid(True, alpha=0.2)
         ax1.ticklabel_format(style='plain', axis='y')
         ax1.set_xlim(-0.5, 11.5)
@@ -217,8 +252,8 @@ def criar_grafico_tendencia_global(caminho_planilha_proj):
         
         tabela = ax2.table(cellText=cell_text, colLabels=col_labels, cellLoc='center', loc='center')
         tabela.auto_set_font_size(False)
-        tabela.set_fontsize(9)
-        tabela.scale(1, 1.5)
+        tabela.set_fontsize(10)
+        tabela.scale(1, 1.6)
         
         for j in range(len(col_labels)):
             tabela[0, j].set_facecolor('#1E3A8A')
@@ -234,7 +269,7 @@ def criar_grafico_tendencia_global(caminho_planilha_proj):
         return None
 
 def criar_grafico_grupo_despesa(df_filtrado):
-    """Cria o gráfico interativo com Plotly e Tabela HTML perfeitamente renderizada sem recuos de código."""
+    """Cria o gráfico interativo com Plotly e Tabela HTML com fontes grandes e números destacados."""
     try:
         col_grupo = next((c for c in df_filtrado.columns if 'GRUPO' in c.upper() and 'DESPESA' in c.upper()), None)
         if not col_grupo:
@@ -306,22 +341,24 @@ def criar_grafico_grupo_despesa(df_filtrado):
                 y=[row[col] for col in fases_labels],
                 text=text_labels,
                 textposition='outside',
+                textfont=dict(size=16, color="black", family="sans-serif", weight="bold"),
                 marker_color=cores.get(grupo, '#6B7280'),
                 hovertemplate="%{customdata}<extra></extra>",
                 customdata=hover_texts
             ))
 
         fig.update_layout(
-            title=dict(text='Execução Orçamentária por Grupo de Despesa (em R$ milhões)', font=dict(size=16, color='#111827')),
+            title=dict(text='Execução Orçamentária por Grupo de Despesa (em R$ milhões)', font=dict(size=20, color='#111827', weight='bold')),
             yaxis_title='R$ (Em milhões de reais)',
             barmode='group',
-            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5),
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5, font=dict(size=15, weight='bold')),
             plot_bgcolor='rgba(0,0,0,0)',
             margin=dict(t=60, b=10, l=10, r=10),
-            height=330
+            height=360
         )
 
-        fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='#E5E7EB', griddash='dash')
+        fig.update_xaxes(tickfont=dict(size=15, weight='bold', color='#111827'))
+        fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='#E5E7EB', griddash='dash', tickfont=dict(size=14))
 
         dicas = {
             'LOA': 'LOA (Lei Orçamentária Anual) é o instrumento legal que estima as receitas e fixa as despesas da UEA para o período de um ano.',
@@ -331,26 +368,26 @@ def criar_grafico_grupo_despesa(df_filtrado):
             'DISPONÍVEL': 'Saldo orçamentário livre que ainda pode ser utilizado para novas contratações.'
         }
 
-        # Construção da Tabela HTML estritamente alinhada à esquerda (sem 4+ espaços de recuo)
+        # Tabela HTML com fontes maiores e números em super destaque
         html_tabela = f"""<style>
 .tabela-despesas-container {{
     margin-top: 15px;
-    border: 1px solid #D1D5DB;
-    border-radius: 8px;
+    border: 2px solid #CBD5E1;
+    border-radius: 10px;
     overflow: hidden;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
 }}
 .tabela-despesas {{
     width: 100%;
     border-collapse: collapse;
     font-family: sans-serif;
-    font-size: 13px;
 }}
 .tabela-despesas th {{
     background-color: #1E3A8A;
     color: white;
-    font-weight: 700;
-    padding: 10px 12px;
+    font-weight: 800;
+    font-size: 16px;
+    padding: 14px 14px;
     text-align: center;
     border-right: 1px solid #3B82F6;
     cursor: help;
@@ -359,16 +396,18 @@ def criar_grafico_grupo_despesa(df_filtrado):
     border-right: none;
 }}
 .tabela-despesas td {{
-    padding: 10px 12px;
+    padding: 14px 14px;
     text-align: center;
-    border-bottom: 1px solid #E5E7EB;
-    color: #374151;
+    border-bottom: 1px solid #E2E8F0;
+    font-size: 18px;
+    font-weight: 800;
+    color: #1E3A8A;
 }}
 .tabela-despesas tr:nth-child(even) td {{
-    background-color: #F9FAFB;
+    background-color: #F8FAFC;
 }}
 .tabela-despesas tr:hover td {{
-    background-color: #F3F4F6;
+    background-color: #F1F5F9;
 }}
 .col-grupo-hdr {{
     text-align: left !important;
@@ -376,8 +415,9 @@ def criar_grafico_grupo_despesa(df_filtrado):
 }}
 .col-grupo-cell {{
     text-align: left !important;
-    font-weight: 600;
-    color: #111827 !important;
+    font-weight: 800 !important;
+    font-size: 16px !important;
+    color: #0F172A !important;
 }}
 </style>
 <div class="tabela-despesas-container">
@@ -518,7 +558,7 @@ def criar_grafico_receita_x_despesa(caminho_arquivo):
                 linhas_tabela.append(linha)
                 labels_tabela.append(label_tabela)
 
-        ax1.legend(loc='upper right', fontsize=10, bbox_to_anchor=(1, 1))
+        ax1.legend(loc='upper right', fontsize=11, bbox_to_anchor=(1, 1))
         ax1.grid(True, alpha=0.3, linestyle='-')
         ax1.spines['top'].set_visible(False)
         ax1.spines['right'].set_visible(False)
@@ -539,8 +579,8 @@ def criar_grafico_receita_x_despesa(caminho_arquivo):
             tabela = ax2.table(cellText=linhas_tabela, colLabels=colunas_tabela, rowLabels=labels_tabela,
                                cellLoc='center', loc='center')
             tabela.auto_set_font_size(False)
-            tabela.set_fontsize(9)
-            tabela.scale(1, 1.4)
+            tabela.set_fontsize(10)
+            tabela.scale(1, 1.5)
             
             for key, cell in tabela.get_celld().items():
                 cell.set_edgecolor('#D1D5DB')
@@ -833,25 +873,25 @@ try:
     if var_fonte_codigo != "Todas": mask_var &= (df_var['Fonte_3'] == var_fonte_codigo)
     df_var_filtrada = df_var[mask_var]
         
-    # CARDS KPIS
+    # CARDS KPIS COM FONTES AMPLIADAS
     st.markdown("""
         <style>
-        .kpi-card { background: linear-gradient(135deg, #1E3A8A 0%, #3B82F6 100%); border-radius: 12px; padding: 25px 20px; text-align: center; color: white; box-shadow: 0 4px 15px rgba(30, 58, 138, 0.3); min-height: 140px; display: flex; flex-direction: column; justify-content: center; transition: transform 0.2s; }
+        .kpi-card { background: linear-gradient(135deg, #1E3A8A 0%, #3B82F6 100%); border-radius: 14px; padding: 22px 15px; text-align: center; color: white; box-shadow: 0 6px 18px rgba(30, 58, 138, 0.35); min-height: 150px; display: flex; flex-direction: column; justify-content: center; transition: transform 0.2s; }
         .kpi-card:hover { transform: scale(1.03); }
-        .kpi-card-aut { background: linear-gradient(135deg, #64748B 0%, #94A3B8 100%); }
-        .kpi-card-emp { background: linear-gradient(135deg, #1E3A8A 0%, #3B82F6 100%); }
-        .kpi-card-liq { background: linear-gradient(135deg, #0369A1 0%, #38BDF8 100%); }
-        .kpi-card-pago { background: linear-gradient(135deg, #047857 0%, #34D399 100%); }
-        .kpi-card-disp { background: linear-gradient(135deg, #B45309 0%, #FBBF24 100%); }
-        .kpi-label { font-size: 16px; font-weight: 600; letter-spacing: 1px; opacity: 0.9; margin-bottom: 8px; }
-        .kpi-value { font-size: 28px; font-weight: 800; line-height: 1.2; }
-        .kpi-delta { font-size: 14px; opacity: 0.85; margin-top: 5px; }
+        .kpi-card-aut { background: linear-gradient(135deg, #475569 0%, #64748B 100%); }
+        .kpi-card-emp { background: linear-gradient(135deg, #1E3A8A 0%, #2563EB 100%); }
+        .kpi-card-liq { background: linear-gradient(135deg, #0369A1 0%, #0284C7 100%); }
+        .kpi-card-pago { background: linear-gradient(135deg, #047857 0%, #10B981 100%); }
+        .kpi-card-disp { background: linear-gradient(135deg, #B45309 0%, #D97706 100%); }
+        .kpi-label { font-size: 18px !important; font-weight: 800 !important; letter-spacing: 1px; opacity: 0.95; margin-bottom: 6px; text-transform: uppercase; }
+        .kpi-value { font-size: 38px !important; font-weight: 900 !important; line-height: 1.1; letter-spacing: -0.5px; text-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+        .kpi-delta { font-size: 16px !important; font-weight: 700 !important; opacity: 0.95; margin-top: 8px; background: rgba(255,255,255,0.15); padding: 2px 8px; border-radius: 12px; display: inline-block; }
         .kpi-container { position: sticky; top: 0; background: white; z-index: 999; padding: 10px 0 15px 0; border-bottom: 2px solid #e5e7eb; margin-bottom: 15px; }
         </style>
         """, unsafe_allow_html=True)
         
     st.markdown('<div class="kpi-container">', unsafe_allow_html=True)
-    st.markdown(f"<div class='destaque-ano'>Exercício Orçamentário: {ano_dinamico} <span style='font-size: 16px; font-weight: bold; color: #6B7280;'>(última atualização: {dt_atual})</span></div>", unsafe_allow_html=True)
+    st.markdown(f"<div class='destaque-ano'>Exercício Orçamentário: {ano_dinamico} <span style='font-size: 18px; font-weight: bold; color: #6B7280;'>(última atualização: {dt_atual})</span></div>", unsafe_allow_html=True)
     
     c1, c2, c3, c4, c5 = st.columns(5)
     v_aut = df_latest['Autorizado'].sum() if 'Autorizado' in df_latest.columns else 0
@@ -906,13 +946,13 @@ try:
                     max_valor_bar = df_top['Empenhado'].max()
                     
                     fig_bar.update_layout(
-                        yaxis=dict(categoryorder='total ascending', tickfont=dict(size=14, color="#111827"), automargin=True), 
-                        font=dict(size=14, color="black"), 
+                        yaxis=dict(categoryorder='total ascending', tickfont=dict(size=16, color="#111827", weight="bold"), automargin=True), 
+                        font=dict(size=15, color="black"), 
                         xaxis=dict(showticklabels=False, title="", range=[0, max_valor_bar * 1.25]), 
                         yaxis_title="", 
                         margin=dict(l=20, r=100, t=10, b=10)
                     )
-                    fig_bar.update_traces(marker_color='#4f8868', textposition="outside", textfont=dict(size=14, color="black"), hovertemplate="<b>Ação: %{customdata[0]} - %{customdata[1]}</b><br>Valor: %{text}<extra></extra>")
+                    fig_bar.update_traces(marker_color='#4f8868', textposition="outside", textfont=dict(size=15, color="black", weight="bold"), hovertemplate="<b>Ação: %{customdata[0]} - %{customdata[1]}</b><br>Valor: %{text}<extra></extra>")
                     st.plotly_chart(fig_bar, width="stretch")
                 else:
                     st.info("Não há valores empenhados para os filtros selecionados.")
@@ -927,14 +967,14 @@ try:
                     df_tree['Valor_Abreviado'] = df_tree['Empenhado'].apply(formata_abreviado)
                     
                     fig_tree = px.treemap(df_tree, path=[px.Constant(f"Ação {var_acao_codigo}"), 'Rotulo_Display'], values='Empenhado', color='Empenhado', color_continuous_scale='Greens', custom_data=['Valor_Abreviado'])
-                    fig_tree.update_traces(texttemplate="<b>%{label}</b><br>%{customdata[0]}", textfont=dict(size=14), hovertemplate="<b>%{label}</b><br>Empenhado: %{customdata[0]}<extra></extra>")
-                    fig_tree.update_layout(margin=dict(t=20, l=10, r=10, b=10), height=450)
+                    fig_tree.update_traces(texttemplate="<b>%{label}</b><br>%{customdata[0]}", textfont=dict(size=16, weight="bold"), hovertemplate="<b>%{label}</b><br>Empenhado: %{customdata[0]}<extra></extra>")
+                    fig_tree.update_layout(margin=dict(t=20, l=10, r=10, b=10), height=480)
                     st.plotly_chart(fig_tree, width="stretch")
                 else:
                     st.info("Não há valores empenhados para detalhar nesta Ação.")
 
         elif aba_atual == "📈 Evolução Mensal":
-            st.markdown(f"<div class='destaque-ano'>Evolução Mensal da Execução - Ano {ano_dinamico} <span style='font-size: 16px; font-weight: normal; color: #6B7280;'>(última atualização: {dt_atual})</span></div>", unsafe_allow_html=True)
+            st.markdown(f"<div class='destaque-ano'>Evolução Mensal da Execução - Ano {ano_dinamico} <span style='font-size: 18px; font-weight: normal; color: #6B7280;'>(última atualização: {dt_atual})</span></div>", unsafe_allow_html=True)
             colunas_ex = [col for col in ['Autorizado', 'Empenhado', 'Liquidado', 'Pago', 'Disponível'] if col in df_base.columns]
             df_m = df_base[mask_evo].groupby('Mês Referência')[colunas_ex].sum().reset_index()
             
@@ -949,19 +989,19 @@ try:
                 fig_line = px.line(df_melt, x='Mês', y='Valor', color='Fase', markers=True, text='Rotulo_F', color_discrete_sequence=['#64748B', '#1E3A8A', '#3B82F6', '#10B981', '#F59E0B'])
                 for trace in fig_line.data:
                     trace.textfont.color = trace.line.color
-                    trace.textfont.size = 12
+                    trace.textfont.size = 14
                     trace.textfont.weight = "bold"
-                    trace.marker.size = 10
-                    trace.line.width = 3
+                    trace.marker.size = 11
+                    trace.line.width = 4
                     trace.textposition = "top center"
                 
-                fig_line.update_layout(font=dict(size=14, color="black"), margin=dict(l=40, r=60, t=20, b=20), yaxis_range=[0, df_melt['Valor'].max() * 1.30], yaxis=dict(showticklabels=False), xaxis=dict(tickfont=dict(size=14, weight="bold")), legend=dict(orientation="h", y=1.05))
+                fig_line.update_layout(font=dict(size=15, color="black"), margin=dict(l=40, r=60, t=20, b=20), yaxis_range=[0, df_melt['Valor'].max() * 1.30], yaxis=dict(showticklabels=False), xaxis=dict(tickfont=dict(size=16, weight="bold")), legend=dict(orientation="h", y=1.05, font=dict(size=14, weight="bold")))
                 st.plotly_chart(fig_line, width="stretch")
             else:
                 st.info("Não há dados de evolução mensal para os filtros selecionados.")
 
         elif aba_atual == "📉 Projeção vs. Realizado":
-            st.markdown(f"<div class='destaque-ano'>Projeção Orçamentária - Ano {ano_dinamico} <span style='font-size: 16px; font-weight: normal; color: #6B7280;'>(última atualização: {dt_atual})</span></div>", unsafe_allow_html=True)
+            st.markdown(f"<div class='destaque-ano'>Projeção Orçamentária - Ano {ano_dinamico} <span style='font-size: 18px; font-weight: normal; color: #6B7280;'>(última atualização: {dt_atual})</span></div>", unsafe_allow_html=True)
             caminho_projecao = r"Projecao_2026.xlsx"
             
             if os.path.exists(caminho_projecao):
@@ -974,7 +1014,7 @@ try:
             else: st.warning("⚠️ Arquivo de projeção não encontrado.")
 
         elif aba_atual == "⚖️ Receita vs. Despesa":
-            st.markdown(f"<div class='destaque-ano'>Análise da Receita Arrecadada x Despesa Realizada <span style='font-size: 16px; font-weight: normal; color: #6B7280;'>(última atualização: {dt_atual})</span></div>", unsafe_allow_html=True)
+            st.markdown(f"<div class='destaque-ano'>Análise da Receita Arrecadada x Despesa Realizada <span style='font-size: 18px; font-weight: normal; color: #6B7280;'>(última atualização: {dt_atual})</span></div>", unsafe_allow_html=True)
             caminho_grupo_despesa = r"Grafico_Grupo de Despesa.xlsx"
             
             if os.path.exists(caminho_grupo_despesa):
@@ -1061,9 +1101,9 @@ try:
 
         elif aba_atual == "📊 Variação por Natureza":
             if var_acao_codigo != "Todas":
-                titulo_dinamico = f"Detalhamento da variação do Empenhado<br><span style='font-size: 20px; color: #4B5563;'>da Ação: {var_acao_str}</span>"
+                titulo_dinamico = f"Detalhamento da variação do Empenhado<br><span style='font-size: 22px; color: #4B5563;'>da Ação: {var_acao_str}</span>"
             else:
-                titulo_dinamico = "Detalhamento da variação do Empenhado<br><span style='font-size: 20px; color: #4B5563;'>(Panorama de Todas as Ações)</span>"
+                titulo_dinamico = "Detalhamento da variação do Empenhado<br><span style='font-size: 22px; color: #4B5563;'>(Panorama de Todas as Ações)</span>"
             st.markdown(f"<div class='destaque-ano'>{titulo_dinamico}</div>", unsafe_allow_html=True)
             
             col_var_emp = None
@@ -1089,10 +1129,10 @@ try:
                     df_chart_var = df_chart_var.sort_values(by=col_var_emp, ascending=True)
                     
                     fig_var = px.bar(df_chart_var, x=col_var_emp, y='Rotulo_Eixo', orientation='h', text='Texto_Valor', custom_data=['Natureza_ID', 'Nome_Natureza'])
-                    fig_var.update_traces(marker_color=df_chart_var['Cor'], textposition="outside", textfont=dict(size=14, color="black", weight="bold"), hovertemplate="<b>Natureza: %{customdata[0]} - %{customdata[1]}</b><br>Variação no Período: %{text}<extra></extra>")
+                    fig_var.update_traces(marker_color=df_chart_var['Cor'], textposition="outside", textfont=dict(size=15, color="black", weight="bold"), hovertemplate="<b>Natureza: %{customdata[0]} - %{customdata[1]}</b><br>Variação no Período: %{text}<extra></extra>")
                     fig_var.add_vline(x=0, line_width=2, line_color="black")
                     max_abs = abs(df_chart_var[col_var_emp]).max()
-                    fig_var.update_layout(font=dict(size=14, color="black"), yaxis=dict(tickfont=dict(size=13, color="#111827")), xaxis=dict(showticklabels=False, title="", range=[-max_abs * 1.35, max_abs * 1.35]), yaxis_title="", margin=dict(l=10, r=40, t=20, b=10), height=max(400, len(df_chart_var) * 45))
+                    fig_var.update_layout(font=dict(size=15, color="black"), yaxis=dict(tickfont=dict(size=14, color="#111827", weight="bold")), xaxis=dict(showticklabels=False, title="", range=[-max_abs * 1.35, max_abs * 1.35]), yaxis_title="", margin=dict(l=10, r=40, t=20, b=10), height=max(420, len(df_chart_var) * 48))
                     st.plotly_chart(fig_var, width="stretch")
                 else: st.info("Não houve variação de Empenho para as naturezas neste período ou filtro selecionado.")
             else: st.warning("Coluna de variação de Empenhado não foi identificada na base de dados.")
