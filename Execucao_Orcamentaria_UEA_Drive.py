@@ -1,12 +1,3 @@
-Sim, exatamente!
-
-Essa alteração é feita diretamente no ficheiro Execucao_Orcamentaria_UEA_Drive.py, que é o código da sua aplicação principal no Streamlit (onde os gráficos, filtros e abas são desenhados para a apresentação).
-
-O script processar_orcamento.py serve apenas em segundo plano (backend) para gerar o ficheiro Base_Consolidada_SIAFI.xlsx. O Execucao_Orcamentaria_UEA_Drive.py lê essa base (df_base) e monta as visualizações dinâmicas na tela.
-
-Aqui está o código completo e unificado do Execucao_Orcamentaria_UEA_Drive.py já com a conexão ao SIAFI e com os valores exibidos junto aos marcadores do gráfico:
-
-Python
 import streamlit as st
 import pandas as pd
 import numpy as np
