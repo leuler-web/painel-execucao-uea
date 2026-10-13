@@ -134,7 +134,7 @@ def destacar_celulas_com_variacao(df):
     return estilos
 
 def criar_grafico_tendencia_global(caminho_planilha_proj):
-    """Cria o gráfico Empenhado vs. Projeção vs. LOA com tabela integrada (Buscando o TOTAL direto da planilha)"""
+    """Gera o gráfico de tendência interativo (Plotly) e a tabela HTML com tema claro executivo."""
     try:
         df_proj_raw = pd.read_excel(caminho_planilha_proj)
         meses_eixo = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ']
@@ -148,7 +148,7 @@ def criar_grafico_tendencia_global(caminho_planilha_proj):
         mask_saldo = primeira_coluna.str.contains("SALDO", na=False)
         
         if not (mask_loa.any() and mask_emp.any() and mask_prj.any()):
-            return None
+            return None, None, None
         
         row_loa = df_proj_raw[mask_loa].iloc[0]
         row_emp = df_proj_raw[mask_emp].iloc[0]
@@ -165,11 +165,24 @@ def criar_grafico_tendencia_global(caminho_planilha_proj):
             try: return float(v_str)
             except: return 0.0
         
-        loa = [converter_br_para_float(row_loa[m]) for m in meses_eixo]
-        executado = [converter_br_para_float(row_emp[m]) for m in meses_eixo]
-        projetado = [converter_br_para_float(row_prj[m]) for m in meses_eixo]
-        disponivel = [converter_br_para_float(row_disp[m]) if row_disp is not None else 0.0 for m in meses_eixo]
-        saldo = [converter_br_para_float(row_saldo[m]) if row_saldo is not None else 0.0 for m in meses_eixo]
+        def formatar_moeda_curta(valor):
+            if pd.isna(valor) or valor == 0: return "-"
+            abs_v = abs(valor)
+            sinal = "-" if valor < 0 else ""
+            if abs_v >= 1_000_000_000:
+                return f"{sinal}R$ {abs_v/1_000_000_000:,.1f} Bi".replace(",", "X").replace(".", ",").replace("X", ".")
+            elif abs_v >= 1_000_000:
+                return f"{sinal}R$ {abs_v/1_000_000:,.1f} Mi".replace(",", "X").replace(".", ",").replace("X", ".")
+            elif abs_v >= 1_000:
+                return f"{sinal}R$ {abs_v/1_000:,.1f} mil".replace(",", "X").replace(".", ",").replace("X", ".")
+            else:
+                return f"{sinal}R$ {abs_v:,.0f}".replace(",", ".")
+
+        loa = [converter_br_para_float(row_loa[m]) if m in row_loa.index else 0.0 for m in meses_eixo]
+        executado = [converter_br_para_float(row_emp[m]) if m in row_emp.index else 0.0 for m in meses_eixo]
+        projetado = [converter_br_para_float(row_prj[m]) if m in row_prj.index else 0.0 for m in meses_eixo]
+        disponivel = [converter_br_para_float(row_disp[m]) if (row_disp is not None and m in row_disp.index) else 0.0 for m in meses_eixo]
+        saldo = [converter_br_para_float(row_saldo[m]) if (row_saldo is not None and m in row_saldo.index) else 0.0 for m in meses_eixo]
         
         final_exec = 0
         for i, v in enumerate(executado):
@@ -181,92 +194,180 @@ def criar_grafico_tendencia_global(caminho_planilha_proj):
             projetado_display[i] = projetado[i]
         
         executado_display = [v if v > 0 else None for v in executado[:final_exec+1]] + [None]*(12 - final_exec - 1)
-        
-        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(18, 9), gridspec_kw={'height_ratios': [2.5, 1.5]})
-        
-        ax1.plot(meses_eixo, loa, marker='^', label='LOA', color='#8B5CF6', linewidth=2, linestyle=':')
-        ax1.plot(meses_eixo, executado_display, marker='o', label='Empenhado (AFI)', color='#0D47A1', linewidth=4)
-        ax1.plot(meses_eixo, projetado_display, marker='s', label='Projetado (Meta)', color='#FF8F00', linewidth=3, linestyle='--')
-        
-        if row_disp is not None:
-            ax1.plot(meses_eixo, [v if v > 0 else None for v in disponivel], marker='D', label='Disponível (D)', color='#10B981', linewidth=2)
-        if row_saldo is not None:
-            ax1.plot(meses_eixo, [v if v != 0 else None for v in saldo], marker='X', label='Saldo(D-C)', color='#EF4444', linewidth=2, linestyle='-.')
-            
-        ax1.legend(loc='upper left', fontsize=11)
-        ax1.grid(True, alpha=0.2)
-        ax1.ticklabel_format(style='plain', axis='y')
-        ax1.set_xlim(-0.5, 11.5)
-        ax1.margins(x=0.04)
-        
-        def formatar_moeda_curta(valor):
-            if abs(valor) >= 1_000_000:
-                return f"R$ {valor/1_000_000:,.1f} Mi".replace(",", "X").replace(".", ",").replace("X", ".")
-            else:
-                return f"R$ {valor:,.0f}".replace(",", ".")
-        
-        ax2.axis('off')
-        meses_disp = [m for m in meses_eixo if m in df_proj_raw.columns]
-        
-        raw_loa = [converter_br_para_float(row_loa[m]) for m in meses_disp]
-        raw_emp = [converter_br_para_float(row_emp[m]) for m in meses_disp]
-        raw_prj = [converter_br_para_float(row_prj[m]) for m in meses_disp]
-        raw_disp = [converter_br_para_float(row_disp[m]) if row_disp is not None else 0.0 for m in meses_disp]
-        raw_saldo = [converter_br_para_float(row_saldo[m]) if row_saldo is not None else 0.0 for m in meses_disp]
-        
+        disponivel_display = [v if v > 0 else None for v in disponivel[:final_exec+1]] + [None]*(12 - final_exec - 1)
+        saldo_display = [v if v != 0 else None for v in saldo[:final_exec+1]] + [None]*(12 - final_exec - 1)
+
         col_total = next((c for c in df_proj_raw.columns if 'TOTAL' in str(c).upper()), None)
-        
-        def obter_total_real(row, raw_list):
+        def obter_total(row, lst):
             if row is None: return 0.0
             if col_total and col_total in row.index:
                 return converter_br_para_float(row[col_total])
-            return sum(raw_list)
+            return sum(lst)
 
-        val_tot_loa = obter_total_real(row_loa, raw_loa)
-        val_tot_emp = obter_total_real(row_emp, raw_emp)
-        val_tot_prj = obter_total_real(row_prj, raw_prj)
-        val_tot_disp = obter_total_real(row_disp, raw_disp)
-        val_tot_saldo = obter_total_real(row_saldo, raw_saldo)
+        tot_loa = obter_total(row_loa, loa)
+        tot_emp = obter_total(row_emp, executado)
+        tot_prj = obter_total(row_prj, projetado)
+        disp_atual = disponivel[final_exec] if final_exec < len(disponivel) else obter_total(row_disp, disponivel)
 
-        dados_loa = [formatar_moeda_curta(v) for v in raw_loa]
-        dados_emp = [formatar_moeda_curta(v) if v > 0 else '-' for v in raw_emp]
-        dados_prj = [formatar_moeda_curta(v) if v > 0 else '-' for v in raw_prj]
-        dados_disp = [formatar_moeda_curta(v) if (row_disp is not None and v != 0) else '-' for v in raw_disp]
-        dados_saldo = [formatar_moeda_curta(v) if (row_saldo is not None and v != 0) else '-' for v in raw_saldo]
-        
-        str_tot_loa = formatar_moeda_curta(val_tot_loa)
-        str_tot_emp = formatar_moeda_curta(val_tot_emp) if val_tot_emp != 0 else '-'
-        str_tot_prj = formatar_moeda_curta(val_tot_prj) if val_tot_prj != 0 else '-'
-        str_tot_disp = formatar_moeda_curta(val_tot_disp) if val_tot_disp != 0 else '-'
-        str_tot_saldo = formatar_moeda_curta(val_tot_saldo) if val_tot_saldo != 0 else '-'
-        
-        cell_text = [
-            ['LOA (A)'] + dados_loa + [str_tot_loa],
-            ['Empenho (B)'] + dados_emp + [str_tot_emp],
-            ['Projeção (C)'] + dados_prj + [str_tot_prj],
-            ['Disponível (D)'] + dados_disp + [str_tot_disp],
-            ['Saldo(D-C)'] + dados_saldo + [str_tot_saldo]
+        kpis = {
+            'tot_loa': formatar_moeda_curta(tot_loa),
+            'tot_emp': formatar_moeda_curta(tot_emp),
+            'disp_atual': formatar_moeda_curta(disp_atual),
+            'tot_prj': formatar_moeda_curta(tot_prj)
+        }
+
+        loa_mi = [v/1e6 for v in loa]
+        exec_mi = [v/1e6 if v is not None else None for v in executado_display]
+        proj_mi = [v/1e6 if v is not None else None for v in projetado_display]
+        disp_mi = [v/1e6 if v is not None else None for v in disponivel_display]
+        saldo_mi = [v/1e6 if v is not None else None for v in saldo_display]
+
+        fig = go.Figure()
+
+        fig.add_trace(go.Scatter(
+            x=meses_eixo, y=loa_mi, name='LOA (A)',
+            mode='lines+markers',
+            line=dict(color='#8B5CF6', width=2.5, dash='dot'),
+            marker=dict(size=7, symbol='triangle-up'),
+            hovertemplate="<b>LOA (A)</b><br>Mês: %{x}<br>Valor: R$ %{y:.1f} Mi<extra></extra>"
+        ))
+
+        fig.add_trace(go.Scatter(
+            x=meses_eixo, y=exec_mi, name='Empenhado (B)',
+            mode='lines+markers',
+            line=dict(color='#1E3A8A', width=3.5, shape='spline'),
+            fill='tozeroy', fillcolor='rgba(30, 58, 138, 0.07)',
+            marker=dict(size=8, symbol='circle'),
+            hovertemplate="<b>Empenhado (B)</b><br>Mês: %{x}<br>Valor: R$ %{y:.1f} Mi<extra></extra>"
+        ))
+
+        fig.add_trace(go.Scatter(
+            x=meses_eixo, y=proj_mi, name='Projetado (C)',
+            mode='lines+markers',
+            line=dict(color='#D97706', width=3, dash='dash', shape='spline'),
+            marker=dict(size=8, symbol='square'),
+            hovertemplate="<b>Projetado (C)</b><br>Mês: %{x}<br>Valor: R$ %{y:.1f} Mi<extra></extra>"
+        ))
+
+        fig.add_trace(go.Scatter(
+            x=meses_eixo, y=disp_mi, name='Disponível (D)',
+            mode='lines+markers',
+            line=dict(color='#10B981', width=3, shape='spline'),
+            fill='tozeroy', fillcolor='rgba(16, 185, 129, 0.05)',
+            marker=dict(size=8, symbol='diamond'),
+            hovertemplate="<b>Disponível (D)</b><br>Mês: %{x}<br>Valor: R$ %{y:.1f} Mi<extra></extra>"
+        ))
+
+        if row_saldo is not None:
+            fig.add_trace(go.Scatter(
+                x=meses_eixo, y=saldo_mi, name='Saldo (D-C)',
+                mode='lines+markers',
+                line=dict(color='#EF4444', width=2.5, dash='dashdot', shape='spline'),
+                marker=dict(size=7, symbol='x'),
+                hovertemplate="<b>Saldo (D-C)</b><br>Mês: %{x}<br>Valor: R$ %{y:.1f} Mi<extra></extra>"
+            ))
+
+        fig.update_layout(
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)',
+            height=430,
+            margin=dict(l=40, r=40, t=30, b=30),
+            font=dict(size=14, color='#1E293B'),
+            legend=dict(orientation="h", y=1.12, x=0.5, xanchor="center", font=dict(size=14, color="#1E3A8A"))
+        )
+        fig.update_xaxes(tickfont=dict(size=14, color="#111827"), showgrid=True, gridcolor='#E2E8F0')
+        fig.update_yaxes(
+            tickprefix="R$ ", ticksuffix=" Mi",
+            tickfont=dict(size=13, color="#111827"), 
+            showgrid=True, gridcolor='#E2E8F0', griddash='dash'
+        )
+
+        rows_info = [
+            ("LOA (A)", row_loa),
+            ("Empenho (B)", row_emp),
+            ("Projeção (C)", row_prj),
+            ("Disponível (D)", row_disp),
+            ("Saldo(D-C)", row_saldo)
         ]
-        
-        col_labels = [''] + meses_disp + ['TOTAL']
-        
-        tabela = ax2.table(cellText=cell_text, colLabels=col_labels, cellLoc='center', loc='center')
-        tabela.auto_set_font_size(False)
-        tabela.set_fontsize(10)
-        tabela.scale(1, 1.6)
-        
-        for j in range(len(col_labels)):
-            tabela[0, j].set_facecolor('#1E3A8A')
-            tabela[0, j].set_text_props(color='white', fontweight='bold')
+
+        html_tabela = """<style>
+.tabela-proj-container {
+    margin-top: 15px;
+    border: 2px solid #CBD5E1;
+    border-radius: 10px;
+    overflow-x: auto;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+    background: #FFFFFF;
+}
+.tabela-proj {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: sans-serif;
+}
+.tabela-proj th {
+    background-color: #F8FAFC;
+    color: #1E3A8A;
+    font-weight: 800;
+    font-size: 14px;
+    padding: 12px 10px;
+    text-align: center;
+    border-bottom: 2px solid #CBD5E1;
+    border-right: 1px solid #E2E8F0;
+}
+.tabela-proj td {
+    padding: 11px 10px;
+    text-align: center;
+    border-bottom: 1px solid #E2E8F0;
+    border-right: 1px solid #F1F5F9;
+    font-size: 14px;
+    font-weight: 600;
+    color: #334155;
+}
+.tabela-proj td.col-hdr-label {
+    text-align: left;
+    font-weight: 800;
+    color: #0F172A;
+    background-color: #F8FAFC;
+    min-width: 130px;
+}
+.tabela-proj td.col-total-val, .tabela-proj th.col-total-hdr {
+    border-right: none;
+    font-weight: 800;
+    background-color: #F1F5F9;
+    color: #0F172A;
+}
+.tabela-proj tr:hover td {
+    background-color: #F8FAFC;
+}
+</style>
+<div class="tabela-proj-container">
+<table class="tabela-proj">
+<thead>
+<tr>
+<th style="text-align:left;">Fase / Item</th>"""
+
+        for m in meses_eixo:
+            html_tabela += f"<th>{m}</th>"
+        html_tabela += "<th class='col-total-hdr'>TOTAL</th></tr></thead><tbody>"
+
+        for label, row in rows_info:
+            if row is None: continue
+            html_tabela += f"<tr><td class='col-hdr-label'>{label}</td>"
+            vals_m = [converter_br_para_float(row[m]) if m in row.index else 0.0 for m in meses_eixo]
+            for v in vals_m:
+                txt_v = formatar_moeda_curta(v) if v != 0 else "-"
+                html_tabela += f"<td>{txt_v}</td>"
             
-        for i in range(1, len(cell_text) + 1):
-            tabela[i, 0].set_facecolor('#E8EAF6')
-            tabela[i, 0].set_text_props(fontweight='bold')
-        
-        plt.tight_layout(pad=2)
-        return fig
+            tot_val = obter_total(row, vals_m)
+            txt_tot = formatar_moeda_curta(tot_val) if tot_val != 0 else "-"
+            html_tabela += f"<td class='col-total-val'>{txt_tot}</td></tr>"
+
+        html_tabela += "</tbody></table></div>"
+
+        return fig, html_tabela, kpis
+
     except Exception as e:
-        return None
+        return None, None, None
 
 def criar_grafico_grupo_despesa(df_filtrado):
     """Cria o gráfico interativo com Plotly e Tabela HTML com fontes grandes e números destacados."""
@@ -1049,13 +1150,63 @@ try:
             caminho_projecao = r"Projecao_2026.xlsx"
             
             if os.path.exists(caminho_projecao):
-                fig_tendencia = criar_grafico_tendencia_global(caminho_projecao)
+                fig_tendencia, html_tabela_proj, kpis = criar_grafico_tendencia_global(caminho_projecao)
                 if fig_tendencia is not None:
-                    st.subheader("📉 LOA vs. Empenhado vs. Projeção vs Disponível - (Ação 2003: Folha de Pagamento - UEA)")
-                    st.pyplot(fig_tendencia)
-                    plt.close(fig_tendencia)
-                else: st.warning("⚠️ Planilha de projeção não encontrada ou com formato inválido.")
-            else: st.warning("⚠️ Arquivo de projeção não encontrado.")
+                    # 1. CARDS DE KPIS EXECUTIVOS NO TOPO
+                    st.markdown("""
+                    <style>
+                    .kpi-row-proj { display: flex; gap: 15px; margin-top: 10px; margin-bottom: 15px; flex-wrap: wrap; }
+                    .kpi-card-proj { flex: 1; min-width: 200px; background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; padding: 14px 18px; box-shadow: 0 4px 10px rgba(0,0,0,0.04); display: flex; align-items: center; gap: 14px; }
+                    .kpi-icon-box { width: 42px; height: 42px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: bold; }
+                    .kpi-title-proj { font-size: 13px; font-weight: 700; color: #64748B; text-transform: uppercase; }
+                    .kpi-value-proj { font-size: 24px; font-weight: 800; color: #0F172A; line-height: 1.1; }
+                    </style>
+                    """, unsafe_allow_html=True)
+
+                    html_kpis = f"""
+                    <div class="kpi-row-proj">
+                        <div class="kpi-card-proj">
+                            <div class="kpi-icon-box" style="background:#F3E8FF; color:#8B5CF6;">📊</div>
+                            <div>
+                                <div class="kpi-title-proj">Total LOA (A)</div>
+                                <div class="kpi-value-proj" style="color:#6B21A8;">{kpis['tot_loa']}</div>
+                            </div>
+                        </div>
+                        <div class="kpi-card-proj">
+                            <div class="kpi-icon-box" style="background:#DBEAFE; color:#1E3A8A;">💰</div>
+                            <div>
+                                <div class="kpi-title-proj">Total Empenhado (B)</div>
+                                <div class="kpi-value-proj" style="color:#1E3A8A;">{kpis['tot_emp']}</div>
+                            </div>
+                        </div>
+                        <div class="kpi-card-proj">
+                            <div class="kpi-icon-box" style="background:#D1FAE5; color:#059669;">🏦</div>
+                            <div>
+                                <div class="kpi-title-proj">Disponível Atual (D)</div>
+                                <div class="kpi-value-proj" style="color:#047857;">{kpis['disp_atual']}</div>
+                            </div>
+                        </div>
+                        <div class="kpi-card-proj">
+                            <div class="kpi-icon-box" style="background:#FEF3C7; color:#D97706;">🎯</div>
+                            <div>
+                                <div class="kpi-title-proj">Total Projeção (C)</div>
+                                <div class="kpi-value-proj" style="color:#B45309;">{kpis['tot_prj']}</div>
+                            </div>
+                        </div>
+                    </div>
+                    """
+                    st.markdown(html_kpis, unsafe_allow_html=True)
+
+                    # 2. TÍTULO E GRÁFICO PLOTLY
+                    st.markdown("### 📉 LOA vs. Empenhado vs. Projeção vs Disponível - (Ação 2003: Folha de Pagamento - UEA)")
+                    st.plotly_chart(fig_tendencia, use_container_width=True)
+
+                    # 3. TABELA HTML
+                    st.markdown(html_tabela_proj, unsafe_allow_html=True)
+                else: 
+                    st.warning("⚠️ Planilha de projeção não encontrada ou com formato inválido.")
+            else: 
+                st.warning("⚠️ Arquivo de projeção não encontrado.")
 
         elif aba_atual == "⚖️ Receita vs. Despesa":
             st.markdown(f"<div class='destaque-ano'>Análise da Receita Arrecadada x Despesa Realizada <span style='font-size: 18px; font-weight: normal; color: #6B7280;'>(última atualização: {dt_atual})</span></div>", unsafe_allow_html=True)
