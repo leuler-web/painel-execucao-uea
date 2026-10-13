@@ -617,14 +617,15 @@ def criar_grafico_grupo_despesa(df_filtrado):
                 customdata=hover_texts
             ))
 
+        # Altere no fig.update_layout a margem inferior 'b':
         fig.update_layout(
-            title=dict(text='Execução Orçamentária por Grupo de Despesa (em R$ milhões)', font=dict(size=20, color='#111827')),
-            yaxis_title='R$ (Em milhões de reais)',
+            title=dict(text='Execução Orçamentária por Grupo de Despesa (em R$ milhões)', font=dict(size=16, color='#111827')),
+            yaxis_title='R$ (Em milhões)',
             barmode='group',
-            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5, font=dict(size=15)),
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5, font=dict(size=14)),
             plot_bgcolor='rgba(0,0,0,0)',
-            margin=dict(t=60, b=10, l=10, r=10),
-            height=240 # REDUZIDO DE 360 PARA 240
+            margin=dict(t=35, b=0, l=10, r=10),  # b=0 para eliminar o espaço em branco inferior
+            height=260
         )
 
         fig.update_xaxes(tickfont=dict(size=15, color='#111827'))
@@ -638,9 +639,10 @@ def criar_grafico_grupo_despesa(df_filtrado):
             'DISPONÍVEL': 'Saldo orçamentário livre que ainda pode ser utilizado para novas contratações.'
         }
 
+        # E no CSS da tabela (html_tabela), altere 'margin-top' para -20px:
         html_tabela = f"""<style>
 .tabela-despesas-container {{
-    margin-top: 15px;
+    margin-top: -20px; /* PUXA A TABELA PARA ENCOSTAR DIRETO NO GRÁFICO */
     border: 2px solid #CBD5E1;
     border-radius: 10px;
     overflow: hidden;
@@ -1217,7 +1219,6 @@ try:
             fig_grupo, html_tabela = criar_grafico_grupo_despesa(df_latest)
             if fig_grupo is not None:
                 st.plotly_chart(fig_grupo, use_container_width=True)
-                st.markdown("### Tabela de Dados")  # <--- REMOVER ESTA LINHA
                 st.markdown(html_tabela, unsafe_allow_html=True)
             else:
                 st.info("A coluna 'Grupo de Despesas' não foi identificada ou está vazia na base de dados atual.")
