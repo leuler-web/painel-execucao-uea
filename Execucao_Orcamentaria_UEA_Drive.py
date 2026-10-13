@@ -371,30 +371,19 @@ def criar_grafico_tendencia_global(caminho_planilha_proj):
 
 def criar_grafico_arrecadacao_fonte116(df_base=None, caminho_arquivo=None):
     """
-    Gera o gráfico de Arrecadação da Fonte 116 mantendo ambas as séries 
-    na escala MENSAL correta (sem misturar com acumulado do SIAFI).
+    Gera o gráfico de Arrecadação da Fonte 116 com posições dinâmicas de rótulos 
+    para evitar colisões nos pontos de cruzamento das linhas.
     """
     try:
         meses_eixo = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
         
-        # 1. Projeção LOA Mensal (Valores de referência em milhares: R$ 63.000, R$ 77.000, etc.)
+        # 1. Projeção LOA Mensal (R$ mil)
         projecao_loa = [63000, 77000, 81000, 87000, 80000, 87000, 75000, 79000, 99000, 91000, 98000, 91000]
         
-        # 2. Realizado Mensal da Arrecadação (Valores mês a mês)
+        # 2. Realizado Mensal (R$ mil)
         realizado_2026 = [62500, 71000, 75000, 91000, 77000, 75000, 71000, 76000, 87000, None, None, None]
 
-        # Tenta carregar dados atualizados da planilha de apoio da Receita caso exista
-        if caminho_arquivo and os.path.exists(caminho_arquivo):
-            try:
-                xls = pd.ExcelFile(caminho_arquivo)
-                aba_alvo = next((s for s in xls.sheet_names if '116' in s or 'RECEITA' in s.upper()), None)
-                if aba_alvo:
-                    df_rec = pd.read_excel(xls, sheet_name=aba_alvo)
-                    # Se houver coluna de receita mensal, pode mapear aqui
-            except Exception:
-                pass
-
-        # 3. Cálculos de Período (Jan a Set)
+        # 3. Cálculos do Período
         idx_realizados = [i for i, v in enumerate(realizado_2026) if v is not None]
         qtd_meses = len(idx_realizados)
 
@@ -424,9 +413,19 @@ def criar_grafico_arrecadacao_fonte116(df_base=None, caminho_arquivo=None):
             'qtd_meses_str': f"jan-{meses_eixo[qtd_meses-1].lower()}" if qtd_meses > 0 else "período"
         }
 
-        # Formatação dos rótulos sob/sobre os marcadores
+        # --- AQUI ENTRA A POSIÇÃO DINÂMICA DOS RÓTULOS ---
         labels_proj = [f"<b>{v:,.0f}</b>".replace(",", ".") for v in projecao_loa]
         labels_real = [f"<b>{v:,.0f}</b>".replace(",", ".") if v is not None else "" for v in realizado_2026]
+
+        pos_proj = []
+        pos_real = []
+        for p, r in zip(projecao_loa, realizado_2026):
+            if r is not None and r > p:
+                pos_proj.append('bottom center')  # Linha verde vai para baixo
+                pos_real.append('top center')     # Linha azul vai para o topo
+            else:
+                pos_proj.append('top center')     # Linha verde vai para o topo
+                pos_real.append('bottom center')  # Linha azul vai para baixo
 
         fig = go.Figure()
 
@@ -436,20 +435,20 @@ def criar_grafico_arrecadacao_fonte116(df_base=None, caminho_arquivo=None):
             name='Projeção LOA 1,01 BI',
             mode='lines+markers+text',
             text=labels_proj,
-            textposition='top center',
+            textposition=pos_proj,
             textfont=dict(size=11, color='#15803D'),
             line=dict(color='#15803D', width=3, shape='spline'),
             marker=dict(size=7, color='#15803D'),
             hovertemplate="<b>Projeção LOA</b><br>Mês: %{x}<br>Valor: R$ %{y:,.0f}<extra></extra>"
         ))
 
-        # Linha Realizado 2026 (Azul Mensal)
+        # Linha Realizado 2026 (Azul)
         fig.add_trace(go.Scatter(
             x=meses_eixo, y=realizado_2026,
             name='Realizado 2026',
             mode='lines+markers+text',
             text=labels_real,
-            textposition='bottom center',
+            textposition=pos_real,
             textfont=dict(size=11, color='#0284C7'),
             line=dict(color='#0284C7', width=3.5, shape='spline'),
             marker=dict(size=8, color='#0284C7'),
@@ -468,7 +467,6 @@ def criar_grafico_arrecadacao_fonte116(df_base=None, caminho_arquivo=None):
         fig.update_xaxes(showgrid=True, gridcolor='#E2E8F0', tickfont=dict(size=13, color="#111827"))
         fig.update_yaxes(showgrid=True, gridcolor='#E2E8F0', griddash='dash', tickprefix="R$ ", tickfont=dict(size=12, color="#111827"), range=[0, 120000])
 
-        # Tabela executiva de resumo
         cor_dif = "f116-neg" if diferenca_abs < 0 else "f116-pos"
         cor_fech = "f116-neg" if dif_fechamento_abs < 0 else "f116-pos"
         bg_dif = "#FEF2F2" if diferenca_abs < 0 else "#F0FDF4"
