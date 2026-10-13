@@ -1217,7 +1217,7 @@ try:
             fig_grupo, html_tabela = criar_grafico_grupo_despesa(df_latest)
             if fig_grupo is not None:
                 st.plotly_chart(fig_grupo, use_container_width=True)
-                st.markdown("### Tabela de Dados")
+                st.markdown("### Tabela de Dados")  # <--- REMOVER ESTA LINHA
                 st.markdown(html_tabela, unsafe_allow_html=True)
             else:
                 st.info("A coluna 'Grupo de Despesas' não foi identificada ou está vazia na base de dados atual.")
