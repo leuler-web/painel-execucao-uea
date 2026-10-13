@@ -270,7 +270,7 @@ def criar_grafico_tendencia_global(caminho_planilha_proj):
         fig.update_layout(
             plot_bgcolor='rgba(0,0,0,0)',
             paper_bgcolor='rgba(0,0,0,0)',
-            height=430,
+            height=250, # REDUZIDO DE 430 PARA 250
             margin=dict(l=40, r=40, t=30, b=30),
             font=dict(size=14, color='#1E293B'),
             legend=dict(orientation="h", y=1.12, x=0.5, xanchor="center", font=dict(size=14, color="#1E3A8A"))
@@ -459,7 +459,7 @@ def criar_grafico_arrecadacao_fonte116(df_base=None, caminho_arquivo=None, meses
             title=dict(text="Acompanhamento da Arrecadação - Fonte 116 (Tesouro)", font=dict(size=18, color="#1E3A8A")),
             plot_bgcolor='rgba(0,0,0,0)',
             paper_bgcolor='rgba(0,0,0,0)',
-            height=460,
+            height=270, # REDUZIDO DE 460 PARA 270
             margin=dict(l=40, r=40, t=50, b=30),
             font=dict(size=13, color='#1E293B'),
             legend=dict(orientation="h", y=1.12, x=0.5, xanchor="center", font=dict(size=13, color="#1E3A8A"))
@@ -624,7 +624,7 @@ def criar_grafico_grupo_despesa(df_filtrado):
             legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5, font=dict(size=15)),
             plot_bgcolor='rgba(0,0,0,0)',
             margin=dict(t=60, b=10, l=10, r=10),
-            height=360
+            height=240 # REDUZIDO DE 360 PARA 240
         )
 
         fig.update_xaxes(tickfont=dict(size=15, color='#111827'))
@@ -784,7 +784,7 @@ def criar_grafico_receita_x_despesa(caminho_arquivo):
         max_val = max(valores_validos) if valores_validos else 0
         em_milhoes_ja = max_val < 100_000
 
-        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(15, 7), gridspec_kw={'height_ratios': [2.5, 1]})
+        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(15, 4.5), gridspec_kw={'height_ratios': [2.5, 1]})
 
         config_cats = [
             ("LOA", "LOA (A)", '#000000', 'o', '-'),            # Preto
@@ -1142,20 +1142,41 @@ try:
     if var_fonte_codigo != "Todas": mask_var &= (df_var['Fonte_3'] == var_fonte_codigo)
     df_var_filtrada = df_var[mask_var]
         
-    # CARDS KPIS COM FONTES AMPLIADAS
+    # CARDS KPIS COM TAMANHO ULTRA-COMPACTO E FIXO NO TOPO
     st.markdown("""
         <style>
-        .kpi-card { background: linear-gradient(135deg, #1E3A8A 0%, #3B82F6 100%); border-radius: 14px; padding: 22px 15px; text-align: center; color: white; box-shadow: 0 6px 18px rgba(30, 58, 138, 0.35); min-height: 150px; display: flex; flex-direction: column; justify-content: center; transition: transform 0.2s; }
-        .kpi-card:hover { transform: scale(1.03); }
+        .kpi-container { 
+            position: sticky; 
+            top: 0; 
+            background: white; 
+            z-index: 999; 
+            padding: 4px 0 6px 0; 
+            border-bottom: 2px solid #e5e7eb; 
+            margin-bottom: 8px; 
+        }
+        .kpi-card { 
+            background: linear-gradient(135deg, #1E3A8A 0%, #3B82F6 100%); 
+            border-radius: 8px; 
+            padding: 6px 10px !important; 
+            text-align: center; 
+            color: white; 
+            box-shadow: 0 2px 6px rgba(30, 58, 138, 0.2); 
+            min-height: 72px !important; 
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center; 
+        }
         .kpi-card-aut { background: linear-gradient(135deg, #475569 0%, #64748B 100%); }
         .kpi-card-emp { background: linear-gradient(135deg, #1E3A8A 0%, #2563EB 100%); }
         .kpi-card-liq { background: linear-gradient(135deg, #0369A1 0%, #0284C7 100%); }
         .kpi-card-pago { background: linear-gradient(135deg, #047857 0%, #10B981 100%); }
         .kpi-card-disp { background: linear-gradient(135deg, #B45309 0%, #D97706 100%); }
-        .kpi-label { font-size: 18px !important; font-weight: 800 !important; letter-spacing: 1px; opacity: 0.95; margin-bottom: 6px; text-transform: uppercase; }
-        .kpi-value { font-size: 38px !important; font-weight: 900 !important; line-height: 1.1; letter-spacing: -0.5px; text-shadow: 0 2px 4px rgba(0,0,0,0.2); }
-        .kpi-delta { font-size: 16px !important; font-weight: 700 !important; opacity: 0.95; margin-top: 8px; background: rgba(255,255,255,0.15); padding: 2px 8px; border-radius: 12px; display: inline-block; }
-        .kpi-container { position: sticky; top: 0; background: white; z-index: 999; padding: 10px 0 15px 0; border-bottom: 2px solid #e5e7eb; margin-bottom: 15px; }
+        .kpi-label { font-size: 12px !important; font-weight: 800 !important; letter-spacing: 0.5px; opacity: 0.95; margin-bottom: 2px !important; text-transform: uppercase; }
+        .kpi-value { font-size: 22px !important; font-weight: 900 !important; line-height: 1.1; }
+        .kpi-delta { font-size: 11px !important; font-weight: 700 !important; opacity: 0.95; margin-top: 2px !important; background: rgba(255,255,255,0.2); padding: 1px 6px; border-radius: 8px; display: inline-block; }
+        
+        /* Reduz padding global da página Streamlit */
+        .block-container { padding-top: 0.5rem !important; padding-bottom: 0.5rem !important; }
         </style>
         """, unsafe_allow_html=True)
         
