@@ -1379,12 +1379,22 @@ try:
             else: st.warning(f"⚠️ Arquivo '{caminho_grupo_despesa}' não encontrado na pasta do projeto.")
 
         elif aba_atual == "🏛️ Arrecadação Fonte 116":
+            import time
             st.markdown(f"<div class='destaque-ano'>Arrecadação Fonte 116 (Tesouro) - Realizado vs. Projeção <span style='font-size: 18px; font-weight: normal; color: #6B7280;'>(última atualização: {dt_atual})</span></div>", unsafe_allow_html=True)
             caminho_grupo_despesa = r"Grafico_Grupo de Despesa.xlsx"
-            
-            fig_f116, html_f116, kpis_f116 = criar_grafico_arrecadacao_fonte116(df_base, caminho_grupo_despesa)
-            if fig_f116 is not None:
-                st.plotly_chart(fig_f116, use_container_width=True)
+
+            # 1. Cria o contêiner dinâmico do gráfico
+            plot_spot = st.empty()
+
+            # 2. Executa o desenho animado (mês a mês)
+            for m in range(1, 13):
+                fig_f116, html_f116, kpis_f116 = criar_grafico_arrecadacao_fonte116(df_base, caminho_grupo_despesa, meses_limite=m)
+                if fig_f116 is not None:
+                    plot_spot.plotly_chart(fig_f116, use_container_width=True)
+                    time.sleep(0.08)  # Ajuste a velocidade da animação aqui (0.08 seg por mês)
+
+            # 3. Exibe a tabela de resumo executivo abaixo do gráfico
+            if html_f116 is not None:
                 st.markdown(html_f116, unsafe_allow_html=True)
             else:
                 st.info("Não foi possível carregar os dados da Fonte 116.")
