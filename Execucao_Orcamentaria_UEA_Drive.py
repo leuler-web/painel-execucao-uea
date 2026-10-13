@@ -369,30 +369,31 @@ def criar_grafico_tendencia_global(caminho_planilha_proj):
     except Exception as e:
         return None, None, None
 
-def criar_grafico_arrecadacao_fonte116(df_base=None, caminho_arquivo=None):
+def criar_grafico_arrecadacao_fonte116(df_base=None, caminho_arquivo=None, meses_limite=12):
     """
-    Gera o gráfico de Arrecadação da Fonte 116 com posições dinâmicas de rótulos 
-    para evitar colisões nos pontos de cruzamento das linhas.
+    Gera o gráfico de Arrecadação da Fonte 116 permitindo a renderização animada mês a mês.
     """
     try:
         meses_eixo = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
         
-        # 1. Projeção LOA Mensal (R$ mil)
-        projecao_loa = [63000, 77000, 81000, 87000, 80000, 87000, 75000, 79000, 99000, 91000, 98000, 91000]
-        
-        # 2. Realizado Mensal (R$ mil)
-        realizado_2026 = [62500, 71000, 75000, 91000, 77000, 75000, 71000, 76000, 87000, None, None, None]
+        # 1. Dados completos
+        projecao_loa_full = [63000, 77000, 81000, 87000, 80000, 87000, 75000, 79000, 99000, 91000, 98000, 91000]
+        realizado_2026_full = [62500, 71000, 75000, 91000, 77000, 75000, 71000, 76000, 87000, None, None, None]
 
-        # 3. Cálculos do Período
-        idx_realizados = [i for i, v in enumerate(realizado_2026) if v is not None]
+        # 2. Corta os dados até o mês limite do frame animado
+        projecao_loa = projecao_loa_full[:meses_limite] + [None] * (12 - meses_limite)
+        realizado_2026 = realizado_2026_full[:meses_limite] + [None] * (12 - meses_limite)
+
+        # 3. Cálculos do Período (calculados com base em todos os meses disponíveis)
+        idx_realizados = [i for i, v in enumerate(realizado_2026_full) if v is not None]
         qtd_meses = len(idx_realizados)
 
-        tot_proj_periodo = sum(projecao_loa[:qtd_meses])
-        tot_real_periodo = sum([v for v in realizado_2026 if v is not None])
+        tot_proj_periodo = sum(projecao_loa_full[:qtd_meses])
+        tot_real_periodo = sum([v for v in realizado_2026_full if v is not None])
         diferenca_abs = tot_real_periodo - tot_proj_periodo
         diferenca_pct = (diferenca_abs / tot_proj_periodo) * 100 if tot_proj_periodo > 0 else 0.0
 
-        tot_proj_anual = sum(projecao_loa)
+        tot_proj_anual = sum(projecao_loa_full)
         proj_fechamento = (tot_real_periodo / tot_proj_periodo) * tot_proj_anual if tot_proj_periodo > 0 else tot_proj_anual
         dif_fechamento_abs = proj_fechamento - tot_proj_anual
         dif_fechamento_pct = (dif_fechamento_abs / tot_proj_anual) * 100 if tot_proj_anual > 0 else 0.0
@@ -413,19 +414,18 @@ def criar_grafico_arrecadacao_fonte116(df_base=None, caminho_arquivo=None):
             'qtd_meses_str': f"jan-{meses_eixo[qtd_meses-1].lower()}" if qtd_meses > 0 else "período"
         }
 
-        # --- AQUI ENTRA A POSIÇÃO DINÂMICA DOS RÓTULOS ---
-        labels_proj = [f"<b>{v:,.0f}</b>".replace(",", ".") for v in projecao_loa]
+        # Rótulos e posições dinâmicas
+        labels_proj = [f"<b>{v:,.0f}</b>".replace(",", ".") if v is not None else "" for v in projecao_loa]
         labels_real = [f"<b>{v:,.0f}</b>".replace(",", ".") if v is not None else "" for v in realizado_2026]
 
-        pos_proj = []
-        pos_real = []
+        pos_proj, pos_real = [], []
         for p, r in zip(projecao_loa, realizado_2026):
-            if r is not None and r > p:
-                pos_proj.append('bottom center')  # Linha verde vai para baixo
-                pos_real.append('top center')     # Linha azul vai para o topo
+            if r is not None and p is not None and r > p:
+                pos_proj.append('bottom center')
+                pos_real.append('top center')
             else:
-                pos_proj.append('top center')     # Linha verde vai para o topo
-                pos_real.append('bottom center')  # Linha azul vai para baixo
+                pos_proj.append('top center')
+                pos_real.append('bottom center')
 
         fig = go.Figure()
 
