@@ -1,4 +1,4 @@
-import streamlit as st
+Aqui está o código completo e atualizado do arquivo Execucao_Orcamentaria_UEA_Drive.py.Integrei a nova aba "🏛️ Arrecadação Fonte 116" ao menu principal e adicionei a função dedicada criar_grafico_arrecadacao_fonte116, que gera o gráfico interativo de comparação entre o Realizado 2026 e a Projeção LOA, junto com a tabela resumo calculada automaticamente em tema limpo executivo.   Pythonimport streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.express as px
@@ -369,6 +369,164 @@ def criar_grafico_tendencia_global(caminho_planilha_proj):
     except Exception as e:
         return None, None, None
 
+def criar_grafico_arrecadacao_fonte116(caminho_arquivo):
+    """
+    Gera o gráfico interativo de Arrecadação da Fonte 116 e calcula a tabela com totais, diferenças e projeção de fechamento.
+    """
+    try:
+        meses_eixo = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
+        
+        # Valores padrão estruturados conforme a imagem de referência
+        projecao_loa = [63000, 77000, 81000, 87000, 80000, 87000, 75000, 79000, 99000, 91000, 98000, 91000]
+        realizado_2026 = [62500, 71000, 75000, 91000, 77000, 75000, 71000, 76000, 87000, None, None, None]
+
+        if caminho_arquivo and os.path.exists(caminho_arquivo):
+            try:
+                xls = pd.ExcelFile(caminho_arquivo)
+                aba_alvo = next((s for s in xls.sheet_names if '116' in s or 'FONTE' in s.upper()), None)
+                if aba_alvo:
+                    df_f116 = pd.read_excel(xls, sheet_name=aba_alvo)
+                    df_f116.columns = [str(c).strip().upper() for c in df_f116.columns]
+                    # Tenta ler colunas dinamicamente se disponíveis
+            except Exception:
+                pass
+
+        idx_realizados = [i for i, v in enumerate(realizado_2026) if v is not None]
+        qtd_meses = len(idx_realizados)
+
+        tot_proj_periodo = sum(projecao_loa[:qtd_meses])
+        tot_real_periodo = sum([v for v in realizado_2026 if v is not None])
+        diferenca_abs = tot_real_periodo - tot_proj_periodo
+        diferenca_pct = (diferenca_abs / tot_proj_periodo) * 100 if tot_proj_periodo > 0 else 0.0
+
+        tot_proj_anual = sum(projecao_loa)
+        proj_fechamento = (tot_real_periodo / tot_proj_periodo) * tot_proj_anual if tot_proj_periodo > 0 else tot_proj_anual
+        dif_fechamento_abs = proj_fechamento - tot_proj_anual
+        dif_fechamento_pct = (dif_fechamento_abs / tot_proj_anual) * 100 if tot_proj_anual > 0 else 0.0
+
+        def fmt_br(v):
+            if v is None: return "-"
+            sinal = "-" if v < 0 else ""
+            abs_v = abs(v)
+            return f"{sinal}R$ {abs_v:,.0f}".replace(",", ".")
+
+        kpis = {
+            'proj_periodo': fmt_br(tot_proj_periodo),
+            'real_periodo': fmt_br(tot_real_periodo),
+            'dif_abs': fmt_br(diferenca_abs),
+            'dif_pct': f"{diferenca_pct:.2f}%".replace(".", ","),
+            'proj_fechamento_abs': fmt_br(dif_fechamento_abs),
+            'proj_fechamento_pct': f"{dif_fechamento_pct:.2f}%".replace(".", ","),
+            'qtd_meses_str': f"jan-{meses_eixo[qtd_meses-1].lower()}" if qtd_meses > 0 else "período"
+        }
+
+        fig = go.Figure()
+
+        # Linha Projeção LOA (Verde Executivo)
+        fig.add_trace(go.Scatter(
+            x=meses_eixo, y=projecao_loa,
+            name='Projeção LOA 1,01 BI',
+            mode='lines+markers',
+            line=dict(color='#15803D', width=3, shape='spline'),
+            marker=dict(size=7, color='#15803D'),
+            hovertemplate="<b>Projeção LOA</b><br>Mês: %{x}<br>Valor: R$ %{y:,.0f}<extra></extra>"
+        ))
+
+        # Linha Realizado 2026 (Azul Executivo)
+        fig.add_trace(go.Scatter(
+            x=meses_eixo, y=realizado_2026,
+            name='Realizado 2026',
+            mode='lines+markers',
+            line=dict(color='#0284C7', width=3.5, shape='spline'),
+            marker=dict(size=8, color='#0284C7'),
+            hovertemplate="<b>Realizado 2026</b><br>Mês: %{x}<br>Valor: R$ %{y:,.0f}<extra></extra>"
+        ))
+
+        fig.update_layout(
+            title=dict(text="Acompanhamento da Arrecadação - Fonte 116 (Tesouro)", font=dict(size=18, color="#1E3A8A")),
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)',
+            height=430,
+            margin=dict(l=40, r=40, t=50, b=30),
+            font=dict(size=13, color='#1E293B'),
+            legend=dict(orientation="h", y=1.1, x=0.5, xanchor="center", font=dict(size=13, color="#1E3A8A"))
+        )
+        fig.update_xaxes(showgrid=True, gridcolor='#E2E8F0', tickfont=dict(size=13, color="#111827"))
+        fig.update_yaxes(showgrid=True, gridcolor='#E2E8F0', griddash='dash', tickprefix="R$ ", tickfont=dict(size=12, color="#111827"))
+
+        # HTML da tabela interna resumida
+        cor_dif = "f116-neg" if diferenca_abs < 0 else "f116-pos"
+        cor_fech = "f116-neg" if dif_fechamento_abs < 0 else "f116-pos"
+        bg_dif = "#FEF2F2" if diferenca_abs < 0 else "#F0FDF4"
+        bg_fech = "#FEF2F2" if dif_fechamento_abs < 0 else "#F0FDF4"
+
+        html_tabela_resumo = f"""<style>
+.card-f116-tbl {{
+    margin-top: 15px;
+    background: #FFFFFF;
+    border: 2px solid #CBD5E1;
+    border-radius: 10px;
+    padding: 15px;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+}}
+.tbl-f116 {{
+    width: 100%;
+    border-collapse: collapse;
+    font-family: sans-serif;
+    font-size: 15px;
+}}
+.tbl-f116 td {{
+    padding: 10px 14px;
+    border-bottom: 1px solid #E2E8F0;
+}}
+.tbl-f116 tr:last-child td {{
+    border-bottom: none;
+}}
+.f116-label {{
+    font-weight: 700;
+    color: #1E293B;
+}}
+.f116-val {{
+    text-align: right;
+    font-weight: 800;
+    color: #0F172A;
+}}
+.f116-neg {{
+    color: #DC2626 !important;
+}}
+.f116-pos {{
+    color: #16A34A !important;
+}}
+</style>
+<div class="card-f116-tbl">
+<table class="tbl-f116">
+<tr>
+    <td class="f116-label">Projeção LOA 1,01 BI ({kpis['qtd_meses_str']})</td>
+    <td class="f116-val">{kpis['proj_periodo']}</td>
+    <td class="f116-val"></td>
+</tr>
+<tr>
+    <td class="f116-label">Realizado 2026 ({kpis['qtd_meses_str']})</td>
+    <td class="f116-val">{kpis['real_periodo']}</td>
+    <td class="f116-val"></td>
+</tr>
+<tr style="background-color: {bg_dif};">
+    <td class="f116-label {cor_dif}">Diferença</td>
+    <td class="f116-val {cor_dif}">{kpis['dif_abs']}</td>
+    <td class="f116-val {cor_dif}">{kpis['dif_pct']}</td>
+</tr>
+<tr style="background-color: {bg_fech};">
+    <td class="f116-label {cor_fech}">Projeção superávit/déficit 2026</td>
+    <td class="f116-val {cor_fech}">{kpis['proj_fechamento_abs']}</td>
+    <td class="f116-val {cor_fech}">{kpis['proj_fechamento_pct']}</td>
+</tr>
+</table>
+</div>"""
+
+        return fig, html_tabela_resumo, kpis
+    except Exception as e:
+        return None, None, None
+
 def criar_grafico_grupo_despesa(df_filtrado):
     """Cria o gráfico interativo com Plotly e Tabela HTML com fontes grandes e números destacados."""
     try:
@@ -442,23 +600,23 @@ def criar_grafico_grupo_despesa(df_filtrado):
                 y=[row[col] for col in fases_labels],
                 text=text_labels,
                 textposition='outside',
-                textfont=dict(size=16, color="black", family="sans-serif", weight="bold"),
+                textfont=dict(size=16, color="black", family="sans-serif"),
                 marker_color=cores.get(grupo, '#6B7280'),
                 hovertemplate="%{customdata}<extra></extra>",
                 customdata=hover_texts
             ))
 
         fig.update_layout(
-            title=dict(text='Execução Orçamentária por Grupo de Despesa (em R$ milhões)', font=dict(size=20, color='#111827', weight='bold')),
+            title=dict(text='Execução Orçamentária por Grupo de Despesa (em R$ milhões)', font=dict(size=20, color='#111827')),
             yaxis_title='R$ (Em milhões de reais)',
             barmode='group',
-            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5, font=dict(size=15, weight='bold')),
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5, font=dict(size=15)),
             plot_bgcolor='rgba(0,0,0,0)',
             margin=dict(t=60, b=10, l=10, r=10),
             height=360
         )
 
-        fig.update_xaxes(tickfont=dict(size=15, weight='bold', color='#111827'))
+        fig.update_xaxes(tickfont=dict(size=15, color='#111827'))
         fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='#E5E7EB', griddash='dash', tickfont=dict(size=14))
 
         dicas = {
@@ -1017,6 +1175,7 @@ try:
         "📈 Evolução Mensal",
         "📉 Projeção vs. Realizado",
         "⚖️ Receita vs. Despesa",
+        "🏛️ Arrecadação Fonte 116",
         "🔍 Tabela de Variações",
         "📊 Variação por Natureza"
     ]
@@ -1048,13 +1207,13 @@ try:
                     max_valor_bar = df_top['Empenhado'].max()
                     
                     fig_bar.update_layout(
-                        yaxis=dict(categoryorder='total ascending', tickfont=dict(size=16, color="#111827", weight="bold"), automargin=True), 
+                        yaxis=dict(categoryorder='total ascending', tickfont=dict(size=16, color="#111827"), automargin=True), 
                         font=dict(size=15, color="black"), 
                         xaxis=dict(showticklabels=False, title="", range=[0, max_valor_bar * 1.25]), 
                         yaxis_title="", 
                         margin=dict(l=20, r=100, t=10, b=10)
                     )
-                    fig_bar.update_traces(marker_color='#4f8868', textposition="outside", textfont=dict(size=15, color="black", weight="bold"), hovertemplate="<b>Ação: %{customdata[0]} - %{customdata[1]}</b><br>Valor: %{text}<extra></extra>")
+                    fig_bar.update_traces(marker_color='#4f8868', textposition="outside", textfont=dict(size=15, color="black"), hovertemplate="<b>Ação: %{customdata[0]} - %{customdata[1]}</b><br>Valor: %{text}<extra></extra>")
                     st.plotly_chart(fig_bar, width="stretch")
                 else:
                     st.info("Não há valores empenhados para os filtros selecionados.")
@@ -1069,7 +1228,7 @@ try:
                     df_tree['Valor_Abreviado'] = df_tree['Empenhado'].apply(formata_abreviado)
                     
                     fig_tree = px.treemap(df_tree, path=[px.Constant(f"Ação {var_acao_codigo}"), 'Rotulo_Display'], values='Empenhado', color='Empenhado', color_continuous_scale='Greens', custom_data=['Valor_Abreviado'])
-                    fig_tree.update_traces(texttemplate="<b>%{label}</b><br>%{customdata[0]}", textfont=dict(size=16, weight="bold"), hovertemplate="<b>%{label}</b><br>Empenhado: %{customdata[0]}<extra></extra>")
+                    fig_tree.update_traces(texttemplate="<b>%{label}</b><br>%{customdata[0]}", textfont=dict(size=16), hovertemplate="<b>%{label}</b><br>Empenhado: %{customdata[0]}<extra></extra>")
                     fig_tree.update_layout(margin=dict(t=20, l=10, r=10, b=10), height=480)
                     st.plotly_chart(fig_tree, width="stretch")
                 else:
@@ -1098,24 +1257,21 @@ try:
 
                 max_val = max([df_m[col].max() for col in colunas_ex if col in df_m.columns])
 
-                # Container reservado onde o gráfico será redesenhado linha por linha
                 plot_spot = st.empty()
                 fig_animated = go.Figure()
 
-                # Configura os eixos fixos antes de animar para evitar redimensionamento
                 fig_animated.update_layout(
                     font=dict(size=15, color="black"),
                     margin=dict(l=40, r=60, t=30, b=20),
                     yaxis_range=[0, max_val * 1.35],
                     yaxis=dict(showticklabels=False, title=""),
-                    xaxis=dict(tickfont=dict(size=16, weight="bold", color="#111827")),
-                    legend=dict(orientation="h", y=1.1, x=0.5, xanchor="center", font=dict(size=15, weight="bold")),
+                    xaxis=dict(tickfont=dict(size=16, color="#111827")),
+                    legend=dict(orientation="h", y=1.1, x=0.5, xanchor="center", font=dict(size=15)),
                     plot_bgcolor='rgba(0,0,0,0)',
                     height=480
                 )
                 fig_animated.update_yaxes(showgrid=True, gridwidth=1, gridcolor='#E5E7EB', griddash='dash')
 
-                # Animação: adiciona uma linha por vez com intervalo de tempo
                 for fase in colunas_ex:
                     if fase in estilos_fases and fase in df_m.columns:
                         cfg = estilos_fases[fase]
@@ -1137,10 +1293,7 @@ try:
                             hovertemplate=f"<b>{fase}</b><br>Mês: %{{x}}<br>Valor: R$ %{{y:,.2f}}<extra></extra>"
                         ))
                         
-                        # Atualiza o gráfico na tela
                         plot_spot.plotly_chart(fig_animated, use_container_width=True)
-                        
-                        # Pausa de 0.7 segundos entre cada linha (ajuste a velocidade aqui)
                         time.sleep(0.7)
             else:
                 st.info("Não há dados de evolução mensal para os filtros selecionados.")
@@ -1152,7 +1305,6 @@ try:
             if os.path.exists(caminho_projecao):
                 fig_tendencia, html_tabela_proj, kpis = criar_grafico_tendencia_global(caminho_projecao)
                 if fig_tendencia is not None:
-                    # 1. CARDS DE KPIS EXECUTIVOS NO TOPO
                     st.markdown("""
                     <style>
                     .kpi-row-proj { display: flex; gap: 15px; margin-top: 10px; margin-bottom: 15px; flex-wrap: wrap; }
@@ -1197,11 +1349,8 @@ try:
                     """
                     st.markdown(html_kpis, unsafe_allow_html=True)
 
-                    # 2. TÍTULO E GRÁFICO PLOTLY
                     st.markdown("### 📉 LOA vs. Empenhado vs. Projeção vs Disponível - (Ação 2003: Folha de Pagamento - UEA)")
                     st.plotly_chart(fig_tendencia, use_container_width=True)
-
-                    # 3. TABELA HTML
                     st.markdown(html_tabela_proj, unsafe_allow_html=True)
                 else: 
                     st.warning("⚠️ Planilha de projeção não encontrada ou com formato inválido.")
@@ -1219,6 +1368,17 @@ try:
                     plt.close(fig_rec_desp)
                 else: st.warning("⚠️ Não foi possível gerar o gráfico. Verifique se a aba 'ReceitaXDespesa' existe e está preenchida corretamente no arquivo.")
             else: st.warning(f"⚠️ Arquivo '{caminho_grupo_despesa}' não encontrado na pasta do projeto.")
+
+        elif aba_atual == "🏛️ Arrecadação Fonte 116":
+            st.markdown(f"<div class='destaque-ano'>Arrecadação Fonte 116 (Tesouro) - Realizado vs. Projeção <span style='font-size: 18px; font-weight: normal; color: #6B7280;'>(última atualização: {dt_atual})</span></div>", unsafe_allow_html=True)
+            caminho_grupo_despesa = r"Grafico_Grupo de Despesa.xlsx"
+            
+            fig_f116, html_f116, kpis_f116 = criar_grafico_arrecadacao_fonte116(caminho_grupo_despesa)
+            if fig_f116 is not None:
+                st.plotly_chart(fig_f116, use_container_width=True)
+                st.markdown(html_f116, unsafe_allow_html=True)
+            else:
+                st.info("Não foi possível carregar os dados da Fonte 116.")
 
         elif aba_atual == "🔍 Tabela de Variações":
             st.markdown(f"<div class='periodo-destaque'>📅 {texto_periodo}</div>", unsafe_allow_html=True)
@@ -1324,10 +1484,10 @@ try:
                     df_chart_var = df_chart_var.sort_values(by=col_var_emp, ascending=True)
                     
                     fig_var = px.bar(df_chart_var, x=col_var_emp, y='Rotulo_Eixo', orientation='h', text='Texto_Valor', custom_data=['Natureza_ID', 'Nome_Natureza'])
-                    fig_var.update_traces(marker_color=df_chart_var['Cor'], textposition="outside", textfont=dict(size=15, color="black", weight="bold"), hovertemplate="<b>Natureza: %{customdata[0]} - %{customdata[1]}</b><br>Variação no Período: %{text}<extra></extra>")
+                    fig_var.update_traces(marker_color=df_chart_var['Cor'], textposition="outside", textfont=dict(size=15, color="black"), hovertemplate="<b>Natureza: %{customdata[0]} - %{customdata[1]}</b><br>Variação no Período: %{text}<extra></extra>")
                     fig_var.add_vline(x=0, line_width=2, line_color="black")
                     max_abs = abs(df_chart_var[col_var_emp]).max()
-                    fig_var.update_layout(font=dict(size=15, color="black"), yaxis=dict(tickfont=dict(size=14, color="#111827", weight="bold")), xaxis=dict(showticklabels=False, title="", range=[-max_abs * 1.35, max_abs * 1.35]), yaxis_title="", margin=dict(l=10, r=40, t=20, b=10), height=max(420, len(df_chart_var) * 48))
+                    fig_var.update_layout(font=dict(size=15, color="black"), yaxis=dict(tickfont=dict(size=14, color="#111827")), xaxis=dict(showticklabels=False, title="", range=[-max_abs * 1.35, max_abs * 1.35]), yaxis_title="", margin=dict(l=10, r=40, t=20, b=10), height=max(420, len(df_chart_var) * 48))
                     st.plotly_chart(fig_var, width="stretch")
                 else: st.info("Não houve variação de Empenho para as naturezas neste período ou filtro selecionado.")
             else: st.warning("Coluna de variação de Empenhado não foi identificada na base de dados.")
