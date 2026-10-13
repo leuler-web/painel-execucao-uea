@@ -1,3 +1,12 @@
+Sim, exatamente!
+
+Essa alteração é feita diretamente no ficheiro Execucao_Orcamentaria_UEA_Drive.py, que é o código da sua aplicação principal no Streamlit (onde os gráficos, filtros e abas são desenhados para a apresentação).
+
+O script processar_orcamento.py serve apenas em segundo plano (backend) para gerar o ficheiro Base_Consolidada_SIAFI.xlsx. O Execucao_Orcamentaria_UEA_Drive.py lê essa base (df_base) e monta as visualizações dinâmicas na tela.
+
+Aqui está o código completo e unificado do Execucao_Orcamentaria_UEA_Drive.py já com a conexão ao SIAFI e com os valores exibidos junto aos marcadores do gráfico:
+
+Python
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -369,28 +378,60 @@ def criar_grafico_tendencia_global(caminho_planilha_proj):
     except Exception as e:
         return None, None, None
 
-def criar_grafico_arrecadacao_fonte116(caminho_arquivo):
+def criar_grafico_arrecadacao_fonte116(df_base, caminho_arquivo=None):
     """
-    Gera o gráfico interativo de Arrecadação da Fonte 116 e calcula a tabela com totais, diferenças e projeção de fechamento.
+    Gera o gráfico interativo da Fonte 116 extraindo os dados reais do SIAFI (df_base)
+    com rótulos de valores visíveis nos marcadores e tabela de resumo.
     """
     try:
         meses_eixo = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
         
-        # Valores padrão estruturados conforme a imagem de referência
+        # 1. Projeção LOA (valores de referência ou lidos de planilha auxiliar)
         projecao_loa = [63000, 77000, 81000, 87000, 80000, 87000, 75000, 79000, 99000, 91000, 98000, 91000]
-        realizado_2026 = [62500, 71000, 75000, 91000, 77000, 75000, 71000, 76000, 87000, None, None, None]
-
+        
         if caminho_arquivo and os.path.exists(caminho_arquivo):
             try:
                 xls = pd.ExcelFile(caminho_arquivo)
                 aba_alvo = next((s for s in xls.sheet_names if '116' in s or 'FONTE' in s.upper()), None)
                 if aba_alvo:
-                    df_f116 = pd.read_excel(xls, sheet_name=aba_alvo)
-                    df_f116.columns = [str(c).strip().upper() for c in df_f116.columns]
-                    # Tenta ler colunas dinamicamente se disponíveis
+                    df_f116_excel = pd.read_excel(xls, sheet_name=aba_alvo)
             except Exception:
                 pass
 
+        # 2. Extração Dinâmica da Arrecadação/Realizado a partir da Base Consolidada SIAFI
+        realizado_2026 = [None] * 12
+        usou_dados_siafi = False
+
+        if df_base is not None and not df_base.empty:
+            col_fonte = 'Fonte_3' if 'Fonte_3' in df_base.columns else next((c for c in df_base.columns if 'FONTE' in c.upper()), None)
+            
+            if col_fonte:
+                df_116 = df_base[df_base[col_fonte].astype(str).str.contains('116', na=False)]
+                
+                if not df_116.empty:
+                    col_mov = 'Tipo Movimento' if 'Tipo Movimento' in df_116.columns else None
+                    if col_mov and (df_116[col_mov] == 'No Mês').any():
+                        df_116_m = df_116[df_116[col_mov] == 'No Mês']
+                    else:
+                        df_116_m = df_116
+
+                    col_valor = 'Empenhado' if 'Empenhado' in df_116_m.columns else ('Autorizado' if 'Autorizado' in df_116_m.columns else None)
+                    if col_valor and 'Mes_Num' in df_116_m.columns:
+                        agrupado = df_116_m.groupby('Mes_Num')[col_valor].sum()
+                        for m_num, val in agrupado.items():
+                            try:
+                                idx = int(m_num) - 1
+                                if 0 <= idx < 12 and val > 0:
+                                    val_em_milhares = val / 1000.0 if val > 1_000_000 else val
+                                    realizado_2026[idx] = round(val_em_milhares, 0)
+                                    usou_dados_siafi = True
+                            except: pass
+
+        # Fallback de segurança se a base ainda não possuir lançamentos da Fonte 116
+        if not usou_dados_siafi or all(v is None for v in realizado_2026):
+            realizado_2026 = [62500, 71000, 75000, 91000, 77000, 75000, 71000, 76000, 87000, None, None, None]
+
+        # 3. Métricas e Cálculos Consolidados
         idx_realizados = [i for i, v in enumerate(realizado_2026) if v is not None]
         qtd_meses = len(idx_realizados)
 
@@ -417,44 +458,55 @@ def criar_grafico_arrecadacao_fonte116(caminho_arquivo):
             'dif_pct': f"{diferenca_pct:.2f}%".replace(".", ","),
             'proj_fechamento_abs': fmt_br(dif_fechamento_abs),
             'proj_fechamento_pct': f"{dif_fechamento_pct:.2f}%".replace(".", ","),
-            'qtd_meses_str': f"jan-{meses_eixo[qtd_meses-1].lower()}" if qtd_meses > 0 else "período"
+            'qtd_meses_str': f"jan-{meses_eixo[qtd_meses-1].lower()}" if qtd_meses > 0 else "período",
+            'origem': "SIAFI (Base Consolidada)" if usou_dados_siafi else "Referência"
         }
+
+        # Rótulos para exibição dos valores sobre/sob os marcadores
+        labels_proj = [f"<b>{v:,.0f}</b>".replace(",", ".") for v in projecao_loa]
+        labels_real = [f"<b>{v:,.0f}</b>".replace(",", ".") if v is not None else "" for v in realizado_2026]
 
         fig = go.Figure()
 
-        # Linha Projeção LOA (Verde Executivo)
+        # Linha Projeção LOA (Verde) com rótulos no topo
         fig.add_trace(go.Scatter(
             x=meses_eixo, y=projecao_loa,
             name='Projeção LOA 1,01 BI',
-            mode='lines+markers',
+            mode='lines+markers+text',
+            text=labels_proj,
+            textposition='top center',
+            textfont=dict(size=11, color='#15803D'),
             line=dict(color='#15803D', width=3, shape='spline'),
             marker=dict(size=7, color='#15803D'),
             hovertemplate="<b>Projeção LOA</b><br>Mês: %{x}<br>Valor: R$ %{y:,.0f}<extra></extra>"
         ))
 
-        # Linha Realizado 2026 (Azul Executivo)
+        # Linha Realizado 2026 (Azul) com rótulos na parte inferior
         fig.add_trace(go.Scatter(
             x=meses_eixo, y=realizado_2026,
             name='Realizado 2026',
-            mode='lines+markers',
+            mode='lines+markers+text',
+            text=labels_real,
+            textposition='bottom center',
+            textfont=dict(size=11, color='#0284C7'),
             line=dict(color='#0284C7', width=3.5, shape='spline'),
             marker=dict(size=8, color='#0284C7'),
             hovertemplate="<b>Realizado 2026</b><br>Mês: %{x}<br>Valor: R$ %{y:,.0f}<extra></extra>"
         ))
 
         fig.update_layout(
-            title=dict(text="Acompanhamento da Arrecadação - Fonte 116 (Tesouro)", font=dict(size=18, color="#1E3A8A")),
+            title=dict(text=f"Acompanhamento da Arrecadação - Fonte 116 (Tesouro) | Origem: {kpis['origem']}", font=dict(size=18, color="#1E3A8A")),
             plot_bgcolor='rgba(0,0,0,0)',
             paper_bgcolor='rgba(0,0,0,0)',
-            height=430,
+            height=460,
             margin=dict(l=40, r=40, t=50, b=30),
             font=dict(size=13, color='#1E293B'),
-            legend=dict(orientation="h", y=1.1, x=0.5, xanchor="center", font=dict(size=13, color="#1E3A8A"))
+            legend=dict(orientation="h", y=1.12, x=0.5, xanchor="center", font=dict(size=13, color="#1E3A8A"))
         )
         fig.update_xaxes(showgrid=True, gridcolor='#E2E8F0', tickfont=dict(size=13, color="#111827"))
         fig.update_yaxes(showgrid=True, gridcolor='#E2E8F0', griddash='dash', tickprefix="R$ ", tickfont=dict(size=12, color="#111827"))
 
-        # HTML da tabela interna resumida
+        # HTML da tabela de resumo
         cor_dif = "f116-neg" if diferenca_abs < 0 else "f116-pos"
         cor_fech = "f116-neg" if dif_fechamento_abs < 0 else "f116-pos"
         bg_dif = "#FEF2F2" if diferenca_abs < 0 else "#F0FDF4"
@@ -627,7 +679,6 @@ def criar_grafico_grupo_despesa(df_filtrado):
             'DISPONÍVEL': 'Saldo orçamentário livre que ainda pode ser utilizado para novas contratações.'
         }
 
-        # Tabela HTML com fontes maiores e números em super destaque
         html_tabela = f"""<style>
 .tabela-despesas-container {{
     margin-top: 15px;
@@ -776,7 +827,6 @@ def criar_grafico_receita_x_despesa(caminho_arquivo):
 
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(15, 7), gridspec_kw={'height_ratios': [2.5, 1]})
 
-        # NOVAS CORES CONFORME A IMAGEM DE REFERÊNCIA
         config_cats = [
             ("LOA", "LOA (A)", '#000000', 'o', '-'),            # Preto
             ("RECEITA", "Receita Arrecadada (B)", '#16A34A', 'o', '-'), # Verde
@@ -1373,7 +1423,7 @@ try:
             st.markdown(f"<div class='destaque-ano'>Arrecadação Fonte 116 (Tesouro) - Realizado vs. Projeção <span style='font-size: 18px; font-weight: normal; color: #6B7280;'>(última atualização: {dt_atual})</span></div>", unsafe_allow_html=True)
             caminho_grupo_despesa = r"Grafico_Grupo de Despesa.xlsx"
             
-            fig_f116, html_f116, kpis_f116 = criar_grafico_arrecadacao_fonte116(caminho_grupo_despesa)
+            fig_f116, html_f116, kpis_f116 = criar_grafico_arrecadacao_fonte116(df_base, caminho_grupo_despesa)
             if fig_f116 is not None:
                 st.plotly_chart(fig_f116, use_container_width=True)
                 st.markdown(html_f116, unsafe_allow_html=True)
