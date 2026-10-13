@@ -1391,7 +1391,7 @@ try:
                 fig_f116, html_f116, kpis_f116 = criar_grafico_arrecadacao_fonte116(df_base, caminho_grupo_despesa, meses_limite=m)
                 if fig_f116 is not None:
                     plot_spot.plotly_chart(fig_f116, use_container_width=True)
-                    time.sleep(0.08)  # Ajuste a velocidade da animação aqui (0.08 seg por mês)
+                    time.sleep(1.08)  # Ajuste a velocidade da animação aqui (0.08 seg por mês)
 
             # 3. Exibe a tabela de resumo executivo abaixo do gráfico
             if html_f116 is not None:
