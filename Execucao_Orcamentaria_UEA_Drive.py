@@ -1,4 +1,4 @@
-Aqui está o código completo e atualizado do arquivo Execucao_Orcamentaria_UEA_Drive.py.Integrei a nova aba "🏛️ Arrecadação Fonte 116" ao menu principal e adicionei a função dedicada criar_grafico_arrecadacao_fonte116, que gera o gráfico interativo de comparação entre o Realizado 2026 e a Projeção LOA, junto com a tabela resumo calculada automaticamente em tema limpo executivo.   Pythonimport streamlit as st
+import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.express as px
