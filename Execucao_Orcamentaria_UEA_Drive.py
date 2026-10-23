@@ -1196,7 +1196,7 @@ def gerar_pdf_8_paginas_dinamico(df_latest, df_base, df_var, caminho_projecao, c
             pdf.ln()
 
     # ---------------------------------------------------------
-    # PÁGINA 5: RECEITA VS DESPESA
+    # PÁGINA 5: RECEITA VS DESPESA (DINÂMICO)
     # ---------------------------------------------------------
     pdf.titulo_secao = "Receita vs. Despesa - Análise de Fluxo Orçamentário"
     pdf.add_page()
@@ -1207,30 +1207,66 @@ def gerar_pdf_8_paginas_dinamico(df_latest, df_base, df_var, caminho_projecao, c
     if os.path.exists(caminho_grupo_despesa):
         try:
             df_rd = pd.read_excel(caminho_grupo_despesa, sheet_name="ReceitaXDespesa")
-            meses_rd = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set"]
-            cols_w5 = [57] + [22]*9 + [30]
+            df_rd.columns = [str(c).strip() for c in df_rd.columns]
+            df_rd["Valor"] = df_rd["Valor"].apply(extrair_numero)
+
+            meses_ordem = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"]
+
+            def padronizar_mes(val):
+                if isinstance(val, pd.Timestamp) or hasattr(val, 'month'):
+                    return meses_ordem[val.month - 1]
+                v = str(val).strip()
+                if '-' in v and len(v) >= 10:
+                    try:
+                        data = pd.to_datetime(v)
+                        return meses_ordem[data.month - 1]
+                    except: pass
+                v_texto = v.capitalize()[:3]
+                for m in meses_ordem:
+                    if m.lower() in v_texto.lower(): return m
+                return v_texto
+
+            df_rd["Mes_Padrao"] = df_rd["Mês/Ano"].apply(padronizar_mes)
+            df_pivot = df_rd.pivot(index="Item Orçamentário", columns="Mes_Padrao", values="Valor")
+
+            for m in meses_ordem:
+                if m not in df_pivot.columns: df_pivot[m] = np.nan
+            df_pivot = df_pivot[meses_ordem]
+
+            cols_w5 = [55] + [16]*12 + [29]
 
             pdf.set_font('Arial', 'B', 8)
             pdf.set_fill_color(30, 58, 138)
             pdf.set_text_color(255, 255, 255)
             pdf.cell(cols_w5[0], 7, "Item Orçamentário", border=1, fill=True, align='C')
-            for m in meses_rd: pdf.cell(22, 7, m, border=1, fill=True, align='C')
+            for m in meses_ordem:
+                pdf.cell(16, 7, m, border=1, fill=True, align='C')
             pdf.cell(cols_w5[-1], 7, "Total", border=1, fill=True, align='C')
             pdf.ln()
 
             pdf.set_font('Arial', '', 8)
             pdf.set_text_color(17, 24, 39)
-            items = df_rd['Item Orçamentário'].unique() if 'Item Orçamentário' in df_rd.columns else []
-            for item in items:
-                pdf.cell(cols_w5[0], 7, str(item)[:30], border=1, align='L')
-                for m in meses_rd:
-                    pdf.cell(22, 7, "-", border=1, align='C')
-                pdf.cell(cols_w5[-1], 7, "-", border=1, align='C')
+
+            for item in df_pivot.index:
+                pdf.cell(cols_w5[0], 7, str(item)[:28], border=1, align='L')
+                tot_item = 0.0
+                for m in meses_ordem:
+                    val = df_pivot.loc[item, m] if m in df_pivot.columns else np.nan
+                    if pd.notna(val) and val != 0:
+                        tot_item += val
+                        val_m = val / 1_000_000 if abs(val) > 100_000 else val
+                        pdf.cell(16, 7, f"{val_m:,.1f}".replace('.', ','), border=1, align='C')
+                    else:
+                        pdf.cell(16, 7, "-", border=1, align='C')
+                
+                tot_m = tot_item / 1_000_000 if abs(tot_item) > 100_000 else tot_item
+                pdf.cell(cols_w5[-1], 7, f"{tot_m:,.1f}".replace('.', ','), border=1, align='C')
                 pdf.ln()
-        except: pass
+        except Exception:
+            pass
 
     # ---------------------------------------------------------
-    # PÁGINA 6: ARRECADAÇÃO FONTE 116
+    # PÁGINA 6: ARRECADAÇÃO FONTE 116 (DINÂMICO)
     # ---------------------------------------------------------
     pdf.titulo_secao = "Arrecadação Fonte 116 (Tesouro) - Projeção vs. Realizado"
     pdf.add_page()
@@ -1247,12 +1283,19 @@ def gerar_pdf_8_paginas_dinamico(df_latest, df_base, df_var, caminho_projecao, c
     pdf.cell(cols_w6[2], 8, "Variação % / Impacto", border=1, fill=True, align='C')
     pdf.ln()
 
-    indicadores_f116 = [
-        ("Projeção LOA 1,01 BI (jan-set)", "R$ 728.000 mil", "-"),
-        ("Realizado 2026 (jan-set)", "R$ 685.500 mil", "-"),
-        ("Diferença Acumulada no Período", "-R$ 42.500 mil", "-5,84%"),
-        ("Projeção Estimada de Superávit / Déficit (2026)", "-R$ 58.846 mil", "-5,84%")
-    ]
+    # Cálculo dinâmico direto da função oficial do painel
+    _, _, kpis_f116 = criar_grafico_arrecadacao_fonte116(df_base, caminho_grupo_despesa)
+
+    if kpis_f116:
+        indicadores_f116 = [
+            (f"Projeção LOA 1,01 BI ({kpis_f116.get('qtd_meses_str', 'período')})", kpis_f116.get('proj_periodo', '-'), "-"),
+            (f"Realizado 2026 ({kpis_f116.get('qtd_meses_str', 'período')})", kpis_f116.get('real_periodo', '-'), "-"),
+            ("Diferença Acumulada no Período", kpis_f116.get('dif_abs', '-'), kpis_f116.get('dif_pct', '-')),
+            ("Projeção Estimada de Superávit / Déficit (2026)", kpis_f116.get('proj_fechamento_abs', '-'), kpis_f116.get('proj_fechamento_pct', '-'))
+        ]
+    else:
+        indicadores_f116 = []
+
     pdf.set_font('Arial', '', 9)
     pdf.set_text_color(17, 24, 39)
     for ind, val, pct in indicadores_f116:
@@ -1937,4 +1980,3 @@ except Exception as e:
             st.cache_data.clear()
             st.session_state.clear()
             st.rerun()
-
