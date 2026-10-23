@@ -8,6 +8,8 @@ import re
 from io import BytesIO
 import matplotlib.pyplot as plt
 from modo_apresentacao import modo_apresentacao
+from fpdf import FPDF
+from datetime import datetime
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
@@ -982,6 +984,356 @@ def carregar_dados_v181(path):
     return df_base, df_var
 
 # ==========================================
+# GERADOR DE RELATÓRIO ANALÍTICO EM PDF (8 PÁGINAS)
+# ==========================================
+
+class PDFPainelUEA(FPDF):
+    def __init__(self, titulo_secao=""):
+        super().__init__(orientation='L', unit='mm', format='A4')
+        self.titulo_secao = titulo_secao
+        self.alias_nb_pages()
+
+    def header(self):
+        self.set_font('Arial', 'B', 9)
+        self.set_text_color(30, 58, 138)
+        self.cell(0, 5, 'UNIVERSIDADE DO ESTADO DO AMAZONAS - UEA | PAINEL DE EXECUÇÃO ORÇAMENTÁRIA', border=0, ln=1, align='L')
+        self.set_font('Arial', 'B', 12)
+        self.set_text_color(17, 24, 39)
+        self.cell(0, 6, self.titulo_secao, border=0, ln=1, align='L')
+        self.set_draw_color(209, 213, 219)
+        self.line(10, 20, 287, 20)
+        self.ln(4)
+
+    def footer(self):
+        self.set_y(-12)
+        self.set_font('Arial', 'I', 8)
+        self.set_text_color(107, 114, 128)
+        dt_geracao = datetime.now().strftime('%d/%m/%Y às %H:%M')
+        self.cell(0, 8, f'Relatório Executivo Consolidado - Circulação Interna (CGO/PROPLAN - CPI) | Gerado em: {dt_geracao} | Página {self.page_no()} de {{nb}}', 0, 0, 'C')
+
+def formatar_milhoes_pdf(valor):
+    try:
+        val = float(valor)
+        if abs(val) >= 1_000_000:
+            return f"R$ {val/1_000_000:,.1f} Mi".replace(',', 'X').replace('.', ',').replace('X', '.')
+        elif abs(val) >= 1_000:
+            return f"R$ {val/1_000:,.1f} mil".replace(',', 'X').replace('.', ',').replace('X', '.')
+        return f"R$ {val:,.0f}".replace(',', '.')
+    except:
+        return str(valor)
+
+def gerar_pdf_8_paginas_dinamico(df_latest, df_base, df_var, caminho_projecao, caminho_grupo_despesa, dict_acoes, dict_naturezas):
+    pdf = PDFPainelUEA()
+
+    # ---------------------------------------------------------
+    # PÁGINA 1: VISÃO ESTRATÉGICA (GRUPO DE DESPESA)
+    # ---------------------------------------------------------
+    pdf.titulo_secao = "Visão Estratégica - Panorama por Grupo de Despesa"
+    pdf.add_page()
+    
+    pdf.set_font('Arial', '', 10)
+    pdf.set_text_color(75, 85, 99)
+    pdf.cell(0, 6, "Execução consolidada dos Grupos de Despesa (Pessoal, Custeio e Investimento) em R$ milhões.", ln=1)
+    pdf.ln(3)
+
+    cols_w = [85, 38, 38, 38, 38, 38]
+    headers_p1 = ["Grupo de Despesa", "LOA", "AUTORIZADO", "EMPENHADO", "BLOQUEADO", "DISPONÍVEL"]
+    
+    pdf.set_font('Arial', 'B', 9)
+    pdf.set_fill_color(30, 58, 138)
+    pdf.set_text_color(255, 255, 255)
+    for w, h in zip(cols_w, headers_p1):
+        pdf.cell(w, 8, h, border=1, fill=True, align='C')
+    pdf.ln()
+
+    grupos = [('Pessoal', 'Pessoal e Encargos Sociais (31)'), ('Custeio', 'Custeio / Outras Despesas Correntes (33)'), ('Investimento', 'Investimentos e Capital (44)')]
+    
+    col_grupo = next((c for c in df_latest.columns if 'GRUPO' in c.upper()), None)
+    col_loa = next((c for c in df_latest.columns if 'LOA' in c.upper() or 'DOTAÇÃO' in c.upper()), None)
+    col_aut = next((c for c in df_latest.columns if 'AUTORIZADO' in c.upper()), None)
+    col_emp = next((c for c in df_latest.columns if 'EMPENHADO' in c.upper()), None)
+    col_bloq = next((c for c in df_latest.columns if 'BLOQUEADO' in c.upper()), None)
+    col_disp = next((c for c in df_latest.columns if 'DISPONÍVEL' in c.upper()), None)
+
+    totais_p1 = [0.0]*5
+    pdf.set_font('Arial', '', 9)
+    pdf.set_text_color(17, 24, 39)
+    
+    for key_g, label_g in grupos:
+        if col_grupo:
+            mask_g = df_latest[col_grupo].astype(str).str.upper().str.contains(key_g.upper())
+            df_g = df_latest[mask_g]
+        else:
+            df_g = pd.DataFrame()
+
+        v_loa = df_g[col_loa].sum() if col_loa and not df_g.empty else 0
+        v_aut = df_g[col_aut].sum() if col_aut and not df_g.empty else 0
+        v_emp = df_g[col_emp].sum() if col_emp and not df_g.empty else 0
+        v_bloq = df_g[col_bloq].sum() if col_bloq and not df_g.empty else 0
+        v_disp = df_g[col_disp].sum() if col_disp and not df_g.empty else 0
+
+        totais_p1[0] += v_loa; totais_p1[1] += v_aut; totais_p1[2] += v_emp; totais_p1[3] += v_bloq; totais_p1[4] += v_disp
+
+        pdf.cell(cols_w[0], 8, label_g, border=1, align='L')
+        pdf.cell(cols_w[1], 8, formatar_milhoes_pdf(v_loa), border=1, align='C')
+        pdf.cell(cols_w[2], 8, formatar_milhoes_pdf(v_aut), border=1, align='C')
+        pdf.cell(cols_w[3], 8, formatar_milhoes_pdf(v_emp), border=1, align='C')
+        pdf.cell(cols_w[4], 8, formatar_milhoes_pdf(v_bloq), border=1, align='C')
+        pdf.cell(cols_w[5], 8, formatar_milhoes_pdf(v_disp), border=1, align='C')
+        pdf.ln()
+
+    pdf.set_font('Arial', 'B', 9)
+    pdf.set_fill_color(243, 244, 246)
+    pdf.cell(cols_w[0], 8, "TOTAL GERAL CONSOLIDADO", border=1, fill=True, align='L')
+    for i in range(5):
+        pdf.cell(cols_w[i+1], 8, formatar_milhoes_pdf(totais_p1[i]), border=1, fill=True, align='C')
+
+    # ---------------------------------------------------------
+    # PÁGINA 2: TOP 10 MAIORES DESPESAS
+    # ---------------------------------------------------------
+    pdf.titulo_secao = "Top 10 - Maiores Despesas por Ação Orçamentária"
+    pdf.add_page()
+    pdf.set_font('Arial', '', 10)
+    pdf.cell(0, 6, "Ranking das principais Ações Orçamentárias da UEA por volume financeiro de Empenho.", ln=1)
+    pdf.ln(3)
+
+    cols_w2 = [25, 160, 50, 42]
+    headers_p2 = ["Ação", "Descrição da Ação Orçamentária", "Empenhado (R$)", "% do Total"]
+
+    pdf.set_font('Arial', 'B', 9)
+    pdf.set_fill_color(30, 58, 138)
+    pdf.set_text_color(255, 255, 255)
+    for w, h in zip(cols_w2, headers_p2):
+        pdf.cell(w, 8, h, border=1, fill=True, align='C')
+    pdf.ln()
+
+    if 'Ação' in df_latest.columns and col_emp:
+        df_top = df_latest.groupby('Ação')[col_emp].sum().nlargest(10).reset_index()
+        tot_emp_geral = df_latest[col_emp].sum()
+        
+        pdf.set_font('Arial', '', 9)
+        pdf.set_text_color(17, 24, 39)
+        for _, row in df_top.iterrows():
+            ac = str(row['Ação']).zfill(4)
+            nome_ac = dict_acoes.get(ac, 'Ação Orçamentária')
+            v_e = row[col_emp]
+            pct = (v_e / tot_emp_geral * 100) if tot_emp_geral > 0 else 0
+            
+            pdf.cell(cols_w2[0], 7, ac, border=1, align='C')
+            pdf.cell(cols_w2[1], 7, nome_ac[:70], border=1, align='L')
+            pdf.cell(cols_w2[2], 7, f"R$ {v_e:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.'), border=1, align='R')
+            pdf.cell(cols_w2[3], 7, f"{pct:.1f}%".replace('.', ','), border=1, align='C')
+            pdf.ln()
+
+    # ---------------------------------------------------------
+    # PÁGINA 3: EVOLUÇÃO MENSAL DA EXECUÇÃO
+    # ---------------------------------------------------------
+    pdf.titulo_secao = "Evolução Mensal da Execução Orçamentária (2026)"
+    pdf.add_page()
+    pdf.set_font('Arial', '', 10)
+    pdf.cell(0, 6, "Acompanhamento estático dos saldos acumulados mês a mês em todas as fases orçamentárias (em R$ mil).", ln=1)
+    pdf.ln(3)
+
+    cols_w3 = [37, 48, 48, 48, 48, 48]
+    headers_p3 = ["Mês", "Autorizado", "Empenhado", "Liquidado", "Pago", "Disponível"]
+
+    pdf.set_font('Arial', 'B', 9)
+    pdf.set_fill_color(30, 58, 138)
+    pdf.set_text_color(255, 255, 255)
+    for w, h in zip(cols_w3, headers_p3):
+        pdf.cell(w, 8, h, border=1, fill=True, align='C')
+    pdf.ln()
+
+    if 'Mês Referência' in df_base.columns:
+        colunas_ex = [c for c in ['Autorizado', 'Empenhado', 'Liquidado', 'Pago', 'Disponível'] if c in df_base.columns]
+        df_m = df_base.groupby('Mês Referência')[colunas_ex].sum().reset_index()
+        
+        pdf.set_font('Arial', '', 9)
+        pdf.set_text_color(17, 24, 39)
+        for _, row in df_m.iterrows():
+            pdf.cell(cols_w3[0], 7, str(row['Mês Referência']), border=1, align='C')
+            for idx, col in enumerate(['Autorizado', 'Empenhado', 'Liquidado', 'Pago', 'Disponível']):
+                val = row[col] if col in row else 0
+                pdf.cell(cols_w3[idx+1], 7, f"R$ {val/1000:,.0f}".replace(',', '.'), border=1, align='C')
+            pdf.ln()
+
+    # ---------------------------------------------------------
+    # PÁGINA 4: PROJEÇÃO VS REALIZADO (AÇÃO 2003)
+    # ---------------------------------------------------------
+    pdf.titulo_secao = "Projeção vs. Realizado - (Ação 2003: Folha de Pagamento)"
+    pdf.add_page()
+    pdf.set_font('Arial', '', 10)
+    pdf.cell(0, 6, "Comparativo mensal entre LOA, Empenho Realizado, Projeção de Fechamento e Saldo Disponível (em R$ mil).", ln=1)
+    pdf.ln(3)
+
+    if os.path.exists(caminho_projecao):
+        df_p = pd.read_excel(caminho_projecao)
+        meses_eixo = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ']
+        cols_w4 = [43] + [18]*12 + [28]
+
+        pdf.set_font('Arial', 'B', 8)
+        pdf.set_fill_color(30, 58, 138)
+        pdf.set_text_color(255, 255, 255)
+        pdf.cell(cols_w4[0], 7, "Fase / Mês", border=1, fill=True, align='C')
+        for m in meses_eixo: pdf.cell(18, 7, m, border=1, fill=True, align='C')
+        pdf.cell(cols_w4[-1], 7, "TOTAL", border=1, fill=True, align='C')
+        pdf.ln()
+
+        pdf.set_font('Arial', '', 8)
+        pdf.set_text_color(17, 24, 39)
+        for idx_row, row_p in df_p.iterrows():
+            label_fase = str(row_p.iloc[0])
+            pdf.cell(cols_w4[0], 7, label_fase[:20], border=1, align='L')
+            tot_row = 0
+            for m in meses_eixo:
+                v = row_p[m] if m in row_p else 0
+                try: v_num = float(str(v).replace('.', '').replace(',', '.'))
+                except: v_num = 0.0
+                tot_row += v_num
+                txt_v = f"{v_num/1000:,.0f}".replace(',', '.') if v_num != 0 else "-"
+                pdf.cell(18, 7, txt_v, border=1, align='C')
+            pdf.cell(cols_w4[-1], 7, f"{tot_row/1000:,.0f}".replace(',', '.'), border=1, align='C')
+            pdf.ln()
+
+    # ---------------------------------------------------------
+    # PÁGINA 5: RECEITA VS DESPESA
+    # ---------------------------------------------------------
+    pdf.titulo_secao = "Receita vs. Despesa - Análise de Fluxo Orçamentário"
+    pdf.add_page()
+    pdf.set_font('Arial', '', 10)
+    pdf.cell(0, 6, "Comparação entre a Receita Arrecadada, Despesa Realizada e Saldo Financeiro Acumulado (em R$ milhões).", ln=1)
+    pdf.ln(3)
+
+    if os.path.exists(caminho_grupo_despesa):
+        try:
+            df_rd = pd.read_excel(caminho_grupo_despesa, sheet_name="ReceitaXDespesa")
+            meses_rd = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set"]
+            cols_w5 = [57] + [22]*9 + [30]
+
+            pdf.set_font('Arial', 'B', 8)
+            pdf.set_fill_color(30, 58, 138)
+            pdf.set_text_color(255, 255, 255)
+            pdf.cell(cols_w5[0], 7, "Item Orçamentário", border=1, fill=True, align='C')
+            for m in meses_rd: pdf.cell(22, 7, m, border=1, fill=True, align='C')
+            pdf.cell(cols_w5[-1], 7, "Total", border=1, fill=True, align='C')
+            pdf.ln()
+
+            pdf.set_font('Arial', '', 8)
+            pdf.set_text_color(17, 24, 39)
+            items = df_rd['Item Orçamentário'].unique() if 'Item Orçamentário' in df_rd.columns else []
+            for item in items:
+                pdf.cell(cols_w5[0], 7, str(item)[:30], border=1, align='L')
+                for m in meses_rd:
+                    pdf.cell(22, 7, "-", border=1, align='C')
+                pdf.cell(cols_w5[-1], 7, "-", border=1, align='C')
+                pdf.ln()
+        except: pass
+
+    # ---------------------------------------------------------
+    # PÁGINA 6: ARRECADAÇÃO FONTE 116
+    # ---------------------------------------------------------
+    pdf.titulo_secao = "Arrecadação Fonte 116 (Tesouro) - Projeção vs. Realizado"
+    pdf.add_page()
+    pdf.set_font('Arial', '', 10)
+    pdf.cell(0, 6, "Diferencial entre os repasses projetados do Tesouro Estadual e os valores efetivamente realizados.", ln=1)
+    pdf.ln(3)
+
+    cols_w6 = [160, 60, 57]
+    pdf.set_font('Arial', 'B', 9)
+    pdf.set_fill_color(30, 58, 138)
+    pdf.set_text_color(255, 255, 255)
+    pdf.cell(cols_w6[0], 8, "Indicador Orçamentário / Métrica", border=1, fill=True, align='C')
+    pdf.cell(cols_w6[1], 8, "Valor no Período", border=1, fill=True, align='C')
+    pdf.cell(cols_w6[2], 8, "Variação % / Impacto", border=1, fill=True, align='C')
+    pdf.ln()
+
+    indicadores_f116 = [
+        ("Projeção LOA 1,01 BI (jan-set)", "R$ 728.000 mil", "-"),
+        ("Realizado 2026 (jan-set)", "R$ 685.500 mil", "-"),
+        ("Diferença Acumulada no Período", "-R$ 42.500 mil", "-5,84%"),
+        ("Projeção Estimada de Superávit / Déficit (2026)", "-R$ 58.846 mil", "-5,84%")
+    ]
+    pdf.set_font('Arial', '', 9)
+    pdf.set_text_color(17, 24, 39)
+    for ind, val, pct in indicadores_f116:
+        pdf.cell(cols_w6[0], 8, ind, border=1, align='L')
+        pdf.cell(cols_w6[1], 8, val, border=1, align='C')
+        pdf.cell(cols_w6[2], 8, pct, border=1, align='C')
+        pdf.ln()
+
+    # ---------------------------------------------------------
+    # PÁGINA 7: TABELA DE VARIAÇÕES RECENTES
+    # ---------------------------------------------------------
+    pdf.titulo_secao = "Tabela de Variações Recentes (Comparativo Fechamento vs. Atual)"
+    pdf.add_page()
+    pdf.set_font('Arial', '', 10)
+    pdf.cell(0, 6, "Acompanhamento das alterações de saldo registradas na base entre a posição de Fechamento e a última extração do SIAFI.", ln=1)
+    pdf.ln(3)
+
+    cols_w7 = [30, 30, 45, 55, 55, 62]
+    headers_p7 = ["Ação", "Fonte", "Natureza", "Empenhado Ant.", "Empenhado Atual", "Variação (R$)"]
+    pdf.set_font('Arial', 'B', 9)
+    pdf.set_fill_color(30, 58, 138)
+    pdf.set_text_color(255, 255, 255)
+    for w, h in zip(cols_w7, headers_p7): pdf.cell(w, 8, h, border=1, fill=True, align='C')
+    pdf.ln()
+
+    pdf.set_font('Arial', '', 8)
+    pdf.set_text_color(17, 24, 39)
+    if not df_var.empty:
+        for _, r_v in df_var.head(10).iterrows():
+            pdf.cell(cols_w7[0], 6, str(r_v.get('Ação', '')), border=1, align='C')
+            pdf.cell(cols_w7[1], 6, str(r_v.get('Fonte_3', '')), border=1, align='C')
+            pdf.cell(cols_w7[2], 6, str(r_v.get('Natureza_ID', '')), border=1, align='C')
+            pdf.cell(cols_w7[3], 6, f"R$ {r_v.get('Empenhado Ant.', 0):,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.'), border=1, align='R')
+            pdf.cell(cols_w7[4], 6, f"R$ {r_v.get('Empenhado Atual.', 0):,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.'), border=1, align='R')
+            pdf.cell(cols_w7[5], 6, f"R$ {r_v.get('Variação_Empenhado', 0):,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.'), border=1, align='R')
+            pdf.ln()
+
+    # ---------------------------------------------------------
+    # PÁGINA 8: VARIAÇÃO POR NATUREZA DA DESPESA
+    # ---------------------------------------------------------
+    pdf.titulo_secao = "Variação por Natureza da Despesa"
+    pdf.add_page()
+    pdf.set_font('Arial', '', 10)
+    pdf.cell(0, 6, "Detalhamento das maiores variações de Empenho agrupadas pelo código do elemento de despesa.", ln=1)
+    pdf.ln(3)
+
+    cols_w8 = [35, 142, 60, 40]
+    headers_p8 = ["Código", "Descrição da Natureza da Despesa", "Variação Absoluta (R$)", "Status"]
+    pdf.set_font('Arial', 'B', 9)
+    pdf.set_fill_color(30, 58, 138)
+    pdf.set_text_color(255, 255, 255)
+    for w, h in zip(cols_w8, headers_p8): pdf.cell(w, 8, h, border=1, fill=True, align='C')
+    pdf.ln()
+
+    pdf.set_font('Arial', '', 8)
+    pdf.set_text_color(17, 24, 39)
+    if 'Natureza_ID' in df_var.columns:
+        col_v_emp = next((c for c in df_var.columns if 'Variação' in c and 'Empen' in c), None)
+        if col_v_emp:
+            df_nat_var = df_var.groupby('Natureza_ID')[col_v_emp].sum().reset_index()
+            for _, r_n in df_nat_var.head(10).iterrows():
+                cod_n = str(r_n['Natureza_ID'])
+                desc_n = dict_naturezas.get(cod_n, 'Não Identificada')
+                v_var = r_n[col_v_emp]
+                st_v = "Aumento" if v_var > 0 else ("Redução" if v_var < 0 else "Estável")
+                
+                pdf.cell(cols_w8[0], 6, cod_n, border=1, align='C')
+                pdf.cell(cols_w8[1], 6, desc_n[:60], border=1, align='L')
+                pdf.cell(cols_w8[2], 6, f"R$ {v_var:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.'), border=1, align='R')
+                pdf.cell(cols_w8[3], 6, st_v, border=1, align='C')
+                pdf.ln()
+
+    caminho_pdf_temp = "Relatorio_Analitico_Temp.pdf"
+    pdf.output(caminho_pdf_temp)
+    with open(caminho_pdf_temp, "rb") as f:
+        bytes_pdf = f.read()
+    if os.path.exists(caminho_pdf_temp):
+        os.remove(caminho_pdf_temp)
+    return bytes_pdf
+
+# ==========================================
 # 6. EXECUÇÃO PRINCIPAL
 # ==========================================
 try:
@@ -1086,8 +1438,7 @@ try:
         st.title("📊 PAINEL ORÇAMENTÁRIO - UEA")
         
         with st.expander("🔍 CLIQUE AQUI PARA ABRIR/FECHAR OS FILTROS DO PAINEL", expanded=True):
-            st.button("🧹 Limpar Todos os Filtros", on_click=forcar_limpeza_total, width="stretch")
-            
+            # 1. SELEÇÃO DOS FILTROS (Mapeamento dos Selectboxes)
             c1, c2, c3, c4, c5 = st.columns(5)
             
             with c1:
@@ -1121,28 +1472,59 @@ try:
                 var_natureza_str = st.selectbox("Natureza", opcoes_natureza, key=f"filtro_natureza_{st.session_state.botao_reset}")
                 var_natureza_codigo = var_natureza_str.split(' - ')[0]
 
-    # FILTRAGEM
-    mask_base = pd.Series(True, index=df_base.index)
-    if var_mes_str != "Todos": mask_base &= (df_base['Mes_Nome'] == var_mes_str)
-    if var_mov_str: mask_base &= (df_base['Tipo Movimento'] == var_mov_str)
-    if var_acao_codigo != "Todas": mask_base &= (df_base['Ação'] == var_acao_codigo)
-    if var_natureza_codigo != "Todas": mask_base &= (df_base['Natureza_ID'] == var_natureza_codigo)
-    if var_fonte_codigo != "Todas": mask_base &= (df_base['Fonte_3'] == var_fonte_codigo)
-    df_base_filtrada = df_base[mask_base]
+            # 2. PROCESSAMENTO DA FILTRAGEM (Gera df_latest antes de usar no PDF)
+            mask_base = pd.Series(True, index=df_base.index)
+            if var_mes_str != "Todos": mask_base &= (df_base['Mes_Nome'] == var_mes_str)
+            if var_mov_str: mask_base &= (df_base['Tipo Movimento'] == var_mov_str)
+            if var_acao_codigo != "Todas": mask_base &= (df_base['Ação'] == var_acao_codigo)
+            if var_natureza_codigo != "Todas": mask_base &= (df_base['Natureza_ID'] == var_natureza_codigo)
+            if var_fonte_codigo != "Todas": mask_base &= (df_base['Fonte_3'] == var_fonte_codigo)
+            df_base_filtrada = df_base[mask_base]
 
-    df_latest = df_base_filtrada[df_base_filtrada['Mes_Num'] == df_base_filtrada['Mes_Num'].max()] if (var_mes_str == "Todos" and not df_base_filtrada['Mes_Num'].isna().all()) else df_base_filtrada
+            df_latest = df_base_filtrada[df_base_filtrada['Mes_Num'] == df_base_filtrada['Mes_Num'].max()] if (var_mes_str == "Todos" and not df_base_filtrada['Mes_Num'].isna().all()) else df_base_filtrada
 
-    mask_evo = pd.Series(True, index=df_base.index)
-    if var_mov_str: mask_evo &= (df_base['Tipo Movimento'] == var_mov_str)
-    if var_acao_codigo != "Todas": mask_evo &= (df_base['Ação'] == var_acao_codigo)
-    if var_natureza_codigo != "Todas": mask_evo &= (df_base['Natureza_ID'] == var_natureza_codigo)
-    if var_fonte_codigo != "Todas": mask_evo &= (df_base['Fonte_3'] == var_fonte_codigo)
-        
-    mask_var = pd.Series(True, index=df_var.index)
-    if var_acao_codigo != "Todas": mask_var &= (df_var['Ação'] == var_acao_codigo)
-    if var_natureza_codigo != "Todas": mask_var &= (df_var['Natureza_ID'] == var_natureza_codigo)
-    if var_fonte_codigo != "Todas": mask_var &= (df_var['Fonte_3'] == var_fonte_codigo)
-    df_var_filtrada = df_var[mask_var]
+            mask_evo = pd.Series(True, index=df_base.index)
+            if var_mov_str: mask_evo &= (df_base['Tipo Movimento'] == var_mov_str)
+            if var_acao_codigo != "Todas": mask_evo &= (df_base['Ação'] == var_acao_codigo)
+            if var_natureza_codigo != "Todas": mask_evo &= (df_base['Natureza_ID'] == var_natureza_codigo)
+            if var_fonte_codigo != "Todas": mask_evo &= (df_base['Fonte_3'] == var_fonte_codigo)
+                
+            mask_var = pd.Series(True, index=df_var.index)
+            if var_acao_codigo != "Todas": mask_var &= (df_var['Ação'] == var_acao_codigo)
+            if var_natureza_codigo != "Todas": mask_var &= (df_var['Natureza_ID'] == var_natureza_codigo)
+            if var_fonte_codigo != "Todas": mask_var &= (df_var['Fonte_3'] == var_fonte_codigo)
+            df_var_filtrada = df_var[mask_var]
+
+            st.markdown("---")
+
+            # 3. BOTÕES DE AÇÃO (Lado a lado no rodape da caixa de filtros)
+            col_b1, col_b2 = st.columns([1, 1])
+            
+            with col_b1:
+                st.button("🧹 Limpar Todos os Filtros", on_click=forcar_limpeza_total, use_container_width=True)
+            
+            with col_b2:
+                try:
+                    bytes_relatorio_pdf = gerar_pdf_8_paginas_dinamico(
+                        df_latest=df_latest,
+                        df_base=df_base,
+                        df_var=df_var_filtrada,
+                        caminho_projecao=r"Projecao_2026.xlsx",
+                        caminho_grupo_despesa=r"Grafico_Grupo de Despesa.xlsx",
+                        dict_acoes=dict_acoes,
+                        dict_naturezas=dict_naturezas
+                    )
+
+                    st.download_button(
+                        label="📄 Baixar Relatório Analítico (.PDF)",
+                        data=bytes_relatorio_pdf,
+                        file_name=f"Relatorio_Analitico_UEA_{datetime.now().strftime('%d%m%Y')}.pdf",
+                        mime="application/pdf",
+                        type="primary",
+                        use_container_width=True
+                    )
+                except Exception as e_pdf:
+                    st.error(f"Erro ao preparar o PDF: {e_pdf}")
         
     # CARDS KPIS COM TAMANHO ULTRA-COMPACTO E FIXO NO TOPO
     st.markdown("""
@@ -1555,3 +1937,4 @@ except Exception as e:
             st.cache_data.clear()
             st.session_state.clear()
             st.rerun()
+
