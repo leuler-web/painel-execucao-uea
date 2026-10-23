@@ -1172,6 +1172,7 @@ try:
         .kpi-card-emp { background: linear-gradient(135deg, #1E3A8A 0%, #2563EB 100%); }
         .kpi-card-liq { background: linear-gradient(135deg, #0369A1 0%, #0284C7 100%); }
         .kpi-card-pago { background: linear-gradient(135deg, #047857 0%, #10B981 100%); }
+        .kpi-card-bloq { background: linear-gradient(135deg, #991B1B 0%, #EF4444 100%); } /* Vermelho para Bloqueado */
         .kpi-card-disp { background: linear-gradient(135deg, #B45309 0%, #D97706 100%); }
         .kpi-label { font-size: 12px !important; font-weight: 800 !important; letter-spacing: 0.5px; opacity: 0.95; margin-bottom: 2px !important; text-transform: uppercase; }
         .kpi-value { font-size: 22px !important; font-weight: 900 !important; line-height: 1.1; }
@@ -1185,18 +1186,21 @@ try:
     st.markdown('<div class="kpi-container">', unsafe_allow_html=True)
     st.markdown(f"<div class='destaque-ano'>Exercício Orçamentário: {ano_dinamico} <span style='font-size: 18px; font-weight: bold; color: #6B7280;'>(última atualização: {dt_atual})</span></div>", unsafe_allow_html=True)
     
-    c1, c2, c3, c4, c5 = st.columns(5)
+    c1, c2, c3, c4, c5, c6 = st.columns(6)
+    
     v_aut = df_latest['Autorizado'].sum() if 'Autorizado' in df_latest.columns else 0
     v_emp = df_latest['Empenhado'].sum() if 'Empenhado' in df_latest.columns else 0
     v_liq = df_latest['Liquidado'].sum() if 'Liquidado' in df_latest.columns else 0
     v_pago = df_latest['Pago'].sum() if 'Pago' in df_latest.columns else 0
+    v_bloq = df_latest['Bloqueado'].sum() if 'Bloqueado' in df_latest.columns else 0
     v_disp = df_latest['Disponível'].sum() if 'Disponível' in df_latest.columns else 0
 
     with c1: st.markdown(f'<div class="kpi-card kpi-card-aut"><div class="kpi-label">📋 AUTORIZADO</div><div class="kpi-value">{formata_moeda_sem_decimal(v_aut)}</div></div>', unsafe_allow_html=True)
     with c2: st.markdown(f'<div class="kpi-card kpi-card-emp"><div class="kpi-label">💰 EMPENHADO</div><div class="kpi-value">{formata_moeda_sem_decimal(v_emp)}</div><div class="kpi-delta">{(v_emp/v_aut)*100 if v_aut>0 else 0:.1f}% do total</div></div>', unsafe_allow_html=True)
     with c3: st.markdown(f'<div class="kpi-card kpi-card-liq"><div class="kpi-label">✅ LIQUIDADO</div><div class="kpi-value">{formata_moeda_sem_decimal(v_liq)}</div><div class="kpi-delta">{(v_liq/v_aut)*100 if v_aut>0 else 0:.1f}% do total</div></div>', unsafe_allow_html=True)
     with c4: st.markdown(f'<div class="kpi-card kpi-card-pago"><div class="kpi-label">💳 PAGO</div><div class="kpi-value">{formata_moeda_sem_decimal(v_pago)}</div><div class="kpi-delta">{(v_pago/v_aut)*100 if v_aut>0 else 0:.1f}% do total</div></div>', unsafe_allow_html=True)
-    with c5: st.markdown(f'<div class="kpi-card kpi-card-disp"><div class="kpi-label">📊 DISPONÍVEL</div><div class="kpi-value">{formata_moeda_sem_decimal(v_disp)}</div></div>', unsafe_allow_html=True)
+    with c5: st.markdown(f'<div class="kpi-card kpi-card-bloq"><div class="kpi-label">🔒 BLOQUEADO</div><div class="kpi-value">{formata_moeda_sem_decimal(v_bloq)}</div></div>', unsafe_allow_html=True)
+    with c6: st.markdown(f'<div class="kpi-card kpi-card-disp"><div class="kpi-label">📊 DISPONÍVEL</div><div class="kpi-value">{formata_moeda_sem_decimal(v_disp)}</div></div>', unsafe_allow_html=True)
     
     st.markdown('</div>', unsafe_allow_html=True)
 
