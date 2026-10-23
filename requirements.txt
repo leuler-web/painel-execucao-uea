@@ -1,10 +1,8 @@
 streamlit
 pandas
+numpy
 plotly
+matplotlib
 openpyxl
 xlsxwriter
-streamlit-plotly-events
-PyGithub
-numpy
-streamlit-aggrid
-matplotlib
+fpdf2
