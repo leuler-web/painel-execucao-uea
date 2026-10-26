@@ -4,7 +4,8 @@ import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 import os
-import re   
+import re
+import tempfile
 from io import BytesIO
 import matplotlib.pyplot as plt
 from modo_apresentacao import modo_apresentacao
@@ -29,7 +30,7 @@ st.set_page_config(
 )
 
 # ==========================================
-# 2. BLOCO ÚNICO DE ESTILOS CSS (AMPLIADO PARA TELAS GRANDES)
+# 2. BLOCO ÚNICO DE ESTILOS CSS
 # ==========================================
 st.markdown("""
 <style>
@@ -272,7 +273,7 @@ def criar_grafico_tendencia_global(caminho_planilha_proj):
         fig.update_layout(
             plot_bgcolor='rgba(0,0,0,0)',
             paper_bgcolor='rgba(0,0,0,0)',
-            height=250, # REDUZIDO DE 430 PARA 250
+            height=250,
             margin=dict(l=40, r=40, t=30, b=30),
             font=dict(size=14, color='#1E293B'),
             legend=dict(orientation="h", y=1.12, x=0.5, xanchor="center", font=dict(size=14, color="#1E3A8A"))
@@ -386,7 +387,7 @@ def criar_grafico_arrecadacao_fonte116(df_base=None, caminho_arquivo=None, meses
         projecao_loa = projecao_loa_full[:meses_limite] + [None] * (12 - meses_limite)
         realizado_2026 = realizado_2026_full[:meses_limite] + [None] * (12 - meses_limite)
 
-        # 3. Cálculos do Período (calculados com base em todos os meses disponíveis)
+        # 3. Cálculos do Período
         idx_realizados = [i for i, v in enumerate(realizado_2026_full) if v is not None]
         qtd_meses = len(idx_realizados)
 
@@ -434,14 +435,14 @@ def criar_grafico_arrecadacao_fonte116(df_base=None, caminho_arquivo=None, meses
         # Linha Projeção LOA (Verde)
         fig.add_trace(go.Scatter(
             x=meses_eixo, y=projecao_loa,
-            name='Projeção LOA 1,01 BI',
+            name='Receita Arrecadada',
             mode='lines+markers+text',
             text=labels_proj,
             textposition=pos_proj,
             textfont=dict(size=11, color='#15803D'),
             line=dict(color='#15803D', width=3, shape='spline'),
             marker=dict(size=7, color='#15803D'),
-            hovertemplate="<b>Projeção LOA</b><br>Mês: %{x}<br>Valor: R$ %{y:,.0f}<extra></extra>"
+            hovertemplate="<b>Receita Arrecadada</b><br>Mês: %{x}<br>Valor: R$ %{y:,.0f}<extra></extra>"
         ))
 
         # Linha Realizado 2026 (Azul)
@@ -461,7 +462,7 @@ def criar_grafico_arrecadacao_fonte116(df_base=None, caminho_arquivo=None, meses
             title=dict(text="Acompanhamento da Arrecadação - Fonte 116 (Tesouro)", font=dict(size=18, color="#1E3A8A")),
             plot_bgcolor='rgba(0,0,0,0)',
             paper_bgcolor='rgba(0,0,0,0)',
-            height=270, # REDUZIDO DE 460 PARA 270
+            height=270,
             margin=dict(l=40, r=40, t=50, b=30),
             font=dict(size=13, color='#1E293B'),
             legend=dict(orientation="h", y=1.12, x=0.5, xanchor="center", font=dict(size=13, color="#1E3A8A"))
@@ -515,7 +516,7 @@ def criar_grafico_arrecadacao_fonte116(df_base=None, caminho_arquivo=None, meses
 <div class="card-f116-tbl">
 <table class="tbl-f116">
 <tr>
-    <td class="f116-label">Projeção LOA 1,01 BI ({kpis['qtd_meses_str']})</td>
+    <td class="f116-label">Receita Arrecadada ({kpis['qtd_meses_str']})</td>
     <td class="f116-val">{kpis['proj_periodo']}</td>
     <td class="f116-val"></td>
 </tr>
@@ -540,6 +541,7 @@ def criar_grafico_arrecadacao_fonte116(df_base=None, caminho_arquivo=None, meses
         return fig, html_tabela_resumo, kpis
     except Exception as e:
         return None, None, None
+
 def criar_grafico_grupo_despesa(df_filtrado):
     """Cria o gráfico interativo com Plotly e Tabela HTML com fontes grandes e números destacados."""
     try:
@@ -619,14 +621,13 @@ def criar_grafico_grupo_despesa(df_filtrado):
                 customdata=hover_texts
             ))
 
-        # Altere no fig.update_layout a margem inferior 'b':
         fig.update_layout(
             title=dict(text='Execução Orçamentária por Grupo de Despesa (em R$ milhões)', font=dict(size=16, color='#111827')),
             yaxis_title='R$ (Em milhões)',
             barmode='group',
             legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="center", x=0.5, font=dict(size=14)),
             plot_bgcolor='rgba(0,0,0,0)',
-            margin=dict(t=35, b=0, l=10, r=10),  # b=0 para eliminar o espaço em branco inferior
+            margin=dict(t=35, b=0, l=10, r=10),
             height=260
         )
 
@@ -641,10 +642,9 @@ def criar_grafico_grupo_despesa(df_filtrado):
             'DISPONÍVEL': 'Saldo orçamentário livre que ainda pode ser utilizado para novas contratações.'
         }
 
-        # E no CSS da tabela (html_tabela), altere 'margin-top' para -20px:
         html_tabela = f"""<style>
 .tabela-despesas-container {{
-    margin-top: -20px; /* PUXA A TABELA PARA ENCOSTAR DIRETO NO GRÁFICO */
+    margin-top: -20px;
     border: 2px solid #CBD5E1;
     border-radius: 10px;
     overflow: hidden;
@@ -791,10 +791,10 @@ def criar_grafico_receita_x_despesa(caminho_arquivo):
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(15, 4.5), gridspec_kw={'height_ratios': [2.5, 1]})
 
         config_cats = [
-            ("LOA", "LOA (A)", '#000000', 'o', '-'),            # Preto
-            ("RECEITA", "Receita Arrecadada (B)", '#16A34A', 'o', '-'), # Verde
-            ("DESPESA", "Despesa Realizada (C)", '#DC2626', 'o', '-'),  # Vermelho
-            ("SALDO", "Saldo (B-C)", '#9333EA', 'x', '-')       # Roxo
+            ("LOA", "LOA (A)", '#000000', 'o', '-'),
+            ("RECEITA", "Receita Arrecadada (B)", '#16A34A', 'o', '-'),
+            ("DESPESA", "Despesa Realizada (C)", '#DC2626', 'o', '-'),
+            ("SALDO", "Saldo (B-C)", '#9333EA', 'x', '-')
         ]
 
         linhas_tabela = []
@@ -984,7 +984,7 @@ def carregar_dados_v181(path):
     return df_base, df_var
 
 # ==========================================
-# GERADOR DE RELATÓRIO ANALÍTICO EM PDF (8 PÁGINAS)
+# GERADOR DE RELATÓRIO ANALÍTICO EM PDF
 # ==========================================
 
 class PDFPainelUEA(FPDF):
@@ -1025,12 +1025,9 @@ def formatar_milhoes_pdf(valor):
 def gerar_pdf_8_paginas_dinamico(df_latest, df_base, df_var, caminho_projecao, caminho_grupo_despesa, dict_acoes, dict_naturezas):
     pdf = PDFPainelUEA()
 
-    # ---------------------------------------------------------
-    # PÁGINA 1: VISÃO ESTRATÉGICA (GRUPO DE DESPESA)
-    # ---------------------------------------------------------
+    # PÁGINA 1
     pdf.titulo_secao = "Visão Estratégica - Panorama por Grupo de Despesa"
     pdf.add_page()
-    
     pdf.set_font('Arial', '', 10)
     pdf.set_text_color(75, 85, 99)
     pdf.cell(0, 6, "Execução consolidada dos Grupos de Despesa (Pessoal, Custeio e Investimento) em R$ milhões.", ln=1)
@@ -1088,9 +1085,7 @@ def gerar_pdf_8_paginas_dinamico(df_latest, df_base, df_var, caminho_projecao, c
     for i in range(5):
         pdf.cell(cols_w[i+1], 8, formatar_milhoes_pdf(totais_p1[i]), border=1, fill=True, align='C')
 
-    # ---------------------------------------------------------
-    # PÁGINA 2: TOP 10 MAIORES DESPESAS
-    # ---------------------------------------------------------
+    # PÁGINA 2
     pdf.titulo_secao = "Top 10 - Maiores Despesas por Ação Orçamentária"
     pdf.add_page()
     pdf.set_font('Arial', '', 10)
@@ -1125,9 +1120,7 @@ def gerar_pdf_8_paginas_dinamico(df_latest, df_base, df_var, caminho_projecao, c
             pdf.cell(cols_w2[3], 7, f"{pct:.1f}%".replace('.', ','), border=1, align='C')
             pdf.ln()
 
-    # ---------------------------------------------------------
-    # PÁGINA 3: EVOLUÇÃO MENSAL DA EXECUÇÃO
-    # ---------------------------------------------------------
+    # PÁGINA 3
     pdf.titulo_secao = "Evolução Mensal da Execução Orçamentária (2026)"
     pdf.add_page()
     pdf.set_font('Arial', '', 10)
@@ -1157,9 +1150,7 @@ def gerar_pdf_8_paginas_dinamico(df_latest, df_base, df_var, caminho_projecao, c
                 pdf.cell(cols_w3[idx+1], 7, f"R$ {val/1000:,.0f}".replace(',', '.'), border=1, align='C')
             pdf.ln()
 
-    # ---------------------------------------------------------
-    # PÁGINA 4: PROJEÇÃO VS REALIZADO (AÇÃO 2003)
-    # ---------------------------------------------------------
+    # PÁGINA 4
     pdf.titulo_secao = "Projeção vs. Realizado - (Ação 2003: Folha de Pagamento)"
     pdf.add_page()
     pdf.set_font('Arial', '', 10)
@@ -1195,9 +1186,7 @@ def gerar_pdf_8_paginas_dinamico(df_latest, df_base, df_var, caminho_projecao, c
             pdf.cell(cols_w4[-1], 7, f"{tot_row/1000:,.0f}".replace(',', '.'), border=1, align='C')
             pdf.ln()
 
-    # ---------------------------------------------------------
-    # PÁGINA 5: RECEITA VS DESPESA (DINÂMICO)
-    # ---------------------------------------------------------
+    # PÁGINA 5
     pdf.titulo_secao = "Receita vs. Despesa - Análise de Fluxo Orçamentário"
     pdf.add_page()
     pdf.set_font('Arial', '', 10)
@@ -1265,9 +1254,7 @@ def gerar_pdf_8_paginas_dinamico(df_latest, df_base, df_var, caminho_projecao, c
         except Exception:
             pass
 
-    # ---------------------------------------------------------
-    # PÁGINA 6: ARRECADAÇÃO FONTE 116 (DINÂMICO)
-    # ---------------------------------------------------------
+    # PÁGINA 6
     pdf.titulo_secao = "Arrecadação Fonte 116 (Tesouro) - Projeção vs. Realizado"
     pdf.add_page()
     pdf.set_font('Arial', '', 10)
@@ -1283,7 +1270,6 @@ def gerar_pdf_8_paginas_dinamico(df_latest, df_base, df_var, caminho_projecao, c
     pdf.cell(cols_w6[2], 8, "Variação % / Impacto", border=1, fill=True, align='C')
     pdf.ln()
 
-    # Cálculo dinâmico direto da função oficial do painel
     _, _, kpis_f116 = criar_grafico_arrecadacao_fonte116(df_base, caminho_grupo_despesa)
 
     if kpis_f116:
@@ -1304,9 +1290,7 @@ def gerar_pdf_8_paginas_dinamico(df_latest, df_base, df_var, caminho_projecao, c
         pdf.cell(cols_w6[2], 8, pct, border=1, align='C')
         pdf.ln()
 
-    # ---------------------------------------------------------
-    # PÁGINA 7: TABELA DE VARIAÇÕES RECENTES
-    # ---------------------------------------------------------
+    # PÁGINA 7
     pdf.titulo_secao = "Tabela de Variações Recentes (Comparativo Fechamento vs. Atual)"
     pdf.add_page()
     pdf.set_font('Arial', '', 10)
@@ -1333,9 +1317,7 @@ def gerar_pdf_8_paginas_dinamico(df_latest, df_base, df_var, caminho_projecao, c
             pdf.cell(cols_w7[5], 6, f"R$ {r_v.get('Variação_Empenhado', 0):,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.'), border=1, align='R')
             pdf.ln()
 
-    # ---------------------------------------------------------
-    # PÁGINA 8: VARIAÇÃO POR NATUREZA DA DESPESA
-    # ---------------------------------------------------------
+    # PÁGINA 8
     pdf.titulo_secao = "Variação por Natureza da Despesa"
     pdf.add_page()
     pdf.set_font('Arial', '', 10)
@@ -1368,12 +1350,17 @@ def gerar_pdf_8_paginas_dinamico(df_latest, df_base, df_var, caminho_projecao, c
                 pdf.cell(cols_w8[3], 6, st_v, border=1, align='C')
                 pdf.ln()
 
-    caminho_pdf_temp = "Relatorio_Analitico_Temp.pdf"
-    pdf.output(caminho_pdf_temp)
+    # BLOCCO CORRIGIDO COM INDENTAÇÃO DO TEMPFILE
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
+        caminho_pdf_temp = tmp_file.name
+        pdf.output(caminho_pdf_temp)
+
     with open(caminho_pdf_temp, "rb") as f:
         bytes_pdf = f.read()
+
     if os.path.exists(caminho_pdf_temp):
         os.remove(caminho_pdf_temp)
+
     return bytes_pdf
 
 # ==========================================
@@ -1481,7 +1468,6 @@ try:
         st.title("📊 PAINEL ORÇAMENTÁRIO - UEA")
         
         with st.expander("🔍 CLIQUE AQUI PARA ABRIR/FECHAR OS FILTROS DO PAINEL", expanded=True):
-            # 1. SELEÇÃO DOS FILTROS (Mapeamento dos Selectboxes)
             c1, c2, c3, c4, c5 = st.columns(5)
             
             with c1:
@@ -1515,7 +1501,6 @@ try:
                 var_natureza_str = st.selectbox("Natureza", opcoes_natureza, key=f"filtro_natureza_{st.session_state.botao_reset}")
                 var_natureza_codigo = var_natureza_str.split(' - ')[0]
 
-            # 2. PROCESSAMENTO DA FILTRAGEM (Gera df_latest antes de usar no PDF)
             mask_base = pd.Series(True, index=df_base.index)
             if var_mes_str != "Todos": mask_base &= (df_base['Mes_Nome'] == var_mes_str)
             if var_mov_str: mask_base &= (df_base['Tipo Movimento'] == var_mov_str)
@@ -1540,7 +1525,6 @@ try:
 
             st.markdown("---")
 
-            # 3. BOTÕES DE AÇÃO (Lado a lado no rodape da caixa de filtros)
             col_b1, col_b2 = st.columns([1, 1])
             
             with col_b1:
@@ -1569,7 +1553,6 @@ try:
                 except Exception as e_pdf:
                     st.error(f"Erro ao preparar o PDF: {e_pdf}")
         
-    # CARDS KPIS COM TAMANHO ULTRA-COMPACTO E FIXO NO TOPO
     st.markdown("""
         <style>
         .kpi-container { 
@@ -1597,13 +1580,11 @@ try:
         .kpi-card-emp { background: linear-gradient(135deg, #1E3A8A 0%, #2563EB 100%); }
         .kpi-card-liq { background: linear-gradient(135deg, #0369A1 0%, #0284C7 100%); }
         .kpi-card-pago { background: linear-gradient(135deg, #047857 0%, #10B981 100%); }
-        .kpi-card-bloq { background: linear-gradient(135deg, #991B1B 0%, #EF4444 100%); } /* Vermelho para Bloqueado */
+        .kpi-card-bloq { background: linear-gradient(135deg, #991B1B 0%, #EF4444 100%); }
         .kpi-card-disp { background: linear-gradient(135deg, #B45309 0%, #D97706 100%); }
         .kpi-label { font-size: 12px !important; font-weight: 800 !important; letter-spacing: 0.5px; opacity: 0.95; margin-bottom: 2px !important; text-transform: uppercase; }
         .kpi-value { font-size: 22px !important; font-weight: 900 !important; line-height: 1.1; }
         .kpi-delta { font-size: 11px !important; font-weight: 700 !important; opacity: 0.95; margin-top: 2px !important; background: rgba(255,255,255,0.2); padding: 1px 6px; border-radius: 8px; display: inline-block; }
-        
-        /* Reduz padding global da página Streamlit */
         .block-container { padding-top: 0.5rem !important; padding-bottom: 0.5rem !important; }
         </style>
         """, unsafe_allow_html=True)
@@ -1629,7 +1610,6 @@ try:
     
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # GERENCIAMENTO DE ABAS VIA COMPONENTE
     lista_abas = [
         "🎯 Visão Estratégica",
         "🏆 Top 10",
@@ -1834,17 +1814,14 @@ try:
             st.markdown(f"<div class='destaque-ano'>Arrecadação Fonte 116 (Tesouro) - Realizado vs. Projeção <span style='font-size: 18px; font-weight: normal; color: #6B7280;'>(última atualização: {dt_atual})</span></div>", unsafe_allow_html=True)
             caminho_grupo_despesa = r"Grafico_Grupo de Despesa.xlsx"
 
-            # 1. Cria o contêiner dinâmico do gráfico
             plot_spot = st.empty()
 
-            # 2. Executa o desenho animado (mês a mês)
             for m in range(1, 13):
                 fig_f116, html_f116, kpis_f116 = criar_grafico_arrecadacao_fonte116(df_base, caminho_grupo_despesa, meses_limite=m)
                 if fig_f116 is not None:
                     plot_spot.plotly_chart(fig_f116, use_container_width=True)
-                    time.sleep(1.08)  # Ajuste a velocidade da animação aqui (0.08 seg por mês)
+                    time.sleep(1.08)
 
-            # 3. Exibe a tabela de resumo executivo abaixo do gráfico
             if html_f116 is not None:
                 st.markdown(html_f116, unsafe_allow_html=True)
             else:
