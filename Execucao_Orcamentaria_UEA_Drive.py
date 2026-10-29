@@ -1855,45 +1855,56 @@ try:
                 st.warning("⚠️ Arquivo de projeção não encontrado.")
 
         elif aba_atual == "⚖️ Receita vs. Despesa":
-            # Função para localizar a data de modificação real do Excel "Grafico_Grupo de Despesa"
+            # Função com varredura em profundidade para capturar a data real do ficheiro Excel
             def obter_dt_planilha_gd():
                 import os
                 from datetime import datetime
-                
-                # Lista de caminhos potenciais (Rede e Local)
+
+                # 1. Procura em variáveis globais do script por caminhos de ficheiros
+                for k, v in list(globals().items()):
+                    if isinstance(v, str) and ("grupo" in v.lower() or "despesa" in v.lower()) and v.lower().endswith(('.xlsx', '.xls')):
+                        if os.path.exists(v):
+                            try:
+                                return datetime.fromtimestamp(os.path.getmtime(v)).strftime('%d/%m/%Y às %H:%M')
+                            except Exception:
+                                pass
+
+                # 2. Teste direto nos caminhos de rede e locais
                 candidatos = [
                     r"\\Rei-1cpd003\coord_plan_institucional\DADOS CPI\Orçamento\2026\EXECUÇÃO ORÇAMENTÁRIA\RELEXORC_CSV\Saida_PowerBI\Grafico_Grupo de Despesa.xlsx",
                     "Grafico_Grupo de Despesa.xlsx",
                     os.path.join(os.path.dirname(os.path.abspath(__file__)), "Grafico_Grupo de Despesa.xlsx") if '__file__' in globals() else ""
                 ]
-                
-                # 1. Teste direto por caminho exato
+
                 for c in candidatos:
-                    if not c: continue
-                    try:
+                    if c:
                         c_norm = os.path.normpath(c)
                         if os.path.exists(c_norm):
-                            return datetime.fromtimestamp(os.path.getmtime(c_norm)).strftime('%d/%m/%Y às %H:%M')
-                    except Exception:
-                        pass
-                
-                # 2. Varredura flexível no diretório local caso o nome venha com maiúsculas/espaços
-                pastas = [os.getcwd()]
+                            try:
+                                return datetime.fromtimestamp(os.path.getmtime(c_norm)).strftime('%d/%m/%Y às %H:%M')
+                            except Exception:
+                                pass
+
+                # 3. Varredura recursiva (os.walk) em todas as subpastas da aplicação
+                pastas_busca = [os.getcwd()]
                 if '__file__' in globals():
-                    pastas.append(os.path.dirname(os.path.abspath(__file__)))
-                    
-                for pasta in pastas:
+                    pastas_busca.append(os.path.dirname(os.path.abspath(__file__)))
+
+                for pasta in pastas_busca:
+                    if not os.path.exists(pasta):
+                        continue
                     try:
-                        if os.path.exists(pasta):
-                            for arq in os.listdir(pasta):
-                                if "grafico" in arq.lower() and "despesa" in arq.lower() and arq.endswith(('.xlsx', '.XLSX')):
-                                    caminho_enc = os.path.join(pasta, arq)
-                                    return datetime.fromtimestamp(os.path.getmtime(caminho_enc)).strftime('%d/%m/%Y às %H:%M')
+                        for raiz, _, ficheiros in os.walk(pasta):
+                            for f in ficheiros:
+                                if "grupo" in f.lower() and "despesa" in f.lower() and f.lower().endswith(('.xlsx', '.xls')):
+                                    caminho_encontrado = os.path.join(raiz, f)
+                                    return datetime.fromtimestamp(os.path.getmtime(caminho_encontrado)).strftime('%d/%m/%Y às %H:%M')
                     except Exception:
                         pass
+
                 return None
 
-            # Captura a data exata do arquivo Excel ou utiliza dt_atual caso não encontre o arquivo
+            # Obtém a data exata da modificação do Excel ou utiliza a data SIAFI caso o ficheiro não exista na máquina
             dt_atualizacao_gd = obter_dt_planilha_gd() or dt_atual
 
             st.markdown(f"<div class='destaque-ano'>Análise da Receita Arrecadada x Despesa Realizada <span style='font-size: 18px; font-weight: normal; color: #6B7280;'>(última atualização: {dt_atualizacao_gd})</span></div>", unsafe_allow_html=True)
