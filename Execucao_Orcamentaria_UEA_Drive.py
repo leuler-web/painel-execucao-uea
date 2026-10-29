@@ -1855,56 +1855,30 @@ try:
                 st.warning("⚠️ Arquivo de projeção não encontrado.")
 
         elif aba_atual == "⚖️ Receita vs. Despesa":
-            # Função com varredura em profundidade para capturar a data real do ficheiro Excel
             def obter_dt_planilha_gd():
-                import os
-                from datetime import datetime
+                try:
+                    import sys
+                    from datetime import datetime
+                    
+                    # Obtém a pasta exata onde o arquivo Execucao_Orcamentaria_UEA_Drive.py está salvo
+                    if '__file__' in globals():
+                        pasta_script = os.path.dirname(os.path.abspath(__file__))
+                    elif len(sys.argv) > 0 and sys.argv[0]:
+                        pasta_script = os.path.dirname(os.path.abspath(sys.argv[0]))
+                    else:
+                        pasta_script = os.getcwd()
 
-                # 1. Procura em variáveis globais do script por caminhos de ficheiros
-                for k, v in list(globals().items()):
-                    if isinstance(v, str) and ("grupo" in v.lower() or "despesa" in v.lower()) and v.lower().endswith(('.xlsx', '.xls')):
-                        if os.path.exists(v):
-                            try:
-                                return datetime.fromtimestamp(os.path.getmtime(v)).strftime('%d/%m/%Y às %H:%M')
-                            except Exception:
-                                pass
-
-                # 2. Teste direto nos caminhos de rede e locais
-                candidatos = [
-                    r"\\Rei-1cpd003\coord_plan_institucional\DADOS CPI\Orçamento\2026\EXECUÇÃO ORÇAMENTÁRIA\RELEXORC_CSV\Saida_PowerBI\Grafico_Grupo de Despesa.xlsx",
-                    "Grafico_Grupo de Despesa.xlsx",
-                    os.path.join(os.path.dirname(os.path.abspath(__file__)), "Grafico_Grupo de Despesa.xlsx") if '__file__' in globals() else ""
-                ]
-
-                for c in candidatos:
-                    if c:
-                        c_norm = os.path.normpath(c)
-                        if os.path.exists(c_norm):
-                            try:
-                                return datetime.fromtimestamp(os.path.getmtime(c_norm)).strftime('%d/%m/%Y às %H:%M')
-                            except Exception:
-                                pass
-
-                # 3. Varredura recursiva (os.walk) em todas as subpastas da aplicação
-                pastas_busca = [os.getcwd()]
-                if '__file__' in globals():
-                    pastas_busca.append(os.path.dirname(os.path.abspath(__file__)))
-
-                for pasta in pastas_busca:
-                    if not os.path.exists(pasta):
-                        continue
-                    try:
-                        for raiz, _, ficheiros in os.walk(pasta):
-                            for f in ficheiros:
-                                if "grupo" in f.lower() and "despesa" in f.lower() and f.lower().endswith(('.xlsx', '.xls')):
-                                    caminho_encontrado = os.path.join(raiz, f)
-                                    return datetime.fromtimestamp(os.path.getmtime(caminho_encontrado)).strftime('%d/%m/%Y às %H:%M')
-                    except Exception:
-                        pass
-
+                    # Varre a pasta do script procurando o arquivo Grafico_Grupo de Despesa.xlsx
+                    for arq in os.listdir(pasta_script):
+                        if "grupo" in arq.lower() and "despesa" in arq.lower() and arq.lower().endswith(('.xlsx', '.xls')):
+                            caminho_arquivo = os.path.join(pasta_script, arq)
+                            mtime = os.path.getmtime(caminho_arquivo)
+                            return datetime.fromtimestamp(mtime).strftime('%d/%m/%Y às %H:%M')
+                except Exception:
+                    pass
                 return None
 
-            # Obtém a data exata da modificação do Excel ou utiliza a data SIAFI caso o ficheiro não exista na máquina
+            # Retorna a data do Excel (23/10/2026 14:09) ou o fallback do SIAFI se falhar
             dt_atualizacao_gd = obter_dt_planilha_gd() or dt_atual
 
             st.markdown(f"<div class='destaque-ano'>Análise da Receita Arrecadada x Despesa Realizada <span style='font-size: 18px; font-weight: normal; color: #6B7280;'>(última atualização: {dt_atualizacao_gd})</span></div>", unsafe_allow_html=True)
