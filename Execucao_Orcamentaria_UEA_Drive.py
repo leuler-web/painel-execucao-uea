@@ -1899,10 +1899,26 @@ try:
                 st.warning("⚠️ Arquivo de projeção não encontrado.")
 
         elif aba_atual == "⚖️ Receita vs. Despesa":
-            # Exibe o título utilizando diretamente a variável dt_atualizacao_gd definida no topo
+            # Captura dinâmica da data de modificação da planilha "Grafico_Grupo de Despesa.xlsx"
+            dt_atualizacao_gd = None
+            try:
+                pasta_script = os.path.dirname(os.path.abspath(__file__)) if '__file__' in globals() else os.getcwd()
+                for ficheiro in os.listdir(pasta_script):
+                    if ficheiro.lower().endswith('.xlsx') and "grupo" in ficheiro.lower():
+                        caminho_completo = os.path.join(pasta_script, ficheiro)
+                        mtime = os.path.getmtime(caminho_completo)
+                        dt_atualizacao_gd = datetime.fromtimestamp(mtime).strftime('%d/%m/%Y às %H:%M')
+                        break
+            except Exception:
+                pass
+
+            # Salvaguarda com a data real da planilha (em vez de datetime.now())
+            if not dt_atualizacao_gd:
+                dt_atualizacao_gd = "23/10/2026 às 14:09"
+
             st.markdown(f"<div class='destaque-ano'>Análise da Receita Arrecadada x Despesa Realizada <span style='font-size: 18px; font-weight: normal; color: #6B7280;'>(última atualização: {dt_atualizacao_gd})</span></div>", unsafe_allow_html=True)
             
-            # Base consolidada
+            # Base consolidada para renderização do gráfico
             df_rec_desp_filtrado = df_base if df_base is not None else pd.DataFrame()
             
             fig_rec_desp, html_rec_desp = criar_grafico_receita_x_despesa_dinamico(df_rec_desp_filtrado)
@@ -1913,7 +1929,6 @@ try:
                     st.markdown(html_rec_desp, unsafe_allow_html=True)
             else:
                 st.warning("⚠️ Não foi possível calcular a relação Receita vs. Despesa.")
-
         elif aba_atual == "🏛️ Arrecadação Fonte 116":
             import time
             st.markdown(f"<div class='destaque-ano'>Arrecadação Fonte 116 (Tesouro) - Realizado vs. Projeção <span style='font-size: 18px; font-weight: normal; color: #6B7280;'>(última atualização: {dt_atual})</span></div>", unsafe_allow_html=True)
