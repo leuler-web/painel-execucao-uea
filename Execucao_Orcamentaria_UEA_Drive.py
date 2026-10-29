@@ -1853,9 +1853,23 @@ try:
                 st.warning("⚠️ Arquivo de projeção não encontrado.")
 
         elif aba_atual == "⚖️ Receita vs. Despesa":
-            st.markdown(f"<div class='destaque-ano'>Análise da Receita Arrecadada x Despesa Realizada <span style='font-size: 18px; font-weight: normal; color: #6B7280;'>(última atualização: {dt_atual})</span></div>", unsafe_allow_html=True)
+            # Formata a exibição do texto da Fonte
+            texto_fonte_display = f"Fonte de Recurso: {var_fonte_str}" if 'var_fonte_str' in locals() and var_fonte_str != "Todas" else "Fonte de Recurso: Todas as Fontes"
+
+            # Renderiza o título alinhado com o rótulo da fonte em destaque azul
+            st.markdown(f"""
+                <div style='display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; margin-bottom: 10px;'>
+                    <div class='destaque-ano'>
+                        Análise da Receita Arrecadada x Despesa Realizada 
+                        <span style='font-size: 16px; font-weight: normal; color: #6B7280;'>(última atualização: {dt_atual})</span>
+                    </div>
+                    <div style='font-size: 18px; font-weight: 800; color: #1E3A8A; background-color: #EFF6FF; padding: 6px 14px; border-radius: 6px; border: 1px solid #BFDBFE;'>
+                        📌 {texto_fonte_display}
+                    </div>
+                </div>
+            """, unsafe_allow_html=True)
             
-            # Passa a base filtrada pelos seletores do topo (Ação, Fonte, Natureza, Tipo Movimento)
+            # Base filtrada pelos seletores do topo
             df_rec_desp_filtrado = df_base[mask_evo] if 'mask_evo' in locals() else df_base
             
             fig_rec_desp, html_rec_desp = criar_grafico_receita_x_despesa_dinamico(df_rec_desp_filtrado)
