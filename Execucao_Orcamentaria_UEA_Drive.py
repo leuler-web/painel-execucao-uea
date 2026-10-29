@@ -728,9 +728,24 @@ def criar_grafico_grupo_despesa(df_filtrado):
 def criar_grafico_receita_x_despesa_dinamico(df_filtrado_evo):
     """
     Gera o gráfico e a tabela comparativa de LOA, Receita Arrecadada, Despesa Realizada e Saldo
-    de forma 100% dinâmica a partir do SIAFI (df_filtrado_evo), respeitando todos os filtros do topo.
+    de forma 100% dinâmica a partir do SIAFI (df_filtrado_evo).
     """
     try:
+        def safe_num(v):
+            if v is None or pd.isna(v):
+                return 0.0
+            if isinstance(v, (int, float)):
+                return float(v)
+            try:
+                s = str(v).replace('R$', '').strip()
+                if ',' in s and '.' in s:
+                    s = s.replace('.', '').replace(',', '.')
+                elif ',' in s:
+                    s = s.replace(',', '.')
+                return float(s)
+            except Exception:
+                return 0.0
+
         meses_ordem = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"]
         
         loa_m = [0.0] * 12
@@ -744,27 +759,22 @@ def criar_grafico_receita_x_despesa_dinamico(df_filtrado_evo):
                 
                 for _, row in df_m.iterrows():
                     try:
-                        m_idx = int(row['Mes_Num']) - 1
+                        m_idx = int(safe_num(row['Mes_Num'])) - 1
                         if 0 <= m_idx < 12:
-                            # LOA (A) = Dotação Autorizada
-                            loa_m[m_idx] = extrair_numero(row.get('Autorizado', 0.0)) / 1_000_000
-                            # Receita Arrecadada (B) = Liquidado (ou Pago / Autorizado)
-                            rec_m[m_idx] = extrair_numero(row.get('Liquidado', row.get('Pago', 0.0))) / 1_000_000
-                            # Despesa Realizada (C) = Empenhado
-                            desp_m[m_idx] = extrair_numero(row.get('Empenhado', 0.0)) / 1_000_000
-                    except (ValueError, TypeError):
+                            loa_m[m_idx] = safe_num(row.get('Autorizado', 0.0)) / 1_000_000
+                            rec_m[m_idx] = safe_num(row.get('Liquidado', row.get('Pago', 0.0))) / 1_000_000
+                            desp_m[m_idx] = safe_num(row.get('Empenhado', 0.0)) / 1_000_000
+                    except Exception:
                         continue
 
         saldo_m = [r - d for r, d in zip(rec_m, desp_m)]
 
-        # Identifica o último mês com dados válidos
         ultimo_mes_idx = 0
         for i in range(11, -1, -1):
             if loa_m[i] > 0 or rec_m[i] > 0 or desp_m[i] > 0:
                 ultimo_mes_idx = i
                 break
 
-        # Filtra meses futuros para exibição limpa no gráfico
         loa_disp = loa_m[:ultimo_mes_idx+1] + [None]*(11 - ultimo_mes_idx)
         rec_disp = rec_m[:ultimo_mes_idx+1] + [None]*(11 - ultimo_mes_idx)
         desp_disp = desp_m[:ultimo_mes_idx+1] + [None]*(11 - ultimo_mes_idx)
@@ -772,7 +782,6 @@ def criar_grafico_receita_x_despesa_dinamico(df_filtrado_evo):
 
         fig = go.Figure()
 
-        # 1. LOA (A) - Preto
         fig.add_trace(go.Scatter(
             x=meses_ordem, y=loa_disp, name='LOA (A)',
             mode='lines+markers',
@@ -781,7 +790,6 @@ def criar_grafico_receita_x_despesa_dinamico(df_filtrado_evo):
             hovertemplate="<b>LOA (A)</b><br>Mês: %{x}<br>Valor: R$ %{y:,.2f} Mi<extra></extra>"
         ))
 
-        # 2. Receita Arrecadada (B) - Verde
         fig.add_trace(go.Scatter(
             x=meses_ordem, y=rec_disp, name='Receita Arrecadada (B)',
             mode='lines+markers',
@@ -790,7 +798,6 @@ def criar_grafico_receita_x_despesa_dinamico(df_filtrado_evo):
             hovertemplate="<b>Receita Arrecadada (B)</b><br>Mês: %{x}<br>Valor: R$ %{y:,.2f} Mi<extra></extra>"
         ))
 
-        # 3. Despesa Realizada (C) - Vermelho
         fig.add_trace(go.Scatter(
             x=meses_ordem, y=desp_disp, name='Despesa Realizada (C)',
             mode='lines+markers',
@@ -799,7 +806,6 @@ def criar_grafico_receita_x_despesa_dinamico(df_filtrado_evo):
             hovertemplate="<b>Despesa Realizada (C)</b><br>Mês: %{x}<br>Valor: R$ %{y:,.2f} Mi<extra></extra>"
         ))
 
-        # 4. Saldo (B-C) - Roxo
         fig.add_trace(go.Scatter(
             x=meses_ordem, y=saldo_disp, name='Saldo (B-C)',
             mode='lines+markers',
@@ -892,26 +898,22 @@ def criar_grafico_receita_x_despesa_dinamico(df_filtrado_evo):
             html_tabela += f"<th>{m}</th>"
         html_tabela += "<th class='col-total-hdr'>Total</th></tr></thead><tbody>"
 
-        # Linha LOA
         html_tabela += "<tr><td class='col-hdr-label'>LOA (A) (milhões)</td>"
         for v in loa_m: html_tabela += f"<td>{fmt_tbl(v)}</td>"
         html_tabela += f"<td class='col-total-val'>{fmt_tbl(tot_loa)}</td></tr>"
 
-        # Linha Receita Arrecadada
         html_tabela += "<tr><td class='col-hdr-label'>Receita Arrecadada (B) (milhões)</td>"
         for i, v in enumerate(rec_m):
             txt = fmt_tbl(v) if i <= ultimo_mes_idx else "-"
             html_tabela += f"<td>{txt}</td>"
         html_tabela += f"<td class='col-total-val'>{fmt_tbl(tot_rec)}</td></tr>"
 
-        # Linha Despesa Realizada
         html_tabela += "<tr><td class='col-hdr-label'>Despesa Realizada (C) (milhões)</td>"
         for i, v in enumerate(desp_m):
             txt = fmt_tbl(v) if i <= ultimo_mes_idx else "-"
             html_tabela += f"<td>{txt}</td>"
         html_tabela += f"<td class='col-total-val'>{fmt_tbl(tot_desp)}</td></tr>"
 
-        # Linha Saldo
         html_tabela += "<tr><td class='col-hdr-label'>Saldo (B-C) (milhões)</td>"
         for i, v in enumerate(saldo_m):
             txt = fmt_tbl(v) if i <= ultimo_mes_idx else "-"
@@ -922,7 +924,7 @@ def criar_grafico_receita_x_despesa_dinamico(df_filtrado_evo):
 
         return fig, html_tabela
 
-    except Exception as e:
+    except Exception:
         return None, None
 
 # ==========================================
@@ -1853,13 +1855,13 @@ try:
                 st.warning("⚠️ Arquivo de projeção não encontrado.")
 
         elif aba_atual == "⚖️ Receita vs. Despesa":
-            # Lista de caminhos para busca exata e insensível a maiúsculas/minúsculas
-            pasta_script = os.path.dirname(os.path.abspath(__file__))
+            # 1. Varredura garantida da data do arquivo "Grafico_Grupo de Despesa.xlsx"
+            pasta_script = os.path.dirname(os.path.abspath(__file__)) if '__file__' in globals() else os.getcwd()
+            nome_alvo = "Grafico_Grupo de Despesa.xlsx"
             
             candidatos_planilha = [
-                os.path.join(pasta_script, "Grafico_Grupo de Despesa.xlsx"),
-                os.path.join(pasta_script, "Grafico_Grupo de Despesa.XLSX"),
-                os.path.abspath("Grafico_Grupo de Despesa.xlsx"),
+                os.path.join(pasta_script, nome_alvo),
+                os.path.abspath(nome_alvo),
                 r"\\Rei-1cpd003\coord_plan_institucional\DADOS CPI\Orçamento\2026\EXECUÇÃO ORÇAMENTÁRIA\RELEXORC_CSV\Saida_PowerBI\Grafico_Grupo de Despesa.xlsx"
             ]
             
@@ -1872,13 +1874,37 @@ try:
                         break
                     except Exception:
                         pass
-            
-            # Caso o arquivo não seja encontrado em nenhum dos caminhos
+
+            # Caso o caminho exato varie, busca por variação do nome na pasta
+            if not dt_atualizacao_gd:
+                try:
+                    for f in os.listdir(pasta_script):
+                        if "grupo de despesa" in f.lower() and f.endswith((".xlsx", ".XLSX")):
+                            caminho_f = os.path.join(pasta_script, f)
+                            mtime = os.path.getmtime(caminho_f)
+                            dt_atualizacao_gd = datetime.fromtimestamp(mtime).strftime('%d/%m/%Y às %H:%M')
+                            break
+                except Exception:
+                    pass
+
+            # Fallback final de segurança
             if not dt_atualizacao_gd:
                 dt_atualizacao_gd = dt_atual
 
             st.markdown(f"<div class='destaque-ano'>Análise da Receita Arrecadada x Despesa Realizada <span style='font-size: 18px; font-weight: normal; color: #6B7280;'>(última atualização: {dt_atualizacao_gd})</span></div>", unsafe_allow_html=True)
-
+            
+            # 2. Filtragem segura (passa a base consolidada para a função)
+            df_rec_desp_filtrado = df_base if df_base is not None else pd.DataFrame()
+            
+            fig_rec_desp, html_rec_desp = criar_grafico_receita_x_despesa_dinamico(df_rec_desp_filtrado)
+            
+            if fig_rec_desp is not None:
+                st.plotly_chart(fig_rec_desp, use_container_width=True)
+                if html_rec_desp:
+                    st.markdown(html_rec_desp, unsafe_allow_html=True)
+            else:
+                st.warning("⚠️ Não foi possível calcular a relação Receita vs. Despesa.")
+                
         elif aba_atual == "🏛️ Arrecadação Fonte 116":
             import time
             st.markdown(f"<div class='destaque-ano'>Arrecadação Fonte 116 (Tesouro) - Realizado vs. Projeção <span style='font-size: 18px; font-weight: normal; color: #6B7280;'>(última atualização: {dt_atual})</span></div>", unsafe_allow_html=True)
