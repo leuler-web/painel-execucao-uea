@@ -1855,45 +1855,50 @@ try:
                 st.warning("⚠️ Arquivo de projeção não encontrado.")
 
         elif aba_atual == "⚖️ Receita vs. Despesa":
-            # 1. Varredura garantida da data do arquivo "Grafico_Grupo de Despesa.xlsx"
-            pasta_script = os.path.dirname(os.path.abspath(__file__)) if '__file__' in globals() else os.getcwd()
-            nome_alvo = "Grafico_Grupo de Despesa.xlsx"
-            
-            candidatos_planilha = [
-                os.path.join(pasta_script, nome_alvo),
-                os.path.abspath(nome_alvo),
-                r"\\Rei-1cpd003\coord_plan_institucional\DADOS CPI\Orçamento\2026\EXECUÇÃO ORÇAMENTÁRIA\RELEXORC_CSV\Saida_PowerBI\Grafico_Grupo de Despesa.xlsx"
-            ]
-            
-            dt_atualizacao_gd = None
-            for caminho_teste in candidatos_planilha:
-                if os.path.exists(caminho_teste):
+            # Função para localizar a data de modificação real do Excel "Grafico_Grupo de Despesa"
+            def obter_dt_planilha_gd():
+                import os
+                from datetime import datetime
+                
+                # Lista de caminhos potenciais (Rede e Local)
+                candidatos = [
+                    r"\\Rei-1cpd003\coord_plan_institucional\DADOS CPI\Orçamento\2026\EXECUÇÃO ORÇAMENTÁRIA\RELEXORC_CSV\Saida_PowerBI\Grafico_Grupo de Despesa.xlsx",
+                    "Grafico_Grupo de Despesa.xlsx",
+                    os.path.join(os.path.dirname(os.path.abspath(__file__)), "Grafico_Grupo de Despesa.xlsx") if '__file__' in globals() else ""
+                ]
+                
+                # 1. Teste direto por caminho exato
+                for c in candidatos:
+                    if not c: continue
                     try:
-                        mtime = os.path.getmtime(caminho_teste)
-                        dt_atualizacao_gd = datetime.fromtimestamp(mtime).strftime('%d/%m/%Y às %H:%M')
-                        break
+                        c_norm = os.path.normpath(c)
+                        if os.path.exists(c_norm):
+                            return datetime.fromtimestamp(os.path.getmtime(c_norm)).strftime('%d/%m/%Y às %H:%M')
                     except Exception:
                         pass
+                
+                # 2. Varredura flexível no diretório local caso o nome venha com maiúsculas/espaços
+                pastas = [os.getcwd()]
+                if '__file__' in globals():
+                    pastas.append(os.path.dirname(os.path.abspath(__file__)))
+                    
+                for pasta in pastas:
+                    try:
+                        if os.path.exists(pasta):
+                            for arq in os.listdir(pasta):
+                                if "grafico" in arq.lower() and "despesa" in arq.lower() and arq.endswith(('.xlsx', '.XLSX')):
+                                    caminho_enc = os.path.join(pasta, arq)
+                                    return datetime.fromtimestamp(os.path.getmtime(caminho_enc)).strftime('%d/%m/%Y às %H:%M')
+                    except Exception:
+                        pass
+                return None
 
-            # Caso o caminho exato varie, busca por variação do nome na pasta
-            if not dt_atualizacao_gd:
-                try:
-                    for f in os.listdir(pasta_script):
-                        if "grupo de despesa" in f.lower() and f.endswith((".xlsx", ".XLSX")):
-                            caminho_f = os.path.join(pasta_script, f)
-                            mtime = os.path.getmtime(caminho_f)
-                            dt_atualizacao_gd = datetime.fromtimestamp(mtime).strftime('%d/%m/%Y às %H:%M')
-                            break
-                except Exception:
-                    pass
-
-            # Fallback final de segurança
-            if not dt_atualizacao_gd:
-                dt_atualizacao_gd = dt_atual
+            # Captura a data exata do arquivo Excel ou utiliza dt_atual caso não encontre o arquivo
+            dt_atualizacao_gd = obter_dt_planilha_gd() or dt_atual
 
             st.markdown(f"<div class='destaque-ano'>Análise da Receita Arrecadada x Despesa Realizada <span style='font-size: 18px; font-weight: normal; color: #6B7280;'>(última atualização: {dt_atualizacao_gd})</span></div>", unsafe_allow_html=True)
             
-            # 2. Filtragem segura (passa a base consolidada para a função)
+            # Base consolidada
             df_rec_desp_filtrado = df_base if df_base is not None else pd.DataFrame()
             
             fig_rec_desp, html_rec_desp = criar_grafico_receita_x_despesa_dinamico(df_rec_desp_filtrado)
@@ -1904,7 +1909,7 @@ try:
                     st.markdown(html_rec_desp, unsafe_allow_html=True)
             else:
                 st.warning("⚠️ Não foi possível calcular a relação Receita vs. Despesa.")
-                
+
         elif aba_atual == "🏛️ Arrecadação Fonte 116":
             import time
             st.markdown(f"<div class='destaque-ano'>Arrecadação Fonte 116 (Tesouro) - Realizado vs. Projeção <span style='font-size: 18px; font-weight: normal; color: #6B7280;'>(última atualização: {dt_atual})</span></div>", unsafe_allow_html=True)
