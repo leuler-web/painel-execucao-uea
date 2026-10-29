@@ -1853,14 +1853,18 @@ try:
                 st.warning("⚠️ Arquivo de projeção não encontrado.")
 
         elif aba_atual == "⚖️ Receita vs. Despesa":
-            # 1. Mapeia o caminho absoluto exato da planilha local e de rede
+            # Lista de caminhos para busca exata e insensível a maiúsculas/minúsculas
             pasta_script = os.path.dirname(os.path.abspath(__file__))
-            caminho_gd_local = os.path.join(pasta_script, "Grafico_Grupo de Despesa.xlsx")
-            caminho_gd_rede = r"\\Rei-1cpd003\coord_plan_institucional\DADOS CPI\Orçamento\2026\EXECUÇÃO ORÇAMENTÁRIA\RELEXORC_CSV\Saida_PowerBI\Grafico_Grupo de Despesa.xlsx"
             
-            # 2. Busca a data de modificação real do arquivo no sistema
+            candidatos_planilha = [
+                os.path.join(pasta_script, "Grafico_Grupo de Despesa.xlsx"),
+                os.path.join(pasta_script, "Grafico_Grupo de Despesa.XLSX"),
+                os.path.abspath("Grafico_Grupo de Despesa.xlsx"),
+                r"\\Rei-1cpd003\coord_plan_institucional\DADOS CPI\Orçamento\2026\EXECUÇÃO ORÇAMENTÁRIA\RELEXORC_CSV\Saida_PowerBI\Grafico_Grupo de Despesa.xlsx"
+            ]
+            
             dt_atualizacao_gd = None
-            for caminho_teste in [caminho_gd_local, caminho_gd_rede]:
+            for caminho_teste in candidatos_planilha:
                 if os.path.exists(caminho_teste):
                     try:
                         mtime = os.path.getmtime(caminho_teste)
@@ -1869,27 +1873,11 @@ try:
                     except Exception:
                         pass
             
-            # Se não encontrar o arquivo, usa a data padrão SIAFI como segurança
+            # Caso o arquivo não seja encontrado em nenhum dos caminhos
             if not dt_atualizacao_gd:
                 dt_atualizacao_gd = dt_atual
 
             st.markdown(f"<div class='destaque-ano'>Análise da Receita Arrecadada x Despesa Realizada <span style='font-size: 18px; font-weight: normal; color: #6B7280;'>(última atualização: {dt_atualizacao_gd})</span></div>", unsafe_allow_html=True)
-            
-            # Filtro específico para esta aba: considera Movimento, Ação e Natureza, mas IGNORA o filtro de Fonte
-            mask_rec_desp = pd.Series(True, index=df_base.index)
-            if var_mov_str: mask_rec_desp &= (df_base['Tipo Movimento'] == var_mov_str)
-            if var_acao_codigo != "Todas": mask_rec_desp &= (df_base['Ação'] == var_acao_codigo)
-            if var_natureza_codigo != "Todas": mask_rec_desp &= (df_base['Natureza_ID'] == var_natureza_codigo)
-            
-            df_rec_desp_filtrado = df_base[mask_rec_desp]
-            
-            fig_rec_desp, html_rec_desp = criar_grafico_receita_x_despesa_dinamico(df_rec_desp_filtrado)
-            
-            if fig_rec_desp is not None:
-                st.plotly_chart(fig_rec_desp, use_container_width=True)
-                st.markdown(html_rec_desp, unsafe_allow_html=True)
-            else:
-                st.warning("⚠️ Não foi possível calcular a relação Receita vs. Despesa.")
 
         elif aba_atual == "🏛️ Arrecadação Fonte 116":
             import time
