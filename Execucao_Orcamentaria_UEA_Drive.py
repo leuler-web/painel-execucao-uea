@@ -51,7 +51,28 @@ try:
         dt_atualizacao_gd = dt_atual
 except Exception:
     dt_atualizacao_gd = dt_atual
+
+# ==============================================================================
+# DATA ESPECÍFICA PARA A ABA RECEITA VS. DESPESA
+# ==============================================================================
+try:
+    pasta_script = os.path.dirname(os.path.abspath(__file__))
+    dt_atualizacao_gd = None
     
+    # Procura na pasta do script pelo ficheiro de grupo de despesa
+    for ficheiro in os.listdir(pasta_script):
+        if "grupo" in ficheiro.lower() and "despesa" in ficheiro.lower() and ficheiro.lower().endswith(('.xlsx', '.xls')):
+            caminho_completo = os.path.join(pasta_script, ficheiro)
+            mtime_gd = os.path.getmtime(caminho_completo)
+            dt_atualizacao_gd = datetime.fromtimestamp(mtime_gd).strftime('%d/%m/%Y às %H:%M')
+            break
+
+    # Se não encontrar a planilha, mantém a data principal do SIAFI (dt_atual) sem gerar hora atual
+    if not dt_atualizacao_gd:
+        dt_atualizacao_gd = dt_atual
+except Exception:
+    dt_atualizacao_gd = dt_atual
+
 # ==========================================
 # 2. BLOCO ÚNICO DE ESTILOS CSS
 # ==========================================
@@ -1878,32 +1899,7 @@ try:
                 st.warning("⚠️ Arquivo de projeção não encontrado.")
 
         elif aba_atual == "⚖️ Receita vs. Despesa":
-            def obter_dt_planilha_gd():
-                try:
-                    import sys
-                    from datetime import datetime
-                    
-                    # Obtém a pasta exata onde o arquivo Execucao_Orcamentaria_UEA_Drive.py está salvo
-                    if '__file__' in globals():
-                        pasta_script = os.path.dirname(os.path.abspath(__file__))
-                    elif len(sys.argv) > 0 and sys.argv[0]:
-                        pasta_script = os.path.dirname(os.path.abspath(sys.argv[0]))
-                    else:
-                        pasta_script = os.getcwd()
-
-                    # Varre a pasta do script procurando o arquivo Grafico_Grupo de Despesa.xlsx
-                    for arq in os.listdir(pasta_script):
-                        if "grupo" in arq.lower() and "despesa" in arq.lower() and arq.lower().endswith(('.xlsx', '.xls')):
-                            caminho_arquivo = os.path.join(pasta_script, arq)
-                            mtime = os.path.getmtime(caminho_arquivo)
-                            return datetime.fromtimestamp(mtime).strftime('%d/%m/%Y às %H:%M')
-                except Exception:
-                    pass
-                return None
-
-            # Retorna a data do Excel (23/10/2026 14:09) ou o fallback do SIAFI se falhar
-            dt_atualizacao_gd = obter_dt_planilha_gd() or dt_atual
-
+            # Exibe o título utilizando diretamente a variável dt_atualizacao_gd definida no topo
             st.markdown(f"<div class='destaque-ano'>Análise da Receita Arrecadada x Despesa Realizada <span style='font-size: 18px; font-weight: normal; color: #6B7280;'>(última atualização: {dt_atualizacao_gd})</span></div>", unsafe_allow_html=True)
             
             # Base consolidada
