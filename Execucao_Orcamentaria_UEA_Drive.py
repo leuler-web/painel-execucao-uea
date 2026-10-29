@@ -28,7 +28,30 @@ st.set_page_config(
         'About': "Painel de Execução Orçamentária UEA. Versão 2.0 (Blindada)"
     }
 )
+# ==============================================================================
+# CARREGAMENTO DE DATAS DE ATUALIZAÇÃO DAS PLANILHAS
+# ==============================================================================
 
+# 1. Data da base principal SIAFI (Sua lógica existente para o topo do painel)
+try:
+    if os.path.exists("Base_Consolidada_SIAFI.xlsx"):
+        mtime_siafi = os.path.getmtime("Base_Consolidada_SIAFI.xlsx")
+        dt_atual = datetime.fromtimestamp(mtime_siafi).strftime('%d/%m/%Y às %H:%M')
+    else:
+        dt_atual = datetime.now().strftime('%d/%m/%Y às %H:%M')
+except Exception:
+    dt_atual = datetime.now().strftime('%d/%m/%Y às %H:%M')
+
+# 2. Data exclusiva da aba Receita vs. Despesa (Grafico_Grupo de Despesa.xlsx)
+try:
+    if os.path.exists("Grafico_Grupo de Despesa.xlsx"):
+        mtime_gd = os.path.getmtime("Grafico_Grupo de Despesa.xlsx")
+        dt_atualizacao_gd = datetime.fromtimestamp(mtime_gd).strftime('%d/%m/%Y às %H:%M')
+    else:
+        dt_atualizacao_gd = dt_atual
+except Exception:
+    dt_atualizacao_gd = dt_atual
+    
 # ==========================================
 # 2. BLOCO ÚNICO DE ESTILOS CSS
 # ==========================================
