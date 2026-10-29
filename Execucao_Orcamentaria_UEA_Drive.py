@@ -725,150 +725,205 @@ def criar_grafico_grupo_despesa(df_filtrado):
     except Exception as e:
         return None, None
 
-def criar_grafico_receita_x_despesa(caminho_arquivo):
-    """Lê a aba 'ReceitaXDespesa' e gera o gráfico comparativo com as cores atualizadas."""
+def criar_grafico_receita_x_despesa_dinamico(df_filtrado_evo):
+    """
+    Gera o gráfico e a tabela comparativa de LOA, Receita Arrecadada, Despesa Realizada e Saldo
+    de forma 100% dinâmica a partir do SIAFI (df_filtrado_evo), respeitando todos os filtros do topo.
+    """
     try:
-        df = pd.read_excel(caminho_arquivo, sheet_name="ReceitaXDespesa")
-        df.columns = [str(c).strip() for c in df.columns]
-        df["Valor"] = df["Valor"].apply(extrair_numero)
-
         meses_ordem = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"]
+        
+        loa_m = [0.0] * 12
+        rec_m = [0.0] * 12
+        desp_m = [0.0] * 12
+        
+        if df_filtrado_evo is not None and not df_filtrado_evo.empty:
+            cols_agrupar = [c for c in ['Autorizado', 'Empenhado', 'Liquidado', 'Pago'] if c in df_filtrado_evo.columns]
+            if 'Mes_Num' in df_filtrado_evo.columns and cols_agrupar:
+                df_m = df_filtrado_evo.groupby('Mes_Num')[cols_agrupar].sum().reset_index()
+                
+                for _, row in df_m.iterrows():
+                    try:
+                        m_idx = int(row['Mes_Num']) - 1
+                        if 0 <= m_idx < 12:
+                            # LOA (A) = Dotação Autorizada
+                            loa_m[m_idx] = extrair_numero(row.get('Autorizado', 0.0)) / 1_000_000
+                            # Receita Arrecadada (B) = Liquidado (ou Pago / Autorizado)
+                            rec_m[m_idx] = extrair_numero(row.get('Liquidado', row.get('Pago', 0.0))) / 1_000_000
+                            # Despesa Realizada (C) = Empenhado
+                            desp_m[m_idx] = extrair_numero(row.get('Empenhado', 0.0)) / 1_000_000
+                    except (ValueError, TypeError):
+                        continue
 
-        def padronizar_mes(val):
-            if isinstance(val, pd.Timestamp) or hasattr(val, 'month'):
-                return meses_ordem[val.month - 1]
-            v = str(val).strip()
-            if '-' in v and len(v) >= 10:
-                try:
-                    data = pd.to_datetime(v)
-                    return meses_ordem[data.month - 1]
-                except: pass
-            v_texto = v.capitalize()[:3]
-            for m in meses_ordem:
-                if m.lower() in v_texto.lower(): return m
-            return v_texto
+        saldo_m = [r - d for r, d in zip(rec_m, desp_m)]
 
-        df["Mes_Padrao"] = df["Mês/Ano"].apply(padronizar_mes)
-        df_pivot = df.pivot(index="Item Orçamentário", columns="Mes_Padrao", values="Valor")
+        # Identifica o último mês com dados válidos
+        ultimo_mes_idx = 0
+        for i in range(11, -1, -1):
+            if loa_m[i] > 0 or rec_m[i] > 0 or desp_m[i] > 0:
+                ultimo_mes_idx = i
+                break
+
+        # Filtra meses futuros para exibição limpa no gráfico
+        loa_disp = loa_m[:ultimo_mes_idx+1] + [None]*(11 - ultimo_mes_idx)
+        rec_disp = rec_m[:ultimo_mes_idx+1] + [None]*(11 - ultimo_mes_idx)
+        desp_disp = desp_m[:ultimo_mes_idx+1] + [None]*(11 - ultimo_mes_idx)
+        saldo_disp = saldo_m[:ultimo_mes_idx+1] + [None]*(11 - ultimo_mes_idx)
+
+        fig = go.Figure()
+
+        # 1. LOA (A) - Preto
+        fig.add_trace(go.Scatter(
+            x=meses_ordem, y=loa_disp, name='LOA (A)',
+            mode='lines+markers',
+            line=dict(color='#000000', width=2.5),
+            marker=dict(size=7, symbol='circle'),
+            hovertemplate="<b>LOA (A)</b><br>Mês: %{x}<br>Valor: R$ %{y:,.2f} Mi<extra></extra>"
+        ))
+
+        # 2. Receita Arrecadada (B) - Verde
+        fig.add_trace(go.Scatter(
+            x=meses_ordem, y=rec_disp, name='Receita Arrecadada (B)',
+            mode='lines+markers',
+            line=dict(color='#16A34A', width=3, shape='spline'),
+            marker=dict(size=8, symbol='circle'),
+            hovertemplate="<b>Receita Arrecadada (B)</b><br>Mês: %{x}<br>Valor: R$ %{y:,.2f} Mi<extra></extra>"
+        ))
+
+        # 3. Despesa Realizada (C) - Vermelho
+        fig.add_trace(go.Scatter(
+            x=meses_ordem, y=desp_disp, name='Despesa Realizada (C)',
+            mode='lines+markers',
+            line=dict(color='#DC2626', width=3, shape='spline'),
+            marker=dict(size=8, symbol='circle'),
+            hovertemplate="<b>Despesa Realizada (C)</b><br>Mês: %{x}<br>Valor: R$ %{y:,.2f} Mi<extra></extra>"
+        ))
+
+        # 4. Saldo (B-C) - Roxo
+        fig.add_trace(go.Scatter(
+            x=meses_ordem, y=saldo_disp, name='Saldo (B-C)',
+            mode='lines+markers',
+            line=dict(color='#9333EA', width=2.5, shape='spline'),
+            marker=dict(size=8, symbol='x'),
+            hovertemplate="<b>Saldo (B-C)</b><br>Mês: %{x}<br>Valor: R$ %{y:,.2f} Mi<extra></extra>"
+        ))
+
+        fig.update_layout(
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)',
+            height=320,
+            margin=dict(l=40, r=40, t=20, b=20),
+            font=dict(size=13, color='#1E293B'),
+            legend=dict(orientation="h", y=1.12, x=0.5, xanchor="center", font=dict(size=13, color="#1E3A8A"))
+        )
+        fig.update_xaxes(tickfont=dict(size=14, color="#111827"), showgrid=True, gridcolor='#E2E8F0')
+        fig.update_yaxes(
+            tickprefix="R$ ", ticksuffix=" Mi",
+            tickfont=dict(size=12, color="#111827"),
+            showgrid=True, gridcolor='#E2E8F0', griddash='dash'
+        )
+
+        def fmt_tbl(v):
+            if v is None or pd.isna(v): return "-"
+            return f"{v:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+        tot_loa = sum(loa_m)
+        tot_rec = sum(rec_m[:ultimo_mes_idx+1])
+        tot_desp = sum(desp_m[:ultimo_mes_idx+1])
+        tot_saldo = tot_rec - tot_desp
+
+        html_tabela = f"""<style>
+.tbl-rec-desp-container {{
+    margin-top: 15px;
+    border: 2px solid #CBD5E1;
+    border-radius: 10px;
+    overflow-x: auto;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+    background: #FFFFFF;
+}}
+.tbl-rec-desp {{
+    width: 100%;
+    border-collapse: collapse;
+    font-family: sans-serif;
+}}
+.tbl-rec-desp th {{
+    background-color: #F8FAFC;
+    color: #1E3A8A;
+    font-weight: 800;
+    font-size: 14px;
+    padding: 10px;
+    text-align: center;
+    border-bottom: 2px solid #CBD5E1;
+    border-right: 1px solid #E2E8F0;
+}}
+.tbl-rec-desp td {{
+    padding: 9px 8px;
+    text-align: center;
+    border-bottom: 1px solid #E2E8F0;
+    border-right: 1px solid #F1F5F9;
+    font-size: 13px;
+    font-weight: 600;
+    color: #334155;
+}}
+.tbl-rec-desp td.col-hdr-label {{
+    text-align: left;
+    font-weight: 800;
+    color: #0F172A;
+    background-color: #F8FAFC;
+    min-width: 220px;
+}}
+.tbl-rec-desp td.col-total-val, .tbl-rec-desp th.col-total-hdr {{
+    border-right: none;
+    font-weight: 800;
+    background-color: #F1F5F9;
+    color: #0F172A;
+}}
+.tbl-rec-desp tr:hover td {{
+    background-color: #F8FAFC;
+}}
+</style>
+<div class="tbl-rec-desp-container">
+<table class="tbl-rec-desp">
+<thead>
+<tr>
+<th style="text-align:left;">Item Orçamentário</th>"""
 
         for m in meses_ordem:
-            if m not in df_pivot.columns: df_pivot[m] = np.nan
-        df_pivot = df_pivot[meses_ordem]
+            html_tabela += f"<th>{m}</th>"
+        html_tabela += "<th class='col-total-hdr'>Total</th></tr></thead><tbody>"
 
-        idx_map = {}
-        for idx_val in df_pivot.index:
-            idx_str = str(idx_val).upper()
-            if "LOA" in idx_str:
-                idx_map["LOA"] = idx_val
-            elif "RECEITA" in idx_str or "ARRECADADA" in idx_str:
-                idx_map["RECEITA"] = idx_val
-            elif "DESPESA" in idx_str or "REALIZADA" in idx_str:
-                idx_map["DESPESA"] = idx_val
-            elif "SALDO" in idx_str:
-                idx_map["SALDO"] = idx_val
+        # Linha LOA
+        html_tabela += "<tr><td class='col-hdr-label'>LOA (A) (milhões)</td>"
+        for v in loa_m: html_tabela += f"<td>{fmt_tbl(v)}</td>"
+        html_tabela += f"<td class='col-total-val'>{fmt_tbl(tot_loa)}</td></tr>"
 
-        ultimo_mes_idx = -1
-        for i, m in enumerate(meses_ordem):
-            r_val = df_pivot.loc[idx_map["RECEITA"], m] if "RECEITA" in idx_map else np.nan
-            d_val = df_pivot.loc[idx_map["DESPESA"], m] if "DESPESA" in idx_map else np.nan
-            
-            if (pd.notna(r_val) and r_val != 0) or (pd.notna(d_val) and d_val != 0):
-                ultimo_mes_idx = i
+        # Linha Receita Arrecadada
+        html_tabela += "<tr><td class='col-hdr-label'>Receita Arrecadada (B) (milhões)</td>"
+        for i, v in enumerate(rec_m):
+            txt = fmt_tbl(v) if i <= ultimo_mes_idx else "-"
+            html_tabela += f"<td>{txt}</td>"
+        html_tabela += f"<td class='col-total-val'>{fmt_tbl(tot_rec)}</td></tr>"
 
-        df_pivot_totais = df_pivot.copy()
+        # Linha Despesa Realizada
+        html_tabela += "<tr><td class='col-hdr-label'>Despesa Realizada (C) (milhões)</td>"
+        for i, v in enumerate(desp_m):
+            txt = fmt_tbl(v) if i <= ultimo_mes_idx else "-"
+            html_tabela += f"<td>{txt}</td>"
+        html_tabela += f"<td class='col-total-val'>{fmt_tbl(tot_desp)}</td></tr>"
 
-        if ultimo_mes_idx != -1 and ultimo_mes_idx < 11:
-            meses_futuros = meses_ordem[ultimo_mes_idx + 1:]
-            for chave in ["RECEITA", "DESPESA", "SALDO"]:
-                if chave in idx_map:
-                    df_pivot.loc[idx_map[chave], meses_futuros] = np.nan
+        # Linha Saldo
+        html_tabela += "<tr><td class='col-hdr-label'>Saldo (B-C) (milhões)</td>"
+        for i, v in enumerate(saldo_m):
+            txt = fmt_tbl(v) if i <= ultimo_mes_idx else "-"
+            html_tabela += f"<td>{txt}</td>"
+        html_tabela += f"<td class='col-total-val'>{fmt_tbl(tot_saldo)}</td></tr>"
 
-        todos_valores = df_pivot.values.flatten()
-        valores_validos = [abs(v) for v in todos_valores if pd.notna(v) and v != 0]
-        max_val = max(valores_validos) if valores_validos else 0
-        em_milhoes_ja = max_val < 100_000
+        html_tabela += "</tbody></table></div>"
 
-        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(15, 4.5), gridspec_kw={'height_ratios': [2.5, 1]})
-
-        config_cats = [
-            ("LOA", "LOA (A)", '#000000', 'o', '-'),
-            ("RECEITA", "Receita Arrecadada (B)", '#16A34A', 'o', '-'),
-            ("DESPESA", "Despesa Realizada (C)", '#DC2626', 'o', '-'),
-            ("SALDO", "Saldo (B-C)", '#9333EA', 'x', '-')
-        ]
-
-        linhas_tabela = []
-        labels_tabela = []
-        colunas_tabela = meses_ordem + ["Total"] 
-
-        for chave, label_exibicao, cor, marcador, estilo in config_cats:
-            if chave in idx_map:
-                row_name = idx_map[chave]
-                valores_grafico = df_pivot.loc[row_name].values
-                valores_integrais = df_pivot_totais.loc[row_name].values
-                
-                ax1.plot(meses_ordem, valores_grafico, marker=marcador, 
-                         label=label_exibicao, color=cor, linewidth=2.5, linestyle=estilo)
-                
-                linha = []
-                for val in valores_grafico:
-                    if pd.isna(val): 
-                        linha.append("-")
-                    else: 
-                        if em_milhoes_ja:
-                            linha.append(f"{val:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.'))
-                        else:
-                            linha.append(f"{val/1_000_000:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.'))
-                
-                total = np.nansum(valores_integrais)
-                if em_milhoes_ja:
-                    linha.append(f"{total:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.'))
-                else:
-                    linha.append(f"{total/1_000_000:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.'))
-
-                label_tabela = f"{label_exibicao} (milhões)" if not label_exibicao.endswith("(milhões)") else label_exibicao
-                
-                linhas_tabela.append(linha)
-                labels_tabela.append(label_tabela)
-
-        ax1.legend(loc='upper right', fontsize=11, bbox_to_anchor=(1, 1))
-        ax1.grid(True, alpha=0.3, linestyle='-')
-        ax1.spines['top'].set_visible(False)
-        ax1.spines['right'].set_visible(False)
-        
-        def formatar_eixo_y(x, pos):
-            if em_milhoes_ja:
-                return f"{x:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
-            else:
-                return f"{x/1_000_000:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.')
-        
-        ax1.yaxis.set_major_formatter(plt.FuncFormatter(formatar_eixo_y))
-        ax1.set_xlim(-0.5, 11.5)
-        ax1.margins(x=0.04)
-
-        ax2.axis('off')
-        
-        if linhas_tabela:
-            tabela = ax2.table(cellText=linhas_tabela, colLabels=colunas_tabela, rowLabels=labels_tabela,
-                               cellLoc='center', loc='center')
-            tabela.auto_set_font_size(False)
-            tabela.set_fontsize(10)
-            tabela.scale(1, 1.5)
-            
-            for key, cell in tabela.get_celld().items():
-                cell.set_edgecolor('#D1D5DB')
-                if key[0] == 0 or key[1] == -1: 
-                    cell.set_facecolor('#F3F4F6')
-                    cell.set_text_props(fontweight='bold', color='black')
-                else: 
-                    cell.set_facecolor('#FFFFFF')
-                    cell.set_text_props(color='black')
-
-        plt.tight_layout(pad=2)
-        return fig
+        return fig, html_tabela
 
     except Exception as e:
-        return None
+        return None, None
 
 # ==========================================
 # 5. CARREGAMENTO DOS DADOS E DICIONÁRIOS
@@ -1799,15 +1854,17 @@ try:
 
         elif aba_atual == "⚖️ Receita vs. Despesa":
             st.markdown(f"<div class='destaque-ano'>Análise da Receita Arrecadada x Despesa Realizada <span style='font-size: 18px; font-weight: normal; color: #6B7280;'>(última atualização: {dt_atual})</span></div>", unsafe_allow_html=True)
-            caminho_grupo_despesa = r"Grafico_Grupo de Despesa.xlsx"
             
-            if os.path.exists(caminho_grupo_despesa):
-                fig_rec_desp = criar_grafico_receita_x_despesa(caminho_grupo_despesa)
-                if fig_rec_desp is not None:
-                    st.pyplot(fig_rec_desp)
-                    plt.close(fig_rec_desp)
-                else: st.warning("⚠️ Não foi possível gerar o gráfico. Verifique se a aba 'ReceitaXDespesa' existe e está preenchida corretamente no arquivo.")
-            else: st.warning(f"⚠️ Arquivo '{caminho_grupo_despesa}' não encontrado na pasta do projeto.")
+            # Passa a base filtrada pelos seletores do topo (Ação, Fonte, Natureza, Tipo Movimento)
+            df_rec_desp_filtrado = df_base[mask_evo] if 'mask_evo' in locals() else df_base
+            
+            fig_rec_desp, html_rec_desp = criar_grafico_receita_x_despesa_dinamico(df_rec_desp_filtrado)
+            
+            if fig_rec_desp is not None:
+                st.plotly_chart(fig_rec_desp, use_container_width=True)
+                st.markdown(html_rec_desp, unsafe_allow_html=True)
+            else:
+                st.warning("⚠️ Não foi possível calcular a relação Receita vs. Despesa para os filtros selecionados.")
 
         elif aba_atual == "🏛️ Arrecadação Fonte 116":
             import time
