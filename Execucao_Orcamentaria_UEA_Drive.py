@@ -1853,20 +1853,25 @@ try:
                 st.warning("⚠️ Arquivo de projeção não encontrado.")
 
         elif aba_atual == "⚖️ Receita vs. Despesa":
-            # Caminhos para localizar a planilha de Grupo de Despesa (Rede e Local)
+            # 1. Mapeia o caminho absoluto exato da planilha local e de rede
+            pasta_script = os.path.dirname(os.path.abspath(__file__))
+            caminho_gd_local = os.path.join(pasta_script, "Grafico_Grupo de Despesa.xlsx")
             caminho_gd_rede = r"\\Rei-1cpd003\coord_plan_institucional\DADOS CPI\Orçamento\2026\EXECUÇÃO ORÇAMENTÁRIA\RELEXORC_CSV\Saida_PowerBI\Grafico_Grupo de Despesa.xlsx"
-            caminho_gd_local = r"Grafico_Grupo de Despesa.xlsx"
             
-            # Tenta capturar a data e hora do arquivo no Windows/Rede
-            dt_atualizacao_gd = dt_atual  # Valor padrão de segurança
-            for caminho_teste in [caminho_gd_rede, caminho_gd_local]:
-                try:
-                    if os.path.exists(caminho_teste):
+            # 2. Busca a data de modificação real do arquivo no sistema
+            dt_atualizacao_gd = None
+            for caminho_teste in [caminho_gd_local, caminho_gd_rede]:
+                if os.path.exists(caminho_teste):
+                    try:
                         mtime = os.path.getmtime(caminho_teste)
                         dt_atualizacao_gd = datetime.fromtimestamp(mtime).strftime('%d/%m/%Y às %H:%M')
                         break
-                except Exception:
-                    pass
+                    except Exception:
+                        pass
+            
+            # Se não encontrar o arquivo, usa a data padrão SIAFI como segurança
+            if not dt_atualizacao_gd:
+                dt_atualizacao_gd = dt_atual
 
             st.markdown(f"<div class='destaque-ano'>Análise da Receita Arrecadada x Despesa Realizada <span style='font-size: 18px; font-weight: normal; color: #6B7280;'>(última atualização: {dt_atualizacao_gd})</span></div>", unsafe_allow_html=True)
             
