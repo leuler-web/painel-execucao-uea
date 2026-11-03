@@ -1899,6 +1899,9 @@ try:
                 st.warning("⚠️ Arquivo de projeção não encontrado.")
 
         elif aba_atual == "⚖️ Receita vs. Despesa":
+            # Diagnóstico de diretório e ficheiros
+            st.write("📁 **Diretório de execução:**", os.getcwd())
+            st.write("📄 **Planilhas encontradas:**", [f for f in os.listdir('.') if f.endswith(('.xlsx', '.xls'))])
             # Captura dinâmica da data de modificação da planilha "Grafico_Grupo de Despesa.xlsx"
             dt_atualizacao_gd = None
             try:
