@@ -1598,16 +1598,25 @@ try:
     
     st.markdown('</div>', unsafe_allow_html=True)
 
+    # 1. Caixa de seleção na barra lateral para ativar/desativar abas em standby
+    exibir_standby = st.sidebar.checkbox("👁️ Exibir Abas em Standby", value=False)
+
+    # 2. Abas Principais (Sempre visíveis no painel e na Rotação Automática)
     lista_abas = [
         "🎯 Visão Estratégica",
         "🏆 Top 10",
         "📈 Evolução Mensal",
         "📉 Projeção vs. Realizado",
-        "⚖️ Receita vs. Despesa",
-        "🏛️ Arrecadação Fonte 116",
-        "🔍 Tabela de Variações",
-        "📊 Variação por Natureza"
+        "⚖️ Receita vs. Despesa"
     ]
+
+    # 3. Adiciona as 3 abas apenas quando a caixa estiver marcada
+    if exibir_standby:
+        lista_abas.extend([
+            "🏛️ Arrecadação Fonte 116",
+            "🔍 Tabela de Variações",
+            "📊 Variação por Natureza"
+        ])
 
     with modo_apresentacao(lista_abas, tempo_segundos=5) as aba_atual:
 
