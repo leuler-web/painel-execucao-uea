@@ -1899,23 +1899,33 @@ try:
                 st.warning("⚠️ Arquivo de projeção não encontrado.")
 
         elif aba_atual == "⚖️ Receita vs. Despesa":
-            # Captura a data de modificação diretamente do ficheiro local confirmado no diretório
+            import os
+            from datetime import datetime, timezone, timedelta
+
+            # Define explicitamente o fuso horário de Manaus / Amazonas (UTC-4)
+            fuso_manaus = timezone(timedelta(hours=-4))
             nome_planilha_gd = "Grafico_Grupo de Despesa.xlsx"
-            
+
             try:
                 if os.path.exists(nome_planilha_gd):
                     mtime_gd = os.path.getmtime(nome_planilha_gd)
-                    dt_atualizacao_gd = datetime.fromtimestamp(mtime_gd).strftime('%d/%m/%Y às %H:%M')
+                    # Converte o carimbo de data/hora para UTC e ajusta para UTC-4
+                    dt_local = datetime.fromtimestamp(mtime_gd, tz=timezone.utc).astimezone(fuso_manaus)
+                    dt_atualizacao_gd = dt_local.strftime('%d/%m/%Y às %H:%M')
                 else:
                     dt_atualizacao_gd = dt_atual
             except Exception:
                 dt_atualizacao_gd = dt_atual
 
-            st.markdown(f"<div class='destaque-ano'>Análise da Receita Arrecadada x Despesa Realizada <span style='font-size: 18px; font-weight: normal; color: #6B7280;'>(última atualização: {dt_atualizacao_gd})</span></div>", unsafe_allow_html=True)
+            st.markdown(
+                f"<div class='destaque-ano'>Análise da Receita Arrecadada x Despesa Realizada "
+                f"<span style='font-size: 18px; font-weight: normal; color: #6B7280;'>"
+                f"(última atualização: {dt_atualizacao_gd})</span></div>", 
+                unsafe_allow_html=True
+            )
             
             # Base consolidada
             df_rec_desp_filtrado = df_base if df_base is not None else pd.DataFrame()
-            
             fig_rec_desp, html_rec_desp = criar_grafico_receita_x_despesa_dinamico(df_rec_desp_filtrado)
             
             if fig_rec_desp is not None:
