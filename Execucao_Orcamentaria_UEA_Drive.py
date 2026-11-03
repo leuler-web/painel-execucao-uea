@@ -829,7 +829,7 @@ def criar_grafico_receita_x_despesa_excel(caminho_excel="Grafico_Grupo de Despes
             yaxis=dict(showgrid=True, gridcolor='#E5E7EB', title='', tickprefix='R$ ', ticksuffix=' Mi')
         )
 
-        # 5. Constrói a Tabela HTML formatada em milhões
+        # 5. Constrói a Tabela HTML em linha contínua para evitar blocos de código
         headers_html = "".join([f"<th style='text-align: center; padding: 8px;'>{m}</th>" for m in ordem_meses])
         
         rows_html = ""
@@ -849,30 +849,9 @@ def criar_grafico_receita_x_despesa_excel(caminho_excel="Grafico_Grupo de Despes
                 total_fmt = f"{soma_total:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
                 bg_style = "background-color: #F9FAFB;" if item == 'Saldo (B-C)' else ""
                 
-                rows_html += f"""
-                <tr style='{bg_style} border-bottom: 1px solid #E5E7EB;'>
-                    <td style='font-weight: bold; padding: 8px 12px; white-space: nowrap;'>{item} (milhões)</td>
-                    {celulas}
-                    <td style='font-weight: bold; text-align: center; padding: 8px; background-color: #F3F4F6;'>{total_fmt}</td>
-                </tr>
-                """
+                rows_html += f"<tr style='{bg_style} border-bottom: 1px solid #E5E7EB;'><td style='font-weight: bold; padding: 8px 12px; white-space: nowrap;'>{item} (milhões)</td>{celulas}<td style='font-weight: bold; text-align: center; padding: 8px; background-color: #F3F4F6;'>{total_fmt}</td></tr>"
 
-        html_tabela = f"""
-        <div style='overflow-x: auto; margin-top: 15px;'>
-            <table style='width: 100%; border-collapse: collapse; font-family: sans-serif; font-size: 13px; background-color: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-radius: 6px;'>
-                <thead>
-                    <tr style='background-color: #1E3A8A; color: white;'>
-                        <th style='text-align: left; padding: 10px 12px;'>Item Orçamentário</th>
-                        {headers_html}
-                        <th style='text-align: center; padding: 10px;'>Total</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {rows_html}
-                </tbody>
-            </table>
-        </div>
-        """
+        html_tabela = f"<div style='overflow-x: auto; margin-top: 15px;'><table style='width: 100%; border-collapse: collapse; font-family: sans-serif; font-size: 13px; background-color: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-radius: 6px;'><thead><tr style='background-color: #1E3A8A; color: white;'><th style='text-align: left; padding: 10px 12px;'>Item Orçamentário</th>{headers_html}<th style='text-align: center; padding: 10px;'>Total</th></tr></thead><tbody>{rows_html}</tbody></table></div>"
 
         return fig, html_tabela
 
