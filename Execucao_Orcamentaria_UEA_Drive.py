@@ -769,202 +769,110 @@ def criar_grafico_grupo_despesa(df_filtrado):
     except Exception as e:
         return None, None
 
-def criar_grafico_receita_x_despesa_dinamico(df_filtrado_evo):
-    """
-    Gera o gráfico e a tabela comparativa de LOA, Receita Arrecadada, Despesa Realizada e Saldo
-    de forma 100% dinâmica a partir do SIAFI (df_filtrado_evo).
-    """
+def criar_grafico_receita_x_despesa_dinamico(caminho_excel="Grafico_Grupo de Despesa.xlsx"):
     try:
-        def safe_num(v):
-            if v is None or pd.isna(v):
-                return 0.0
-            if isinstance(v, (int, float)):
-                return float(v)
-            try:
-                s = str(v).replace('R$', '').strip()
-                if ',' in s and '.' in s:
-                    s = s.replace('.', '').replace(',', '.')
-                elif ',' in s:
-                    s = s.replace(',', '.')
-                return float(s)
-            except Exception:
-                return 0.0
-
-        meses_ordem = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"]
+        # 1. Lê a aba 'ReceitaXDespesa' da planilha
+        df = pd.read_excel(caminho_excel, sheet_name='ReceitaXDespesa')
         
-        loa_m = [0.0] * 12
-        rec_m = [0.0] * 12
-        desp_m = [0.0] * 12
+        # 2. Mapeia os meses em português
+        df['Mês_Num'] = pd.to_datetime(df['Mês/Ano']).dt.month
+        meses_pt = {1: 'Jan', 2: 'Fev', 3: 'Mar', 4: 'Abr', 5: 'Mai', 6: 'Jun', 
+                    7: 'Jul', 8: 'Ago', 9: 'Set', 10: 'Out', 11: 'Nov', 12: 'Dez'}
+        df['Mês'] = df['Mês_Num'].map(meses_pt)
         
-        if df_filtrado_evo is not None and not df_filtrado_evo.empty:
-            cols_agrupar = [c for c in ['Autorizado', 'Empenhado', 'Liquidado', 'Pago'] if c in df_filtrado_evo.columns]
-            if 'Mes_Num' in df_filtrado_evo.columns and cols_agrupar:
-                df_m = df_filtrado_evo.groupby('Mes_Num')[cols_agrupar].sum().reset_index()
-                
-                for _, row in df_m.iterrows():
-                    try:
-                        m_idx = int(safe_num(row['Mes_Num'])) - 1
-                        if 0 <= m_idx < 12:
-                            loa_m[m_idx] = safe_num(row.get('Autorizado', 0.0)) / 1_000_000
-                            rec_m[m_idx] = safe_num(row.get('Liquidado', row.get('Pago', 0.0))) / 1_000_000
-                            desp_m[m_idx] = safe_num(row.get('Empenhado', 0.0)) / 1_000_000
-                    except Exception:
-                        continue
+        # 3. Estrutura a tabela pivô
+        pivot = df.pivot(index='Item Orçamentário', columns='Mês', values='Valor')
+        ordem_meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez']
+        ordem_itens = ['LOA (A)', 'Receita Arrecadada (B)', 'Despesa Realizada (C)', 'Saldo (B-C)']
+        
+        pivot = pivot.reindex(index=ordem_itens, columns=ordem_meses)
 
-        saldo_m = [r - d for r, d in zip(rec_m, desp_m)]
-
-        ultimo_mes_idx = 0
-        for i in range(11, -1, -1):
-            if loa_m[i] > 0 or rec_m[i] > 0 or desp_m[i] > 0:
-                ultimo_mes_idx = i
-                break
-
-        loa_disp = loa_m[:ultimo_mes_idx+1] + [None]*(11 - ultimo_mes_idx)
-        rec_disp = rec_m[:ultimo_mes_idx+1] + [None]*(11 - ultimo_mes_idx)
-        desp_disp = desp_m[:ultimo_mes_idx+1] + [None]*(11 - ultimo_mes_idx)
-        saldo_disp = saldo_m[:ultimo_mes_idx+1] + [None]*(11 - ultimo_mes_idx)
-
+        # 4. Constrói o Gráfico Plotly
         fig = go.Figure()
+        
+        estilos = {
+            'LOA (A)': dict(color='black', dash='solid', marker='circle'),
+            'Receita Arrecadada (B)': dict(color='#10B981', dash='solid', marker='square'),
+            'Despesa Realizada (C)': dict(color='#EF4444', dash='solid', marker='diamond'),
+            'Saldo (B-C)': dict(color='#8B5CF6', dash='solid', marker='x')
+        }
 
-        fig.add_trace(go.Scatter(
-            x=meses_ordem, y=loa_disp, name='LOA (A)',
-            mode='lines+markers',
-            line=dict(color='#000000', width=2.5),
-            marker=dict(size=7, symbol='circle'),
-            hovertemplate="<b>LOA (A)</b><br>Mês: %{x}<br>Valor: R$ %{y:,.2f} Mi<extra></extra>"
-        ))
-
-        fig.add_trace(go.Scatter(
-            x=meses_ordem, y=rec_disp, name='Receita Arrecadada (B)',
-            mode='lines+markers',
-            line=dict(color='#16A34A', width=3, shape='spline'),
-            marker=dict(size=8, symbol='circle'),
-            hovertemplate="<b>Receita Arrecadada (B)</b><br>Mês: %{x}<br>Valor: R$ %{y:,.2f} Mi<extra></extra>"
-        ))
-
-        fig.add_trace(go.Scatter(
-            x=meses_ordem, y=desp_disp, name='Despesa Realizada (C)',
-            mode='lines+markers',
-            line=dict(color='#DC2626', width=3, shape='spline'),
-            marker=dict(size=8, symbol='circle'),
-            hovertemplate="<b>Despesa Realizada (C)</b><br>Mês: %{x}<br>Valor: R$ %{y:,.2f} Mi<extra></extra>"
-        ))
-
-        fig.add_trace(go.Scatter(
-            x=meses_ordem, y=saldo_disp, name='Saldo (B-C)',
-            mode='lines+markers',
-            line=dict(color='#9333EA', width=2.5, shape='spline'),
-            marker=dict(size=8, symbol='x'),
-            hovertemplate="<b>Saldo (B-C)</b><br>Mês: %{x}<br>Valor: R$ %{y:,.2f} Mi<extra></extra>"
-        ))
+        for item in ordem_itens:
+            if item in pivot.index:
+                valores = pivot.loc[item].values
+                est = estilos.get(item, dict(color='blue', dash='solid', marker='circle'))
+                
+                fig.add_trace(go.Scatter(
+                    x=ordem_meses,
+                    y=valores,
+                    mode='lines+markers',
+                    name=item,
+                    line=dict(color=est['color'], width=2.5),
+                    marker=dict(size=7, symbol=est['marker']),
+                    hovertemplate=f"<b>{item}</b><br>Mês: %{{x}}<br>Valor: R$ %{{y:.2f}} Mi<extra></extra>"
+                ))
 
         fig.update_layout(
-            plot_bgcolor='rgba(0,0,0,0)',
+            height=380,
+            margin=dict(l=20, r=20, t=30, b=20),
             paper_bgcolor='rgba(0,0,0,0)',
-            height=320,
-            margin=dict(l=40, r=40, t=20, b=20),
-            font=dict(size=13, color='#1E293B'),
-            legend=dict(orientation="h", y=1.12, x=0.5, xanchor="center", font=dict(size=13, color="#1E3A8A"))
+            plot_bgcolor='rgba(0,0,0,0)',
+            hovermode='x unified',
+            legend=dict(
+                orientation='h',
+                yanchor='bottom',
+                y=1.02,
+                xanchor='center',
+                x=0.5
+            ),
+            xaxis=dict(showgrid=True, gridcolor='#E5E7EB', title=''),
+            yaxis=dict(showgrid=True, gridcolor='#E5E7EB', title='', tickprefix='R$ ', ticksuffix=' Mi')
         )
-        fig.update_xaxes(tickfont=dict(size=14, color="#111827"), showgrid=True, gridcolor='#E2E8F0')
-        fig.update_yaxes(
-            tickprefix="R$ ", ticksuffix=" Mi",
-            tickfont=dict(size=12, color="#111827"),
-            showgrid=True, gridcolor='#E2E8F0', griddash='dash'
-        )
 
-        def fmt_tbl(v):
-            if v is None or pd.isna(v): return "-"
-            return f"{v:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+        # 5. Constrói a Tabela HTML formatada em milhões
+        headers_html = "".join([f"<th style='text-align: center; padding: 8px;'>{m}</th>" for m in ordem_meses])
+        
+        rows_html = ""
+        for item in ordem_itens:
+            if item in pivot.index:
+                linha_vals = pivot.loc[item]
+                soma_total = linha_vals.sum(skipna=True)
+                
+                celulas = ""
+                for val in linha_vals:
+                    if pd.isna(val):
+                        celulas += "<td style='text-align: center; padding: 8px; color: #9CA3AF;'>-</td>"
+                    else:
+                        formatado = f"{val:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+                        celulas += f"<td style='text-align: center; padding: 8px;'>{formatado}</td>"
+                
+                total_fmt = f"{soma_total:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+                bg_style = "background-color: #F9FAFB;" if item == 'Saldo (B-C)' else ""
+                
+                rows_html += f"""
+                <tr style='{bg_style} border-bottom: 1px solid #E5E7EB;'>
+                    <td style='font-weight: bold; padding: 8px 12px; white-space: nowrap;'>{item} (milhões)</td>
+                    {celulas}
+                    <td style='font-weight: bold; text-align: center; padding: 8px; background-color: #F3F4F6;'>{total_fmt}</td>
+                </tr>
+                """
 
-        tot_loa = sum(loa_m)
-        tot_rec = sum(rec_m[:ultimo_mes_idx+1])
-        tot_desp = sum(desp_m[:ultimo_mes_idx+1])
-        tot_saldo = tot_rec - tot_desp
-
-        html_tabela = f"""<style>
-.tbl-rec-desp-container {{
-    margin-top: 15px;
-    border: 2px solid #CBD5E1;
-    border-radius: 10px;
-    overflow-x: auto;
-    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-    background: #FFFFFF;
-}}
-.tbl-rec-desp {{
-    width: 100%;
-    border-collapse: collapse;
-    font-family: sans-serif;
-}}
-.tbl-rec-desp th {{
-    background-color: #F8FAFC;
-    color: #1E3A8A;
-    font-weight: 800;
-    font-size: 14px;
-    padding: 10px;
-    text-align: center;
-    border-bottom: 2px solid #CBD5E1;
-    border-right: 1px solid #E2E8F0;
-}}
-.tbl-rec-desp td {{
-    padding: 9px 8px;
-    text-align: center;
-    border-bottom: 1px solid #E2E8F0;
-    border-right: 1px solid #F1F5F9;
-    font-size: 13px;
-    font-weight: 600;
-    color: #334155;
-}}
-.tbl-rec-desp td.col-hdr-label {{
-    text-align: left;
-    font-weight: 800;
-    color: #0F172A;
-    background-color: #F8FAFC;
-    min-width: 220px;
-}}
-.tbl-rec-desp td.col-total-val, .tbl-rec-desp th.col-total-hdr {{
-    border-right: none;
-    font-weight: 800;
-    background-color: #F1F5F9;
-    color: #0F172A;
-}}
-.tbl-rec-desp tr:hover td {{
-    background-color: #F8FAFC;
-}}
-</style>
-<div class="tbl-rec-desp-container">
-<table class="tbl-rec-desp">
-<thead>
-<tr>
-<th style="text-align:left;">Item Orçamentário</th>"""
-
-        for m in meses_ordem:
-            html_tabela += f"<th>{m}</th>"
-        html_tabela += "<th class='col-total-hdr'>Total</th></tr></thead><tbody>"
-
-        html_tabela += "<tr><td class='col-hdr-label'>LOA (A) (milhões)</td>"
-        for v in loa_m: html_tabela += f"<td>{fmt_tbl(v)}</td>"
-        html_tabela += f"<td class='col-total-val'>{fmt_tbl(tot_loa)}</td></tr>"
-
-        html_tabela += "<tr><td class='col-hdr-label'>Receita Arrecadada (B) (milhões)</td>"
-        for i, v in enumerate(rec_m):
-            txt = fmt_tbl(v) if i <= ultimo_mes_idx else "-"
-            html_tabela += f"<td>{txt}</td>"
-        html_tabela += f"<td class='col-total-val'>{fmt_tbl(tot_rec)}</td></tr>"
-
-        html_tabela += "<tr><td class='col-hdr-label'>Despesa Realizada (C) (milhões)</td>"
-        for i, v in enumerate(desp_m):
-            txt = fmt_tbl(v) if i <= ultimo_mes_idx else "-"
-            html_tabela += f"<td>{txt}</td>"
-        html_tabela += f"<td class='col-total-val'>{fmt_tbl(tot_desp)}</td></tr>"
-
-        html_tabela += "<tr><td class='col-hdr-label'>Saldo (B-C) (milhões)</td>"
-        for i, v in enumerate(saldo_m):
-            txt = fmt_tbl(v) if i <= ultimo_mes_idx else "-"
-            html_tabela += f"<td>{txt}</td>"
-        html_tabela += f"<td class='col-total-val'>{fmt_tbl(tot_saldo)}</td></tr>"
-
-        html_tabela += "</tbody></table></div>"
+        html_tabela = f"""
+        <div style='overflow-x: auto; margin-top: 15px;'>
+            <table style='width: 100%; border-collapse: collapse; font-family: sans-serif; font-size: 13px; background-color: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-radius: 6px;'>
+                <thead>
+                    <tr style='background-color: #1E3A8A; color: white;'>
+                        <th style='text-align: left; padding: 10px 12px;'>Item Orçamentário</th>
+                        {headers_html}
+                        <th style='text-align: center; padding: 10px;'>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {rows_html}
+                </tbody>
+            </table>
+        </div>
+        """
 
         return fig, html_tabela
 
@@ -1902,14 +1810,13 @@ try:
             import os
             from datetime import datetime, timezone, timedelta
 
-            # Define explicitamente o fuso horário de Manaus / Amazonas (UTC-4)
+            # Mapeamento e exibição da data de modificação com fuso horário local (Manaus UTC-4)
             fuso_manaus = timezone(timedelta(hours=-4))
             nome_planilha_gd = "Grafico_Grupo de Despesa.xlsx"
 
             try:
                 if os.path.exists(nome_planilha_gd):
                     mtime_gd = os.path.getmtime(nome_planilha_gd)
-                    # Converte o carimbo de data/hora para UTC e ajusta para UTC-4
                     dt_local = datetime.fromtimestamp(mtime_gd, tz=timezone.utc).astimezone(fuso_manaus)
                     dt_atualizacao_gd = dt_local.strftime('%d/%m/%Y às %H:%M')
                 else:
@@ -1924,16 +1831,15 @@ try:
                 unsafe_allow_html=True
             )
             
-            # Base consolidada
-            df_rec_desp_filtrado = df_base if df_base is not None else pd.DataFrame()
-            fig_rec_desp, html_rec_desp = criar_grafico_receita_x_despesa_dinamico(df_rec_desp_filtrado)
+            # Carrega gráfico e tabela diretamente da planilha Excel "Grafico_Grupo de Despesa.xlsx"
+            fig_rec_desp, html_rec_desp = criar_grafico_receita_x_despesa_excel(nome_planilha_gd)
             
             if fig_rec_desp is not None:
                 st.plotly_chart(fig_rec_desp, use_container_width=True)
                 if html_rec_desp:
                     st.markdown(html_rec_desp, unsafe_allow_html=True)
             else:
-                st.warning("⚠️ Não foi possível calcular a relação Receita vs. Despesa.")
+                st.warning("⚠️ Não foi possível carregar os dados da planilha 'Grafico_Grupo de Despesa.xlsx'.")
         elif aba_atual == "🏛️ Arrecadação Fonte 116":
             import time
             st.markdown(f"<div class='destaque-ano'>Arrecadação Fonte 116 (Tesouro) - Realizado vs. Projeção <span style='font-size: 18px; font-weight: normal; color: #6B7280;'>(última atualização: {dt_atual})</span></div>", unsafe_allow_html=True)
