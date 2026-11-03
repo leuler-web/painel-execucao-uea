@@ -769,7 +769,7 @@ def criar_grafico_grupo_despesa(df_filtrado):
     except Exception as e:
         return None, None
 
-def criar_grafico_receita_x_despesa_dinamico(caminho_excel="Grafico_Grupo de Despesa.xlsx"):
+def criar_grafico_receita_x_despesa_excel(caminho_excel="Grafico_Grupo de Despesa.xlsx"):
     try:
         # 1. Lê a aba 'ReceitaXDespesa' da planilha
         df = pd.read_excel(caminho_excel, sheet_name='ReceitaXDespesa')
