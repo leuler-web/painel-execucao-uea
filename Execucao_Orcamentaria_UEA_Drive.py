@@ -760,7 +760,27 @@ def criar_grafico_grupo_despesa(df_filtrado):
 <td>{row['BLOQUEADO']}</td>
 <td>{row['DISPONÍVEL']}</td>
 </tr>"""
+# --- INÍCIO DO CÓDIGO NOVO PARA O TOTAL ---
+        total_loa = df_grafico['LOA'].sum()
+        total_aut = df_grafico['AUTORIZADO'].sum()
+        total_emp = df_grafico['EMPENHADO'].sum()
+        total_bloq = df_grafico['BLOQUEADO'].sum()
+        total_disp = df_grafico['DISPONÍVEL'].sum()
 
+        html_tabela += f"""<tr style="background-color: #E2E8F0; font-weight: 900;">
+        <td class="col-grupo-cell" style="color: #0F172A;">TOTAL GERAL CONSOLIDADO</td>
+        <td>{total_loa}</td>
+        <td>{total_aut}</td>
+        <td>{total_emp}</td>
+        <td>{total_bloq}</td>
+        <td>{total_disp}</td>
+        </tr>"""
+        # --- FIM DO CÓDIGO NOVO ---
+
+        # (Este código abaixo já existe no seu ficheiro)
+        # html_tabela += """</tbody>
+        # </table>
+        # </div>"""
         html_tabela += """</tbody>
 </table>
 </div>"""
