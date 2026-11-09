@@ -1031,7 +1031,7 @@ def gerar_pdf_8_paginas_dinamico(df_latest, df_base, df_var, caminho_projecao, c
         pdf.cell(w, 8, h, border=1, fill=True, align='C')
     pdf.ln()
 
-    grupos = [('Pessoal', 'Pessoal e Encargos Sociais (31)'), ('Custeio', 'Custeio / Outras Despesas Correntes (33)'), ('Investimento', 'Investimentos e Capital (44)')]
+    grupos = [('Pessoal', 'Pessoal e Encargos Sociais'), ('Custeio', 'Custeio / Outras Despesas Correntes'), ('Investimento', 'Investimentos e Capital')]
     
     col_grupo = next((c for c in df_latest.columns if 'GRUPO' in c.upper()), None)
     col_loa = next((c for c in df_latest.columns if 'LOA' in c.upper() or 'DOTAÇÃO' in c.upper()), None)
@@ -1040,10 +1040,10 @@ def gerar_pdf_8_paginas_dinamico(df_latest, df_base, df_var, caminho_projecao, c
     col_bloq = next((c for c in df_latest.columns if 'BLOQUEADO' in c.upper()), None)
     col_disp = next((c for c in df_latest.columns if 'DISPONÍVEL' in c.upper()), None)
 
-    totais_p1 = [0.0]*5
-    pdf.set_font('Arial', '', 9)
-    pdf.set_text_color(17, 24, 39)
-    
+    # 1. Coleta os valores brutos por grupo
+    dados_matriz = []
+    totais_p1 = [0.0] * 5
+
     for key_g, label_g in grupos:
         if col_grupo:
             mask_g = df_latest[col_grupo].astype(str).str.upper().str.contains(key_g.upper())
@@ -1057,16 +1057,49 @@ def gerar_pdf_8_paginas_dinamico(df_latest, df_base, df_var, caminho_projecao, c
         v_bloq = df_g[col_bloq].sum() if col_bloq and not df_g.empty else 0
         v_disp = df_g[col_disp].sum() if col_disp and not df_g.empty else 0
 
-        totais_p1[0] += v_loa; totais_p1[1] += v_aut; totais_p1[2] += v_emp; totais_p1[3] += v_bloq; totais_p1[4] += v_disp
+        vals = [v_loa, v_aut, v_emp, v_bloq, v_disp]
+        dados_matriz.append({'label': label_g, 'valores': vals})
 
-        pdf.cell(cols_w[0], 8, label_g, border=1, align='L')
-        pdf.cell(cols_w[1], 8, formatar_milhoes_pdf(v_loa), border=1, align='C')
-        pdf.cell(cols_w[2], 8, formatar_milhoes_pdf(v_aut), border=1, align='C')
-        pdf.cell(cols_w[3], 8, formatar_milhoes_pdf(v_emp), border=1, align='C')
-        pdf.cell(cols_w[4], 8, formatar_milhoes_pdf(v_bloq), border=1, align='C')
-        pdf.cell(cols_w[5], 8, formatar_milhoes_pdf(v_disp), border=1, align='C')
+        for i in range(5):
+            totais_p1[i] += vals[i]
+
+    # 2. Calcula porcentagens automáticas com trava de 100% por coluna
+    matriz_porcentagens = []
+    for _ in grupos:
+        matriz_porcentagens.append([0.0] * 5)
+
+    for col_idx in range(5):
+        total_col = totais_p1[col_idx]
+        if total_col > 0:
+            pcts_brutos = [round((dados_matriz[r]['valores'][col_idx] / total_col) * 100, 2) for r in range(len(grupos))]
+            soma_pcts = round(sum(pcts_brutos), 2)
+            diferenca = round(100.00 - soma_pcts, 2)
+
+            # Ajusta a diferença para garantir exatos 100% no maior grupo da coluna
+            if diferenca != 0:
+                idx_maior = max(range(len(grupos)), key=lambda r: dados_matriz[r]['valores'][col_idx])
+                pcts_brutos[idx_maior] = round(pcts_brutos[idx_maior] + diferenca, 2)
+
+            for r_idx in range(len(grupos)):
+                matriz_porcentagens[r_idx][col_idx] = pcts_brutos[r_idx]
+
+    # 3. Desenha as linhas formatadas no PDF
+    pdf.set_font('Arial', '', 9)
+    pdf.set_text_color(17, 24, 39)
+
+    for r_idx, item in enumerate(dados_matriz):
+        pdf.cell(cols_w[0], 8, item['label'], border=1, align='L')
+        for c_idx in range(5):
+            val_txt = formatar_milhoes_pdf(item['valores'][c_idx])
+            pct_val = matriz_porcentagens[r_idx][c_idx]
+            pct_txt = f"{pct_val:.2f}%".replace('.', ',')
+            
+            # Formato final exibido: R$ 460,9 Mi (44,50%)
+            celula_txt = f"{val_txt} ({pct_txt})"
+            pdf.cell(cols_w[c_idx+1], 8, celula_txt, border=1, align='C')
         pdf.ln()
 
+    # Totalizador final
     pdf.set_font('Arial', 'B', 9)
     pdf.set_fill_color(243, 244, 246)
     pdf.cell(cols_w[0], 8, "TOTAL GERAL CONSOLIDADO", border=1, fill=True, align='L')
