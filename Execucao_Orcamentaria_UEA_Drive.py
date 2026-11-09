@@ -1189,27 +1189,44 @@ def gerar_pdf_8_paginas_dinamico(df_latest, df_base, df_var, caminho_projecao, c
         meses_eixo = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ']
         cols_w4 = [43] + [18]*12 + [28]
 
+        # --- CÁLCULO DE CENTRALIZAÇÃO DA TABELA ---
+        largura_total_tabela = sum(cols_w4)
+        start_x = (pdf.w - largura_total_tabela) / 2
+        # ------------------------------------------
+
         pdf.set_font('Arial', 'B', 8)
         pdf.set_fill_color(30, 58, 138)
         pdf.set_text_color(255, 255, 255)
+        
+        # --- DESENHANDO O CABEÇALHO CENTRALIZADO ---
+        pdf.set_x(start_x) # Aplica a margem antes de iniciar a linha
         pdf.cell(cols_w4[0], 7, "Fase / Mês", border=1, fill=True, align='C')
-        for m in meses_eixo: pdf.cell(18, 7, m, border=1, fill=True, align='C')
+        for m in meses_eixo: 
+            pdf.cell(18, 7, m, border=1, fill=True, align='C')
         pdf.cell(cols_w4[-1], 7, "TOTAL", border=1, fill=True, align='C')
         pdf.ln()
 
         pdf.set_font('Arial', '', 8)
         pdf.set_text_color(17, 24, 39)
         for idx_row, row_p in df_p.iterrows():
+            # --- DESENHANDO CADA LINHA CENTRALIZADA ---
+            pdf.set_x(start_x) # Aplica a margem no início de toda nova linha
+            
             label_fase = str(row_p.iloc[0])
             pdf.cell(cols_w4[0], 7, label_fase[:20], border=1, align='L')
+            
             tot_row = 0
             for m in meses_eixo:
                 v = row_p[m] if m in row_p else 0
-                try: v_num = float(str(v).replace('.', '').replace(',', '.'))
-                except: v_num = 0.0
+                try: 
+                    v_num = float(str(v).replace('.', '').replace(',', '.'))
+                except: 
+                    v_num = 0.0
+                
                 tot_row += v_num
                 txt_v = f"{v_num/1000:,.0f}".replace(',', '.') if v_num != 0 else "-"
                 pdf.cell(18, 7, txt_v, border=1, align='C')
+                
             pdf.cell(cols_w4[-1], 7, f"{tot_row/1000:,.0f}".replace(',', '.'), border=1, align='C')
             pdf.ln()
 
