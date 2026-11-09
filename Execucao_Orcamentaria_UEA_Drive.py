@@ -1309,8 +1309,8 @@ def gerar_pdf_8_paginas_dinamico(df_latest, df_base, df_var, caminho_projecao, c
                 pdf.cell(cols_w5[-1], 7, f"{tot_m:,.1f}".replace('.', ','), border=1, align='C')
                 pdf.ln()
                 
-        except Exception:
-            pass
+    except Exception:
+        pass
 
     # PÁGINA 6
     pdf.titulo_secao = "Arrecadação Fonte 116 (Tesouro) - Projeção vs. Realizado"
