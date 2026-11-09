@@ -1229,6 +1229,12 @@ def gerar_pdf_8_paginas_dinamico(df_latest, df_base, df_var, caminho_projecao, c
                 
             pdf.cell(cols_w4[-1], 7, f"{tot_row/1000:,.0f}".replace(',', '.'), border=1, align='C')
             pdf.ln()
+    # PÁGINA 5
+    pdf.titulo_secao = "Receita vs. Despesa"
+    pdf.add_page()
+    pdf.set_font('Arial', '', 10)
+    pdf.cell(0, 6, "Comparativo mensal entre Receita Arrecadada e Despesa Realizada.", ln=1)
+    pdf.ln(3)
 
     try:
             df_rd = pd.read_excel(caminho_grupo_despesa, sheet_name="ReceitaXDespesa")
