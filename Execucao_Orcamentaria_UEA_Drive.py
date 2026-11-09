@@ -1162,6 +1162,12 @@ def gerar_pdf_8_paginas_dinamico(df_latest, df_base, df_var, caminho_projecao, c
         colunas_ex = [c for c in ['Autorizado', 'Empenhado', 'Liquidado', 'Pago', 'Disponível'] if c in df_base.columns]
         df_m = df_base.groupby('Mês Referência')[colunas_ex].sum().reset_index()
         
+        # --- ORDENAÇÃO CRONOLÓGICA DOS MESES ---
+        df_m['Mes_Nome'] = df_m['Mês Referência'].apply(identifying_mes_streamlit)
+        df_m['Mes_Num'] = df_m['Mes_Nome'].map(ordem_meses).fillna(99)
+        df_m = df_m.sort_values('Mes_Num')
+        # ----------------------------------------
+        
         pdf.set_font('Arial', '', 9)
         pdf.set_text_color(17, 24, 39)
         for _, row in df_m.iterrows():
