@@ -1319,102 +1319,102 @@ def gerar_pdf_8_paginas_dinamico(df_latest, df_base, df_var, caminho_projecao, c
                 
     except Exception:
         pass
-
+        
     # PÁGINA 6
-    pdf.titulo_secao = "Arrecadação Fonte 116 (Tesouro) - Projeção vs. Realizado"
-    pdf.add_page()
-    pdf.set_font('Arial', '', 10)
-    pdf.cell(0, 6, "Diferencial entre os repasses projetados do Tesouro Estadual e os valores efetivamente realizados.", ln=1)
-    pdf.ln(3)
+    # pdf.titulo_secao = "Arrecadação Fonte 116 (Tesouro) - Projeção vs. Realizado"
+    # pdf.add_page()
+    # pdf.set_font('Arial', '', 10)
+    # pdf.cell(0, 6, "Diferencial entre os repasses projetados do Tesouro Estadual e os valores efetivamente realizados.", ln=1)
+    # pdf.ln(3)
 
-    cols_w6 = [160, 60, 57]
-    pdf.set_font('Arial', 'B', 9)
-    pdf.set_fill_color(30, 58, 138)
-    pdf.set_text_color(255, 255, 255)
-    pdf.cell(cols_w6[0], 8, "Indicador Orçamentário / Métrica", border=1, fill=True, align='C')
-    pdf.cell(cols_w6[1], 8, "Valor no Período", border=1, fill=True, align='C')
-    pdf.cell(cols_w6[2], 8, "Variação % / Impacto", border=1, fill=True, align='C')
-    pdf.ln()
+    # cols_w6 = [160, 60, 57]
+    # pdf.set_font('Arial', 'B', 9)
+    # pdf.set_fill_color(30, 58, 138)
+    # pdf.set_text_color(255, 255, 255)
+    # pdf.cell(cols_w6[0], 8, "Indicador Orçamentário / Métrica", border=1, fill=True, align='C')
+    # pdf.cell(cols_w6[1], 8, "Valor no Período", border=1, fill=True, align='C')
+    # pdf.cell(cols_w6[2], 8, "Variação % / Impacto", border=1, fill=True, align='C')
+    # pdf.ln()
 
-    _, _, kpis_f116 = criar_grafico_arrecadacao_fonte116(df_base, caminho_grupo_despesa)
+    # _, _, kpis_f116 = criar_grafico_arrecadacao_fonte116(df_base, caminho_grupo_despesa)
 
-    if kpis_f116:
-        indicadores_f116 = [
-            (f"Projeção LOA 1,01 BI ({kpis_f116.get('qtd_meses_str', 'período')})", kpis_f116.get('proj_periodo', '-'), "-"),
-            (f"Realizado 2026 ({kpis_f116.get('qtd_meses_str', 'período')})", kpis_f116.get('real_periodo', '-'), "-"),
-            ("Diferença Acumulada no Período", kpis_f116.get('dif_abs', '-'), kpis_f116.get('dif_pct', '-')),
-            ("Projeção Estimada de Superávit / Déficit (2026)", kpis_f116.get('proj_fechamento_abs', '-'), kpis_f116.get('proj_fechamento_pct', '-'))
-        ]
-    else:
-        indicadores_f116 = []
+    # if kpis_f116:
+    #     indicadores_f116 = [
+    #         (f"Projeção LOA 1,01 BI ({kpis_f116.get('qtd_meses_str', 'período')})", kpis_f116.get('proj_periodo', '-'), "-"),
+    #         (f"Realizado 2026 ({kpis_f116.get('qtd_meses_str', 'período')})", kpis_f116.get('real_periodo', '-'), "-"),
+    #         ("Diferença Acumulada no Período", kpis_f116.get('dif_abs', '-'), kpis_f116.get('dif_pct', '-')),
+    #         ("Projeção Estimada de Superávit / Déficit (2026)", kpis_f116.get('proj_fechamento_abs', '-'), kpis_f116.get('proj_fechamento_pct', '-'))
+    #     ]
+    # else:
+    #     indicadores_f116 = []
 
-    pdf.set_font('Arial', '', 9)
-    pdf.set_text_color(17, 24, 39)
-    for ind, val, pct in indicadores_f116:
-        pdf.cell(cols_w6[0], 8, ind, border=1, align='L')
-        pdf.cell(cols_w6[1], 8, val, border=1, align='C')
-        pdf.cell(cols_w6[2], 8, pct, border=1, align='C')
-        pdf.ln()
+    # pdf.set_font('Arial', '', 9)
+    # pdf.set_text_color(17, 24, 39)
+    # for ind, val, pct in indicadores_f116:
+    #     pdf.cell(cols_w6[0], 8, ind, border=1, align='L')
+    #     pdf.cell(cols_w6[1], 8, val, border=1, align='C')
+    #     pdf.cell(cols_w6[2], 8, pct, border=1, align='C')
+    #     pdf.ln()
 
-    # PÁGINA 7
-    pdf.titulo_secao = "Tabela de Variações Recentes (Comparativo Fechamento vs. Atual)"
-    pdf.add_page()
-    pdf.set_font('Arial', '', 10)
-    pdf.cell(0, 6, "Acompanhamento das alterações de saldo registradas na base entre a posição de Fechamento e a última extração do SIAFI.", ln=1)
-    pdf.ln(3)
+    # # PÁGINA 7
+    # pdf.titulo_secao = "Tabela de Variações Recentes (Comparativo Fechamento vs. Atual)"
+    # pdf.add_page()
+    # pdf.set_font('Arial', '', 10)
+    # pdf.cell(0, 6, "Acompanhamento das alterações de saldo registradas na base entre a posição de Fechamento e a última extração do SIAFI.", ln=1)
+    # pdf.ln(3)
 
-    cols_w7 = [30, 30, 45, 55, 55, 62]
-    headers_p7 = ["Ação", "Fonte", "Natureza", "Empenhado Ant.", "Empenhado Atual", "Variação (R$)"]
-    pdf.set_font('Arial', 'B', 9)
-    pdf.set_fill_color(30, 58, 138)
-    pdf.set_text_color(255, 255, 255)
-    for w, h in zip(cols_w7, headers_p7): pdf.cell(w, 8, h, border=1, fill=True, align='C')
-    pdf.ln()
+    # cols_w7 = [30, 30, 45, 55, 55, 62]
+    # headers_p7 = ["Ação", "Fonte", "Natureza", "Empenhado Ant.", "Empenhado Atual", "Variação (R$)"]
+    # pdf.set_font('Arial', 'B', 9)
+    # pdf.set_fill_color(30, 58, 138)
+    # pdf.set_text_color(255, 255, 255)
+    # for w, h in zip(cols_w7, headers_p7): pdf.cell(w, 8, h, border=1, fill=True, align='C')
+    # pdf.ln()
 
-    pdf.set_font('Arial', '', 8)
-    pdf.set_text_color(17, 24, 39)
-    if not df_var.empty:
-        for _, r_v in df_var.head(10).iterrows():
-            pdf.cell(cols_w7[0], 6, str(r_v.get('Ação', '')), border=1, align='C')
-            pdf.cell(cols_w7[1], 6, str(r_v.get('Fonte_3', '')), border=1, align='C')
-            pdf.cell(cols_w7[2], 6, str(r_v.get('Natureza_ID', '')), border=1, align='C')
-            pdf.cell(cols_w7[3], 6, f"R$ {r_v.get('Empenhado Ant.', 0):,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.'), border=1, align='R')
-            pdf.cell(cols_w7[4], 6, f"R$ {r_v.get('Empenhado Atual.', 0):,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.'), border=1, align='R')
-            pdf.cell(cols_w7[5], 6, f"R$ {r_v.get('Variação_Empenhado', 0):,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.'), border=1, align='R')
-            pdf.ln()
+    # pdf.set_font('Arial', '', 8)
+    # pdf.set_text_color(17, 24, 39)
+    # if not df_var.empty:
+    #     for _, r_v in df_var.head(10).iterrows():
+    #         pdf.cell(cols_w7[0], 6, str(r_v.get('Ação', '')), border=1, align='C')
+    #         pdf.cell(cols_w7[1], 6, str(r_v.get('Fonte_3', '')), border=1, align='C')
+    #         pdf.cell(cols_w7[2], 6, str(r_v.get('Natureza_ID', '')), border=1, align='C')
+    #         pdf.cell(cols_w7[3], 6, f"R$ {r_v.get('Empenhado Ant.', 0):,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.'), border=1, align='R')
+    #         pdf.cell(cols_w7[4], 6, f"R$ {r_v.get('Empenhado Atual.', 0):,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.'), border=1, align='R')
+    #         pdf.cell(cols_w7[5], 6, f"R$ {r_v.get('Variação_Empenhado', 0):,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.'), border=1, align='R')
+    #         pdf.ln()
 
-    # PÁGINA 8
-    pdf.titulo_secao = "Variação por Natureza da Despesa"
-    pdf.add_page()
-    pdf.set_font('Arial', '', 10)
-    pdf.cell(0, 6, "Detalhamento das maiores variações de Empenho agrupadas pelo código do elemento de despesa.", ln=1)
-    pdf.ln(3)
+    # # PÁGINA 8
+    # pdf.titulo_secao = "Variação por Natureza da Despesa"
+    # pdf.add_page()
+    # pdf.set_font('Arial', '', 10)
+    # pdf.cell(0, 6, "Detalhamento das maiores variações de Empenho agrupadas pelo código do elemento de despesa.", ln=1)
+    # pdf.ln(3)
 
-    cols_w8 = [35, 142, 60, 40]
-    headers_p8 = ["Código", "Descrição da Natureza da Despesa", "Variação Absoluta (R$)", "Status"]
-    pdf.set_font('Arial', 'B', 9)
-    pdf.set_fill_color(30, 58, 138)
-    pdf.set_text_color(255, 255, 255)
-    for w, h in zip(cols_w8, headers_p8): pdf.cell(w, 8, h, border=1, fill=True, align='C')
-    pdf.ln()
+    # cols_w8 = [35, 142, 60, 40]
+    # headers_p8 = ["Código", "Descrição da Natureza da Despesa", "Variação Absoluta (R$)", "Status"]
+    # pdf.set_font('Arial', 'B', 9)
+    # pdf.set_fill_color(30, 58, 138)
+    # pdf.set_text_color(255, 255, 255)
+    # for w, h in zip(cols_w8, headers_p8): pdf.cell(w, 8, h, border=1, fill=True, align='C')
+    # pdf.ln()
 
-    pdf.set_font('Arial', '', 8)
-    pdf.set_text_color(17, 24, 39)
-    if 'Natureza_ID' in df_var.columns:
-        col_v_emp = next((c for c in df_var.columns if 'Variação' in c and 'Empen' in c), None)
-        if col_v_emp:
-            df_nat_var = df_var.groupby('Natureza_ID')[col_v_emp].sum().reset_index()
-            for _, r_n in df_nat_var.head(10).iterrows():
-                cod_n = str(r_n['Natureza_ID'])
-                desc_n = dict_naturezas.get(cod_n, 'Não Identificada')
-                v_var = r_n[col_v_emp]
-                st_v = "Aumento" if v_var > 0 else ("Redução" if v_var < 0 else "Estável")
+    # pdf.set_font('Arial', '', 8)
+    # pdf.set_text_color(17, 24, 39)
+    # if 'Natureza_ID' in df_var.columns:
+    #     col_v_emp = next((c for c in df_var.columns if 'Variação' in c and 'Empen' in c), None)
+    #     if col_v_emp:
+    #         df_nat_var = df_var.groupby('Natureza_ID')[col_v_emp].sum().reset_index()
+    #         for _, r_n in df_nat_var.head(10).iterrows():
+    #             cod_n = str(r_n['Natureza_ID'])
+    #             desc_n = dict_naturezas.get(cod_n, 'Não Identificada')
+    #             v_var = r_n[col_v_emp]
+    #             st_v = "Aumento" if v_var > 0 else ("Redução" if v_var < 0 else "Estável")
                 
-                pdf.cell(cols_w8[0], 6, cod_n, border=1, align='C')
-                pdf.cell(cols_w8[1], 6, desc_n[:60], border=1, align='L')
-                pdf.cell(cols_w8[2], 6, f"R$ {v_var:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.'), border=1, align='R')
-                pdf.cell(cols_w8[3], 6, st_v, border=1, align='C')
-                pdf.ln()
+    #             pdf.cell(cols_w8[0], 6, cod_n, border=1, align='C')
+    #             pdf.cell(cols_w8[1], 6, desc_n[:60], border=1, align='L')
+    #             pdf.cell(cols_w8[2], 6, f"R$ {v_var:,.2f}".replace(',', 'X').replace('.', ',').replace('X', '.'), border=1, align='R')
+    #             pdf.cell(cols_w8[3], 6, st_v, border=1, align='C')
+    #             pdf.ln()
 
     # BLOCCO CORRIGIDO COM INDENTAÇÃO DO TEMPFILE
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
