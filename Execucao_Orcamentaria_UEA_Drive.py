@@ -1674,7 +1674,7 @@ try:
         elif aba_atual == "📈 Evolução Mensal":
             import time
 
-            st.markdown(f"<div class='destaque-ano'>Evolução Mensal da Execução - Ano {ano_dinamico} <span style='font-size: 18px; font-weight: normal; color: #6B7280;'>(última atualização: {dt_atual})</span></div>", unsafe_allow_html=True)
+            st.markdown(f"<div class='destaque-ano'>Projeção Orçamentária - Ano {ano_dinamico}</div>", unsafe_allow_html=True)
             colunas_ex = [col for col in ['Autorizado', 'Empenhado', 'Liquidado', 'Pago', 'Disponível'] if col in df_base.columns]
             df_m = df_base[mask_evo].groupby('Mês Referência')[colunas_ex].sum().reset_index()
             
@@ -1736,7 +1736,7 @@ try:
                 st.info("Não há dados de evolução mensal para os filtros selecionados.")
 
         elif aba_atual == "📉 Projeção vs. Realizado":
-            st.markdown(f"<div class='destaque-ano'>Projeção Orçamentária - Ano {ano_dinamico} <span style='font-size: 18px; font-weight: normal; color: #6B7280;'>(última atualização: {dt_atual})</span></div>", unsafe_allow_html=True)
+            st.markdown(f"<div class='destaque-ano'>Projeção Orçamentária - Ano {ano_dinamico}</div>", unsafe_allow_html=True)
             caminho_projecao = r"Projecao_2026.xlsx"
             
             if os.path.exists(caminho_projecao):
@@ -1813,10 +1813,8 @@ try:
                 dt_atualizacao_gd = dt_atual
 
             st.markdown(
-                f"<div class='destaque-ano'>Análise da Receita Arrecadada x Despesa Realizada "
-                f"<span style='font-size: 18px; font-weight: normal; color: #6B7280;'>"
-                f"(última atualização: {dt_atualizacao_gd})</span></div>", 
-                unsafe_allow_html=True
+            "<div class='destaque-ano'>Análise da Receita Arrecadada x Despesa Realizada</div>", 
+            unsafe_allow_html=True
             )
             
             # Carrega gráfico e tabela diretamente da planilha Excel "Grafico_Grupo de Despesa.xlsx"
