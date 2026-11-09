@@ -1185,13 +1185,11 @@ def gerar_pdf_8_paginas_dinamico(df_latest, df_base, df_var, caminho_projecao, c
     pdf.ln(3)
 
     if os.path.exists(caminho_projecao):
-    df_p = pd.read_excel(caminho_projecao)
-    
-    # Adicione esta linha para tratar os valores vazios (nan):
-    df_p = df_p.fillna(0).replace(["nan", "NaN"], 0)
-    
-    meses_eixo = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ']
-    cols_w4 = [43] + [18]*12 + [28]
+        df_p = pd.read_excel(caminho_projecao)
+        # Adicione esta linha para tratar os valores vazios (nan):
+        df_p = df_p.fillna(0).replace(["nan", "NaN"], 0)
+        meses_eixo = ['JAN', 'FEV', 'MAR', 'ABR', 'MAI', 'JUN', 'JUL', 'AGO', 'SET', 'OUT', 'NOV', 'DEZ']
+        cols_w4 = [43] + [18]*12 + [28]
 
         # --- CÁLCULO DE CENTRALIZAÇÃO DA TABELA ---
         largura_total_tabela = sum(cols_w4)
