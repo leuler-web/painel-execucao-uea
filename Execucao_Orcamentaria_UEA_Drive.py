@@ -1230,15 +1230,7 @@ def gerar_pdf_8_paginas_dinamico(df_latest, df_base, df_var, caminho_projecao, c
             pdf.cell(cols_w4[-1], 7, f"{tot_row/1000:,.0f}".replace(',', '.'), border=1, align='C')
             pdf.ln()
 
-    # PÁGINA 5
-    pdf.titulo_secao = "Receita vs. Despesa - Análise de Fluxo Orçamentário"
-    pdf.add_page()
-    pdf.set_font('Arial', '', 10)
-    pdf.cell(0, 6, "Comparação entre a Receita Arrecadada, Despesa Realizada e Saldo Financeiro Acumulado (em R$ milhões).", ln=1)
-    pdf.ln(3)
-
-    if os.path.exists(caminho_grupo_despesa):
-        try:
+    try:
             df_rd = pd.read_excel(caminho_grupo_despesa, sheet_name="ReceitaXDespesa")
             df_rd.columns = [str(c).strip() for c in df_rd.columns]
             df_rd["Valor"] = df_rd["Valor"].apply(extrair_numero)
@@ -1266,11 +1258,30 @@ def gerar_pdf_8_paginas_dinamico(df_latest, df_base, df_var, caminho_projecao, c
                 if m not in df_pivot.columns: df_pivot[m] = np.nan
             df_pivot = df_pivot[meses_ordem]
 
+            # --- NOVA ORDENAÇÃO DAS LINHAS AQUI ---
+            ordem_linhas = [
+                'LOA (A)', 
+                'Receita Arrecadada (B)', 
+                'Despesa Realizada (C)', 
+                'Saldo (B-C)'
+            ]
+            # Filtra apenas os itens que realmente existem para evitar erros e reordena
+            itens_presentes = [item for item in ordem_linhas if item in df_pivot.index]
+            df_pivot = df_pivot.reindex(itens_presentes)
+            # --------------------------------------
+
             cols_w5 = [55] + [16]*12 + [29]
+            
+            # --- CÁLCULO DE CENTRALIZAÇÃO DA TABELA ---
+            largura_total_tabela = sum(cols_w5)
+            start_x = (pdf.w - largura_total_tabela) / 2
+            # ------------------------------------------
 
             pdf.set_font('Arial', 'B', 8)
             pdf.set_fill_color(30, 58, 138)
             pdf.set_text_color(255, 255, 255)
+            
+            pdf.set_x(start_x) # Aplica a margem no cabeçalho
             pdf.cell(cols_w5[0], 7, "Item Orçamentário", border=1, fill=True, align='C')
             for m in meses_ordem:
                 pdf.cell(16, 7, m, border=1, fill=True, align='C')
@@ -1281,8 +1292,10 @@ def gerar_pdf_8_paginas_dinamico(df_latest, df_base, df_var, caminho_projecao, c
             pdf.set_text_color(17, 24, 39)
 
             for item in df_pivot.index:
+                pdf.set_x(start_x) # Aplica a margem em cada linha da tabela
                 pdf.cell(cols_w5[0], 7, str(item)[:28], border=1, align='L')
                 tot_item = 0.0
+                
                 for m in meses_ordem:
                     val = df_pivot.loc[item, m] if m in df_pivot.columns else np.nan
                     if pd.notna(val) and val != 0:
@@ -1295,6 +1308,7 @@ def gerar_pdf_8_paginas_dinamico(df_latest, df_base, df_var, caminho_projecao, c
                 tot_m = tot_item / 1_000_000 if abs(tot_item) > 100_000 else tot_item
                 pdf.cell(cols_w5[-1], 7, f"{tot_m:,.1f}".replace('.', ','), border=1, align='C')
                 pdf.ln()
+                
         except Exception:
             pass
 
