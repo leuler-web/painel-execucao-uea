@@ -30,10 +30,11 @@ def modo_apresentacao(lista_abas, tempo_segundos=5):
         )
 
     with col1:
-        aba_selecionada = st.segmented_control(
+        aba_selecionada = st.radio(
             "Navegação do Painel",
             options=lista_abas,
-            key="navegacao_apresentacao"
+            key="navegacao_apresentacao",
+            horizontal=True
         )
 
     # 3. Entrega a aba selecionada para o app.py renderizar os gráficos
