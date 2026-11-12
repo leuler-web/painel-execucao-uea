@@ -1,3 +1,4 @@
+import time
 import streamlit as st
 import streamlit.components.v1 as components
 from contextlib import contextmanager
@@ -6,7 +7,7 @@ from contextlib import contextmanager
 def modo_apresentacao(lista_abas, tempo_segundos=5):
     """
     Gerenciador de contexto adaptado para stlite: renderiza os gráficos
-    sem bloquear o navegador e agenda a troca automática de aba via JS.
+    sem bloquear o navegador e clica no <label> da próxima aba via JS.
     """
     if "modo_auto_play" not in st.session_state:
         st.session_state.modo_auto_play = False
@@ -35,7 +36,7 @@ def modo_apresentacao(lista_abas, tempo_segundos=5):
     # Entrega a aba selecionada para o app_stlite.py desenhar os gráficos
     yield aba_selecionada
 
-    # Após desenhar os gráficos, agenda o clique na próxima aba no navegador
+    # Após desenhar os gráficos, agenda o clique no <label> da próxima aba
     if st.session_state.modo_auto_play and len(lista_abas) > 1:
         aba_atual = st.session_state.navegacao_apresentacao
         idx_atual = lista_abas.index(aba_atual) if aba_atual in lista_abas else 0
@@ -43,6 +44,7 @@ def modo_apresentacao(lista_abas, tempo_segundos=5):
 
         components.html(
             f"""
+            <!-- ciclo: {time.time()} -->
             <script>
             setTimeout(function() {{
                 try {{
@@ -50,9 +52,10 @@ def modo_apresentacao(lista_abas, tempo_segundos=5):
                     const grupos = doc.querySelectorAll('[data-testid="stRadio"]');
                     for (const grupo of grupos) {{
                         if (grupo.innerText.includes("Navegação do Painel")) {{
-                            const opcoes = grupo.querySelectorAll('input[type="radio"]');
-                            if (opcoes.length > {proximo_idx}) {{
-                                opcoes[{proximo_idx}].click();
+                            const radioGroup = grupo.querySelector('[role="radiogroup"]');
+                            const labels = radioGroup ? radioGroup.querySelectorAll('label') : [];
+                            if (labels.length > {proximo_idx}) {{
+                                labels[{proximo_idx}].click();
                             }}
                             break;
                         }}

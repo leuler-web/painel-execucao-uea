@@ -1554,7 +1554,7 @@ try:
         st.write("")
         col_esq, col_centro, col_dir = st.columns([1, 3, 1])
         with col_centro:
-            try: st.image("LogoPainelOrcamento.jpeg", use_container_width=True)
+            try: st.image("LogoPainelOrcamento.jpeg", use_column_width=True)
             except: st.warning("Imagem da capa não encontrada.")
             st.write("")
             if st.button("🚀 ACESSAR PAINEL DE EXECUÇÃO ORÇAMENTÁRIA", use_container_width=True):
