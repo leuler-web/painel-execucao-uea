@@ -1524,7 +1524,7 @@ try:
     # BARRA LATERAL
     img_logos = r"Logos_Execução.jpeg"
     if os.path.exists(img_logos):
-        st.sidebar.image(img_logos, use_container_width=True)
+        st.sidebar.image(img_logos, use_column_width=True)
         st.sidebar.markdown("---")
 
     if st.sidebar.button("🔄 Atualizar Dados da Rede", use_container_width=True):
