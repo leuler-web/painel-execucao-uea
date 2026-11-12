@@ -1,18 +1,13 @@
-import time
 import streamlit as st
+import streamlit.components.v1 as components
 from contextlib import contextmanager
 
 @contextmanager
 def modo_apresentacao(lista_abas, tempo_segundos=5):
     """
-    Gerenciador de contexto que garante a renderização completa dos gráficos
-    antes de realizar a pausa e transição de aba.
+    Gerenciador de contexto adaptado para stlite: renderiza os gráficos
+    sem bloquear o navegador e agenda a troca automática de aba via JS.
     """
-    # 1. Aplica a transição de aba pendente
-    if "proxima_aba" in st.session_state:
-        st.session_state.navegacao_apresentacao = st.session_state.pop("proxima_aba")
-
-    # 2. Inicializa os estados do Session State
     if "modo_auto_play" not in st.session_state:
         st.session_state.modo_auto_play = False
 
@@ -23,7 +18,7 @@ def modo_apresentacao(lista_abas, tempo_segundos=5):
 
     with col2:
         st.session_state.modo_auto_play = st.toggle(
-            "🔄 Rotação Automática", 
+            "🔄 Rotação Automática",
             value=st.session_state.modo_auto_play,
             key="toggle_auto_play_key",
             help="Ative para alternar as abas automaticamente."
@@ -37,16 +32,37 @@ def modo_apresentacao(lista_abas, tempo_segundos=5):
             horizontal=True
         )
 
-    # 3. Entrega a aba selecionada para o app.py renderizar os gráficos
+    # Entrega a aba selecionada para o app_stlite.py desenhar os gráficos
     yield aba_selecionada
 
-    # 4. DEPOIS que a página foi desenhada, aguarda o tempo e agenda a próxima troca
-    if st.session_state.modo_auto_play:
-        time.sleep(tempo_segundos)
-        
+    # Após desenhar os gráficos, agenda o clique na próxima aba no navegador
+    if st.session_state.modo_auto_play and len(lista_abas) > 1:
         aba_atual = st.session_state.navegacao_apresentacao
         idx_atual = lista_abas.index(aba_atual) if aba_atual in lista_abas else 0
         proximo_idx = (idx_atual + 1) % len(lista_abas)
-        
-        st.session_state.proxima_aba = lista_abas[proximo_idx]
-        st.rerun()
+
+        components.html(
+            f"""
+            <script>
+            setTimeout(function() {{
+                try {{
+                    const doc = window.parent.document;
+                    const grupos = doc.querySelectorAll('[data-testid="stRadio"]');
+                    for (const grupo of grupos) {{
+                        if (grupo.innerText.includes("Navegação do Painel")) {{
+                            const opcoes = grupo.querySelectorAll('input[type="radio"]');
+                            if (opcoes.length > {proximo_idx}) {{
+                                opcoes[{proximo_idx}].click();
+                            }}
+                            break;
+                        }}
+                    }}
+                }} catch (e) {{
+                    console.error("Erro na rotação automática:", e);
+                }}
+            }}, {tempo_segundos * 1000});
+            </script>
+            """,
+            height=0,
+            width=0,
+        )
