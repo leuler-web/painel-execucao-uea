@@ -1524,17 +1524,17 @@ try:
     # BARRA LATERAL
     img_logos = r"Logos_Execução.jpeg"
     if os.path.exists(img_logos):
-        st.sidebar.image(img_logos, width="stretch")
+        st.sidebar.image(img_logos, use_container_width=True)
         st.sidebar.markdown("---")
 
-    if st.sidebar.button("🔄 Atualizar Dados da Rede", width="stretch"):
+    if st.sidebar.button("🔄 Atualizar Dados da Rede", use_container_width=True):
         st.cache_data.clear()
         st.rerun()
 
     st.sidebar.markdown("---")
 
     if st.session_state.pagina_ativa == 'dashboard':
-        st.sidebar.button("⬅️ Voltar para a Capa", on_click=lambda: st.session_state.update(pagina_ativa='capa'), width="stretch")
+        st.sidebar.button("⬅️ Voltar para a Capa", on_click=lambda: st.session_state.update(pagina_ativa='capa'), use_container_width=True)
 
     st.sidebar.markdown("""
         <br><hr>
@@ -1555,10 +1555,10 @@ try:
         st.write("")
         col_esq, col_centro, col_dir = st.columns([1, 3, 1])
         with col_centro:
-            try: st.image("LogoPainelOrcamento.jpeg", width="stretch")
+            try: st.image("LogoPainelOrcamento.jpeg", use_container_width=True)
             except: st.warning("Imagem da capa não encontrada.")
             st.write("")
-            if st.button("🚀 ACESSAR PAINEL DE EXECUÇÃO ORÇAMENTÁRIA", width="stretch"):
+            if st.button("🚀 ACESSAR PAINEL DE EXECUÇÃO ORÇAMENTÁRIA", use_container_width=True):
                 st.session_state.pagina_ativa = 'dashboard'
                 st.rerun()
         st.stop()  
@@ -1763,7 +1763,7 @@ try:
                         margin=dict(l=20, r=100, t=10, b=10)
                     )
                     fig_bar.update_traces(marker_color='#4f8868', textposition="outside", textfont=dict(size=15, color="black"), hovertemplate="<b>Ação: %{customdata[0]} - %{customdata[1]}</b><br>Valor: %{text}<extra></extra>")
-                    st.plotly_chart(fig_bar, width="stretch")
+                    st.plotly_chart(fig_bar, use_container_width=True)
                 else:
                     st.info("Não há valores empenhados para os filtros selecionados.")
             else:
@@ -1779,7 +1779,7 @@ try:
                     fig_tree = px.treemap(df_tree, path=[px.Constant(f"Ação {var_acao_codigo}"), 'Rotulo_Display'], values='Empenhado', color='Empenhado', color_continuous_scale='Greens', custom_data=['Valor_Abreviado'])
                     fig_tree.update_traces(texttemplate="<b>%{label}</b><br>%{customdata[0]}", textfont=dict(size=16), hovertemplate="<b>%{label}</b><br>Empenhado: %{customdata[0]}<extra></extra>")
                     fig_tree.update_layout(margin=dict(t=20, l=10, r=10, b=10), height=480)
-                    st.plotly_chart(fig_tree, width="stretch")
+                    st.plotly_chart(fig_tree, use_container_width=True)
                 else:
                     st.info("Não há valores empenhados para detalhar nesta Ação.")
 
@@ -2064,7 +2064,7 @@ try:
                     fig_var.add_vline(x=0, line_width=2, line_color="black")
                     max_abs = abs(df_chart_var[col_var_emp]).max()
                     fig_var.update_layout(font=dict(size=15, color="black"), yaxis=dict(tickfont=dict(size=14, color="#111827")), xaxis=dict(showticklabels=False, title="", range=[-max_abs * 1.35, max_abs * 1.35]), yaxis_title="", margin=dict(l=10, r=40, t=20, b=10), height=max(420, len(df_chart_var) * 48))
-                    st.plotly_chart(fig_var, width="stretch")
+                    st.plotly_chart(fig_var, use_container_width=True)
                 else: st.info("Não houve variação de Empenho para as naturezas neste período ou filtro selecionado.")
             else: st.warning("Coluna de variação de Empenhado não foi identificada na base de dados.")
 
@@ -2078,11 +2078,11 @@ except Exception as e:
             <p style="color: #991B1B; font-size: 13px;"><b>Erro técnico detalhado:</b> {e}</p>
         </div>
     """, unsafe_allow_html=True)
-    
+    st.exception(e)    
     st.write("")
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        if st.button("🔄 Reiniciar e Limpar Cache do Sistema", width="stretch"):
+        if st.button("🔄 Reiniciar e Limpar Cache do Sistema", use_container_width=True):
             st.cache_data.clear()
             st.session_state.clear()
             st.rerun()
