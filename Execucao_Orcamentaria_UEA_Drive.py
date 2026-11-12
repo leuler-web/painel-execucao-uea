@@ -28,6 +28,31 @@ st.set_page_config(
         'About': "Painel de Execução Orçamentária UEA. Versão 2.0 (Blindada)"
     }
 )
+st.markdown("""
+<style>
+@media (max-width: 768px) {
+    /* Aproveita melhor as bordas da tela do celular */
+    .block-container {
+        padding-top: 1.5rem !important;
+        padding-left: 0.75rem !important;
+        padding-right: 0.75rem !important;
+    }
+
+    /* Transforma as abas (st.radio) em menu deslizante horizontal */
+    div[data-testid="stRadio"] > div[role="radiogroup"] {
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 6px;
+    }
+    div[data-testid="stRadio"] > div[role="radiogroup"] label {
+        white-space: nowrap !important;
+        flex-shrink: 0 !important;
+        font-size: 13px !important;
+    }
+}
+</style>
+""", unsafe_allow_html=True)
 # ==============================================================================
 # CARREGAMENTO DE DATAS DE ATUALIZAÇÃO DAS PLANILHAS
 # ==============================================================================
