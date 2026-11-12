@@ -48,4 +48,4 @@ def modo_apresentacao(lista_abas, tempo_segundos=5):
         proximo_idx = (idx_atual + 1) % len(lista_abas)
         
         st.session_state.proxima_aba = lista_abas[proximo_idx]
-        st.rerun()
+        st.rerun().
