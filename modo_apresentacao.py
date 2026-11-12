@@ -8,6 +8,17 @@ def modo_apresentacao(lista_abas, tempo_segundos=5):
     Gerenciador de contexto que garante a renderização completa dos gráficos
     antes de realizar a pausa e transição de aba.
     """
+    # Injeção segura do CSS para evitar o SyntaxError
+    st.markdown("""
+    <style>
+    .container { 
+        margin: 50px auto 40px auto; 
+        width: 600px; 
+        text-align: center; 
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
     # 1. Aplica a transição de aba pendente
     if "proxima_aba" in st.session_state:
         st.session_state.navegacao_apresentacao = st.session_state.pop("proxima_aba")
