@@ -11,7 +11,6 @@ import matplotlib.pyplot as plt
 from modo_apresentacao import modo_apresentacao
 import urllib.request
 import http.client
-
 if not hasattr(urllib.request, "HTTPSHandler"):
     class HTTPSHandler:
         pass
