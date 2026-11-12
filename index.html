@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <!DOCTYPE html>
 <html>
   <head>
@@ -25,4 +26,32 @@
       }, document.getElementById("root"))
     </script>
   </body>
+=======
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Painel Orçamentário UEA</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@stlite/mountable@0.59.0/build/stlite.css" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script src="https://cdn.jsdelivr.net/npm/@stlite/mountable@0.59.0/build/stlite.js"></script>
+    <script>
+      stlite.mount({
+        requirements: ["streamlit", "pandas", "plotly", "openpyxl", "fpdf"],
+        entrypoint: "app_stlite.py",
+        files: {
+          "app_stlite.py": { url: "app_stlite.py" },
+          "Base_Consolidada_SIAFI.xlsx": { url: "Base_Consolidada_SIAFI.xlsx" },
+          "Gráfico_Grupo de Despesa.xlsx": { url: "Gr%C3%A1fico_Grupo%20de%20Despesa.xlsx" },
+          "Projecao_2026.xlsx": { url: "Projecao_2026.xlsx" },
+          "Tabelas_Auxiliares.xlsx": { url: "Tabelas_Auxiliares.xlsx" },
+          "LogoPainelOrcamento.jpeg": { url: "LogoPainelOrcamento.jpeg" },
+          "Logos_Execução.jpeg": { url: "Logos_Execução.jpeg" }
+        }
+      }, document.getElementById("root"))
+    </script>
+  </body>
+>>>>>>> 6938da2a761da3055a2572ea7800117c04241f97
 </html>
