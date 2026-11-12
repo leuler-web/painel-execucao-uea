@@ -10,11 +10,19 @@ from io import BytesIO
 import matplotlib.pyplot as plt
 from modo_apresentacao import modo_apresentacao
 import urllib.request
+import http.client
+
 if not hasattr(urllib.request, "HTTPSHandler"):
     class HTTPSHandler:
         pass
     urllib.request.HTTPSHandler = HTTPSHandler
-    
+
+if not hasattr(http.client, "HTTPSConnection"):
+    class HTTPSConnection(http.client.HTTPConnection):
+        pass
+    http.client.HTTPSConnection = HTTPSConnection
+
+from modo_apresentacao import modo_apresentacao
 from fpdf import FPDF
 from datetime import datetime
 
