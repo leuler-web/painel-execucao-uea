@@ -9,6 +9,12 @@ import tempfile
 from io import BytesIO
 import matplotlib.pyplot as plt
 from modo_apresentacao import modo_apresentacao
+import urllib.request
+if not hasattr(urllib.request, "HTTPSHandler"):
+    class HTTPSHandler:
+        pass
+    urllib.request.HTTPSHandler = HTTPSHandler
+    
 from fpdf import FPDF
 from datetime import datetime
 
