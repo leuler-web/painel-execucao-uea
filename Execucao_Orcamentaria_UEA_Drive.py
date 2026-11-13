@@ -28,31 +28,6 @@ st.set_page_config(
         'About': "Painel de Execução Orçamentária UEA. Versão 2.0 (Blindada)"
     }
 )
-st.markdown("""
-<style>
-@media (max-width: 768px) {
-    /* Aproveita melhor as bordas da tela do celular */
-    .block-container {
-        padding-top: 1.5rem !important;
-        padding-left: 0.75rem !important;
-        padding-right: 0.75rem !important;
-    }
-
-    /* Transforma as abas (st.radio) em menu deslizante horizontal */
-    div[data-testid="stRadio"] > div[role="radiogroup"] {
-        flex-wrap: nowrap !important;
-        overflow-x: auto !important;
-        -webkit-overflow-scrolling: touch;
-        padding-bottom: 6px;
-    }
-    div[data-testid="stRadio"] > div[role="radiogroup"] label {
-        white-space: nowrap !important;
-        flex-shrink: 0 !important;
-        font-size: 13px !important;
-    }
-}
-</style>
-""", unsafe_allow_html=True)
 # ==============================================================================
 # CARREGAMENTO DE DATAS DE ATUALIZAÇÃO DAS PLANILHAS
 # ==============================================================================
@@ -1545,7 +1520,26 @@ try:
     st.sidebar.markdown("---")
 
     if st.session_state.pagina_ativa == 'dashboard':
-        st.sidebar.button("⬅️ Voltar para a Capa", on_click=lambda: st.session_state.update(pagina_ativa='capa'), width="stretch")
+        if st.session_state.get("ocultar_sidebar", False):
+            st.markdown("""
+                <style>
+                [data-testid="stSidebar"],
+                [data-testid="collapsedControl"],
+                [data-testid="stExpandSidebarButton"] {
+                    display: none !important;
+                }
+                </style>
+            """, unsafe_allow_html=True)
+
+            # Botão discreto no topo para conseguir voltar à capa e reativar a barra
+            if st.button("⬅️ Voltar para a Capa"):
+                st.session_state.ocultar_sidebar = False
+                st.session_state.pagina_ativa = 'capa'
+                st.rerun()
+                st.sidebar.button("⬅️ Voltar para a Capa", on_click=lambda: st.session_state.update(pagina_ativa='capa'), width="stretch")
+                if st.button("◀️ Ocultar Barra Lateral", use_container_width=True):
+                    st.session_state.ocultar_sidebar = True
+                    st.rerun()
 
     st.sidebar.markdown("""
         <br><hr>
@@ -1562,6 +1556,7 @@ try:
 
     # TELA 1 (CAPA)
     if st.session_state.pagina_ativa == 'capa':
+        st.session_state.ocultar_sidebar = False
         st.write("")
         st.write("")
         col_esq, col_centro, col_dir = st.columns([1, 3, 1])
